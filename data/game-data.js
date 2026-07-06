@@ -4,10 +4,12 @@ window.REBIRTH_GAME_DATA = {
     "initialCapital": 10000.0,
     "targetCapital": 100000000.0,
     "currency": "CNY",
-    "generatedAt": "2026-07-05T16:23:35.997592+00:00",
+    "generatedAt": "2026-07-06T03:37:33.029258+00:00",
     "source": {
-      "dailyCleanDir": "Z:\\market-data-platform\\assets\\tushare\\a_share\\daily\\a_share_all_20150101_20260703_daily_clean",
-      "instruments": "Z:\\market-data-platform\\assets\\tushare\\a_share\\instruments\\a_share_all_instruments_latest.parquet",
+      "dailyDataset": "a_share_daily_clean",
+      "dailyDatasetVersion": "20260703",
+      "instrumentDataset": "a_share_instruments",
+      "instrumentDatasetVersion": "unknown",
       "priceColumn": "adj_close"
     },
     "rules": {
@@ -1279,10 +1281,12 @@ window.REBIRTH_GAME_DATA = {
     "initialCapital": 10000.0,
     "targetCapital": 100000000.0,
     "currency": "CNY",
-    "generatedAt": "2026-07-05T16:24:10.228305+00:00",
+    "generatedAt": "2026-07-06T03:38:09.765317+00:00",
     "source": {
-      "dailyCleanDir": "Z:\\market-data-platform\\assets\\tushare\\a_share\\daily\\a_share_all_20150101_20260703_daily_clean",
-      "instruments": "Z:\\market-data-platform\\assets\\tushare\\a_share\\instruments\\a_share_all_instruments_latest.parquet",
+      "dailyDataset": "a_share_daily_clean",
+      "dailyDatasetVersion": "20260703",
+      "instrumentDataset": "a_share_instruments",
+      "instrumentDatasetVersion": "unknown",
       "priceColumn": "adj_close"
     },
     "rules": {
@@ -2554,10 +2558,12 @@ window.REBIRTH_GAME_DATA = {
     "initialCapital": 10000.0,
     "targetCapital": 100000000.0,
     "currency": "CNY",
-    "generatedAt": "2026-07-05T16:24:51.885453+00:00",
+    "generatedAt": "2026-07-06T03:38:47.097859+00:00",
     "source": {
-      "dailyCleanDir": "Z:\\market-data-platform\\assets\\tushare\\a_share\\daily\\a_share_all_20150101_20260703_daily_clean",
-      "instruments": "Z:\\market-data-platform\\assets\\tushare\\a_share\\instruments\\a_share_all_instruments_latest.parquet",
+      "dailyDataset": "a_share_daily_clean",
+      "dailyDatasetVersion": "20260703",
+      "instrumentDataset": "a_share_instruments",
+      "instrumentDatasetVersion": "unknown",
       "priceColumn": "adj_close"
     },
     "rules": {

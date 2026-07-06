@@ -8,10 +8,11 @@ import datetime as dt
 import json
 import math
 import random
+import re
 from collections import defaultdict
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
-
+from typing import Any, Literal, TypedDict, cast
 
 DEFAULT_DAILY_CLEAN_DIR = (
     r"Z:\market-data-platform\assets\tushare\a_share\daily"
@@ -21,13 +22,38 @@ DEFAULT_INSTRUMENTS_FILE = (
     r"Z:\market-data-platform\assets\tushare\a_share\instruments"
     r"\a_share_all_instruments_latest.parquet"
 )
+DEFAULT_YEARS = (2023, 2024, 2025)
+PriceColumn = Literal["adj_close", "close"]
 
 
-def parse_args() -> argparse.Namespace:
+@dataclass(frozen=True)
+class Config:
+    years: list[int]
+    daily_clean_dir: str
+    instruments: str
+    out_dir: str
+    initial_capital: float
+    target_capital: float
+    active_pool: int
+    min_listed_days: int
+    min_trading_ratio: float
+    distractor_low_pct: float
+    distractor_high_pct: float
+    price_column: PriceColumn
+    seed: int
+
+
+class Manifest(TypedDict):
+    generatedAt: str
+    years: list[int]
+    files: list[str]
+
+
+def parse_args() -> Config:
     parser = argparse.ArgumentParser(
         description="Generate compact yearly JSON for the rebirth stock game."
     )
-    parser.add_argument("--years", nargs="+", type=int, default=[2023, 2024])
+    parser.add_argument("--years", nargs="+", type=int, default=list(DEFAULT_YEARS))
     parser.add_argument("--daily-clean-dir", default=DEFAULT_DAILY_CLEAN_DIR)
     parser.add_argument("--instruments", default=DEFAULT_INSTRUMENTS_FILE)
     parser.add_argument("--out-dir", default="data")
@@ -40,7 +66,23 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--distractor-high-pct", type=float, default=0.30)
     parser.add_argument("--price-column", choices=["adj_close", "close"], default="adj_close")
     parser.add_argument("--seed", type=int, default=20240706)
-    return parser.parse_args()
+    namespace = parser.parse_args()
+    values = vars(namespace)
+    return Config(
+        years=values["years"],
+        daily_clean_dir=values["daily_clean_dir"],
+        instruments=values["instruments"],
+        out_dir=values["out_dir"],
+        initial_capital=values["initial_capital"],
+        target_capital=values["target_capital"],
+        active_pool=values["active_pool"],
+        min_listed_days=values["min_listed_days"],
+        min_trading_ratio=values["min_trading_ratio"],
+        distractor_low_pct=values["distractor_low_pct"],
+        distractor_high_pct=values["distractor_high_pct"],
+        price_column=cast(PriceColumn, values["price_column"]),
+        seed=values["seed"],
+    )
 
 
 def require_duckdb():
@@ -56,6 +98,25 @@ def require_duckdb():
 
 def duckdb_path(path: str | Path) -> str:
     return str(Path(path)).replace("\\", "/")
+
+
+def dataset_version(path: str | Path) -> str:
+    match = re.search(r"(20\d{6})(?!.*20\d{6})", str(path))
+    return match.group(1) if match else "unknown"
+
+
+def public_source_metadata(
+    daily_clean_dir: str | Path,
+    instruments: str | Path,
+    price_column: PriceColumn,
+) -> dict[str, str]:
+    return {
+        "dailyDataset": "a_share_daily_clean",
+        "dailyDatasetVersion": dataset_version(daily_clean_dir),
+        "instrumentDataset": "a_share_instruments",
+        "instrumentDatasetVersion": dataset_version(instruments),
+        "priceColumn": price_column,
+    }
 
 
 def query_year(
@@ -206,7 +267,7 @@ def query_year(
 
     by_month: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
-        item = dict(zip(columns, row))
+        item = dict(zip(columns, row, strict=True))
         by_month[item["month_key"]].append(item)
     return by_month
 
@@ -255,8 +316,7 @@ def pick_distractors(
     band = [
         row
         for row in rows
-        if low_rank <= int(row["return_rank"]) <= high_rank
-        and row["ts_code"] != rows[0]["ts_code"]
+        if low_rank <= int(row["return_rank"]) <= high_rank and row["ts_code"] != rows[0]["ts_code"]
     ]
     if len(band) < 3:
         band = [row for row in rows[1 : min(len(rows), 80)] if row["ts_code"] != rows[0]["ts_code"]]
@@ -265,7 +325,7 @@ def pick_distractors(
     return rng.sample(band, 3)
 
 
-def build_year_payload(args: argparse.Namespace, con: Any, year: int) -> dict[str, Any]:
+def build_year_payload(args: Config, con: Any, year: int) -> dict[str, Any]:
     by_month = query_year(
         con=con,
         year=year,
@@ -320,12 +380,12 @@ def build_year_payload(args: argparse.Namespace, con: Any, year: int) -> dict[st
         "initialCapital": float(args.initial_capital),
         "targetCapital": float(args.target_capital),
         "currency": "CNY",
-        "generatedAt": dt.datetime.now(dt.timezone.utc).isoformat(),
-        "source": {
-            "dailyCleanDir": str(args.daily_clean_dir),
-            "instruments": str(args.instruments),
-            "priceColumn": args.price_column,
-        },
+        "generatedAt": dt.datetime.now(dt.UTC).isoformat(),
+        "source": public_source_metadata(
+            args.daily_clean_dir,
+            args.instruments,
+            args.price_column,
+        ),
         "rules": {
             "activePool": args.active_pool,
             "minListedDays": args.min_listed_days,
@@ -345,9 +405,9 @@ def build_year_payload(args: argparse.Namespace, con: Any, year: int) -> dict[st
 
 def write_outputs(out_dir: Path, payloads: list[dict[str, Any]]) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
-    bundle: dict[str, Any] = {}
-    manifest = {
-        "generatedAt": dt.datetime.now(dt.timezone.utc).isoformat(),
+    bundle: dict[str, dict[str, Any]] = {}
+    manifest: Manifest = {
+        "generatedAt": dt.datetime.now(dt.UTC).isoformat(),
         "years": [],
         "files": [],
     }
@@ -355,20 +415,22 @@ def write_outputs(out_dir: Path, payloads: list[dict[str, Any]]) -> None:
     for payload in payloads:
         year = str(payload["year"])
         file_path = out_dir / f"{year}.json"
-        file_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        file_path.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
         bundle[year] = payload
         manifest["years"].append(int(year))
         manifest["files"].append(file_path.name)
         print(f"Wrote {file_path}")
 
     manifest_path = out_dir / "manifest.json"
-    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    manifest_path.write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
 
     js_path = out_dir / "game-data.js"
     js_body = (
-        "window.REBIRTH_GAME_DATA = "
-        + json.dumps(bundle, ensure_ascii=False, indent=2)
-        + ";\n"
+        "window.REBIRTH_GAME_DATA = " + json.dumps(bundle, ensure_ascii=False, indent=2) + ";\n"
     )
     js_path.write_text(js_body, encoding="utf-8")
     print(f"Wrote {manifest_path}")

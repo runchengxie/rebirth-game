@@ -1,0 +1,16 @@
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.basedpyright]
+include = ["scripts"]
+typeCheckingMode = "basic"
+reportMissingImports = false
+reportMissingTypeStubs = false
+reportAny = false
+reportExplicitAny = false
+reportImplicitStringConcatenation = false
+reportUnusedCallResult = false

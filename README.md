@@ -6,13 +6,15 @@
 
 ## 数据来源
 
-默认读取本机 Z 盘清洗后的 A 股日线层：
+默认读取本机 market-data-platform 的清洗后 A 股日线层：
 
-`Z:\market-data-platform\assets\tushare\a_share\daily\a_share_all_20150101_20260703_daily_clean`
+- `a_share_daily_clean`
 
 脚本还会读取股票名称、行业、上市日期：
 
-`Z:\market-data-platform\assets\tushare\a_share\instruments\a_share_all_instruments_latest.parquet`
+- `a_share_instruments`
+
+具体本机路径在 `scripts/build_data.py` 的默认参数里，也可以通过 `--daily-clean-dir` 和 `--instruments` 覆盖。发布后的 JSON 只保留数据集名称和版本，不包含本机路径。
 
 ## 规则
 
@@ -38,13 +40,15 @@ uv pip install -r requirements.txt
 - `data/2025.json`
 - `data/game-data.js`
 
-`index.html` 直接引用 `data/game-data.js`，所以可以直接用浏览器打开，不需要前端构建步骤。
+`index.html` 直接引用 `styles.css`、`app.js` 和 `data/game-data.js`，所以可以直接用浏览器打开，不需要前端构建步骤。
 
 ## 分享给朋友
 
 朋友玩游戏只需要这些文件：
 
 - `index.html`
+- `styles.css`
+- `app.js`
 - `data/game-data.js`
 - `data/2023.json`
 - `data/2024.json`
@@ -59,6 +63,23 @@ cd C:\Users\gbyha\code\rebirth-game
 ```
 
 生成结果在 `dist/rebirth-game-share.zip`。解压后直接打开 `index.html` 即可玩，不需要 Z 盘数据。
+
+`package.ps1` 会读取 `data/manifest.json`，以后新增年份后重新生成数据即可自动进入分享包。
+
+## 验证
+
+本地检查命令：
+
+```powershell
+uvx ruff check .
+uvx ruff format --check .
+.\.venv\Scripts\python.exe -m compileall scripts
+uvx basedpyright scripts
+.\.venv\Scripts\python.exe scripts\validate_data.py
+node scripts\validate_frontend.js
+```
+
+GitHub Actions 会在 push 和 pull request 时运行同一组轻量检查。
 
 ## 调整玩法
 

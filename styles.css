@@ -5,6 +5,15 @@
       --ink: #172026;
       --muted: #64727d;
       --line: #dce3e8;
+      --option-bg: #ffffff;
+      --canvas-bg: #fbfcfd;
+      --table-head: #fafbfc;
+      --button-bg: #172026;
+      --button-ink: #ffffff;
+      --option-hover-line: #9fb5c6;
+      --chart-grid: #dce3e8;
+      --chart-label: #64727d;
+      --target-line: #c43d3d;
       --green: #138a54;
       --green-soft: #e7f5ee;
       --red: #c43d3d;
@@ -16,6 +25,33 @@
       --shadow: 0 14px 36px rgba(23, 32, 38, 0.08);
       font-family: "Microsoft YaHei", "PingFang SC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       letter-spacing: 0;
+    }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #111417;
+      --surface: #1a2025;
+      --ink: #eef3f6;
+      --muted: #9caab4;
+      --line: #2f3a42;
+      --option-bg: #20272d;
+      --canvas-bg: #151a1f;
+      --table-head: #20272d;
+      --button-bg: #eef3f6;
+      --button-ink: #111417;
+      --option-hover-line: #637887;
+      --chart-grid: #31404a;
+      --chart-label: #9caab4;
+      --target-line: #ff7676;
+      --green: #49c484;
+      --green-soft: #173b2a;
+      --red: #ff7676;
+      --red-soft: #431f23;
+      --blue: #7eb7f3;
+      --blue-soft: #1b334a;
+      --gold: #f0b54d;
+      --gold-soft: #3b2f16;
+      --shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
     }
 
     * {
@@ -102,8 +138,8 @@
     }
 
     .segmented button.active {
-      background: var(--ink);
-      color: #fff;
+      background: var(--button-bg);
+      color: var(--button-ink);
     }
 
     .money-input {
@@ -131,10 +167,10 @@
     .icon-button,
     .primary-button {
       height: 42px;
-      border: 1px solid var(--ink);
+      border: 1px solid var(--button-bg);
       border-radius: 8px;
-      background: var(--ink);
-      color: #fff;
+      background: var(--button-bg);
+      color: var(--button-ink);
       padding: 0 16px;
       font-weight: 700;
       white-space: nowrap;
@@ -236,7 +272,7 @@
       width: 100%;
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: #fff;
+      background: var(--option-bg);
       color: var(--ink);
       padding: 16px;
       text-align: left;
@@ -248,7 +284,7 @@
 
     .option:hover:not(:disabled) {
       transform: translateY(-2px);
-      border-color: #9fb5c6;
+      border-color: var(--option-hover-line);
     }
 
     .option:disabled {
@@ -363,7 +399,7 @@
       height: 250px;
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: #fbfcfd;
+      background: var(--canvas-bg);
     }
 
     .legend {
@@ -461,7 +497,7 @@
       color: var(--muted);
       font-size: 12px;
       font-weight: 700;
-      background: #fafbfc;
+      background: var(--table-head);
     }
 
     tr:last-child td {

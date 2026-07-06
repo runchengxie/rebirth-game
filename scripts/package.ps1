@@ -19,10 +19,11 @@ New-Item -ItemType Directory -Force $ShareDir | Out-Null
 New-Item -ItemType Directory -Force (Join-Path $ShareDir "data") | Out-Null
 
 $Manifest = Get-Content -LiteralPath $ManifestPath -Raw | ConvertFrom-Json
-$RuntimeFiles = @("index.html", "styles.css", "app.js", "README.md")
+$RootFiles = @("index.html", "styles.css", "app.js", "README.md", "AGENTS.md", "pyproject.toml", "requirements.txt")
 $DataFiles = @("game-data.js", "manifest.json") + @($Manifest.files)
+$ProjectDirs = @("scripts", "docs", ".github")
 
-foreach ($File in $RuntimeFiles) {
+foreach ($File in $RootFiles) {
     Copy-Item -LiteralPath (Join-Path $ProjectRoot $File) -Destination $ShareDir -Force
 }
 
@@ -30,9 +31,16 @@ foreach ($File in ($DataFiles | Select-Object -Unique)) {
     Copy-Item -LiteralPath (Join-Path $ProjectRoot "data\$File") -Destination (Join-Path $ShareDir "data") -Force
 }
 
+foreach ($Dir in $ProjectDirs) {
+    Copy-Item -LiteralPath (Join-Path $ProjectRoot $Dir) -Destination $ShareDir -Recurse -Force
+}
+
+Get-ChildItem -LiteralPath $ShareDir -Recurse -Directory -Filter "__pycache__" | Remove-Item -Recurse -Force
+Get-ChildItem -LiteralPath $ShareDir -Recurse -File -Filter "*.pyc" | Remove-Item -Force
+
 Push-Location -LiteralPath $ShareDir
 try {
-    Compress-Archive -Path @("index.html", "styles.css", "app.js", "README.md", "data") -DestinationPath $ZipPath -Force
+    Compress-Archive -Path @($RootFiles + "data" + $ProjectDirs) -DestinationPath $ZipPath -Force
 }
 finally {
     Pop-Location

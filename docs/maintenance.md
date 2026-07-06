@@ -1,0 +1,70 @@
+# 维护说明
+
+## 日常开发流程
+
+1. 修改源码或数据生成脚本。
+2. 需要更新题库时，运行 `scripts/build_data.py`。
+3. 运行本地验证命令。
+4. 需要离线分享包时，运行 `scripts/package.ps1`。
+5. 提交并推送到 `main`，GitHub Pages 会自动发布。
+
+## 数据生成
+
+默认命令：
+
+```powershell
+.\.venv\Scripts\python.exe scripts\build_data.py
+```
+
+默认年份为 2023、2024、2025。生成脚本会输出：
+
+- 每年一个 JSON 文件。
+- `data/game-data.js`，供网页直接加载。
+- `data/manifest.json`，供校验和打包脚本读取。
+
+公开数据中的 `source` 字段只保留数据集名称、版本和价格字段，不写入本机路径。
+
+## 验证脚本
+
+`scripts/validate_data.py` 会检查：
+
+- `manifest.json` 与年份 JSON 是否一致。
+- 每个年份是否有 12 个月。
+- 每个月是否有 4 个选项。
+- 每个月是否只有 1 个正确答案。
+- `perfectCapital` 是否能复算一致。
+- `game-data.js` 是否与年份 JSON 内容一致。
+- 公开数据里是否出现本机路径。
+
+`scripts/validate_frontend.js` 会检查：
+
+- `index.html` 是否引用 `styles.css`、`app.js` 和 `data/game-data.js`。
+- 暗色模式按钮是否存在。
+- `styles.css` 是否包含暗色模式变量。
+- 内联脚本、`app.js` 和 `game-data.js` 是否能通过基础语法检查。
+
+## GitHub Pages
+
+仓库通过 GitHub Pages 发布，来源为 `main` 分支根目录。
+
+线上地址：
+
+<https://runchengxie.github.io/rebirth-game/>
+
+推送到 `main` 后，GitHub 会运行 CI 和 Pages 发布流程。CI 成功后，再确认线上页面和静态资源返回 200。
+
+## 离线分享包
+
+运行：
+
+```powershell
+.\scripts\package.ps1
+```
+
+生成：
+
+```text
+dist/rebirth-game-share.zip
+```
+
+压缩包保留 `data/` 目录结构。解压后打开 `index.html` 即可游玩。

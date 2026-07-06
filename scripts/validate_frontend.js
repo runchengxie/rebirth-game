@@ -10,9 +10,22 @@ for (const required of [
   'href="styles.css"',
   'src="data/game-data.js"',
   'src="app.js"',
+  'id="themeToggleBtn"',
 ]) {
   if (!html.includes(required)) {
     fail(`index.html missing ${required}`);
+  }
+}
+
+const inlineScripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
+for (const [, script] of inlineScripts) {
+  new Function(script);
+}
+
+const css = fs.readFileSync("styles.css", "utf8");
+for (const required of ['data-theme="dark"', "--button-bg", "--canvas-bg"]) {
+  if (!css.includes(required)) {
+    fail(`styles.css missing ${required}`);
   }
 }
 

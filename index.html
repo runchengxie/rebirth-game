@@ -4,6 +4,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>重生选股游戏</title>
+  <script>
+    (() => {
+      const key = "rebirthGameTheme";
+      const systemDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      let stored = null;
+      try {
+        stored = localStorage.getItem(key);
+      } catch {
+        stored = null;
+      }
+      document.documentElement.dataset.theme = stored || (systemDark ? "dark" : "light");
+    })();
+  </script>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -19,6 +32,7 @@
           本金
           <input id="initialCapital" type="number" min="100" step="100" value="10000">
         </label>
+        <button class="icon-button theme-button" id="themeToggleBtn" type="button" title="切换暗色模式" aria-label="切换暗色模式">◐</button>
         <button class="icon-button" id="restartBtn" type="button" title="重新开始" aria-label="重新开始">↻</button>
       </div>
     </header>

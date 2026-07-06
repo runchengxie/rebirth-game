@@ -1,9 +1,11 @@
     const DATA = window.REBIRTH_GAME_DATA || {};
+    const THEME_STORAGE_KEY = "rebirthGameTheme";
     const years = Object.keys(DATA).sort();
 
     const els = {
       yearTabs: document.getElementById("yearTabs"),
       initialCapital: document.getElementById("initialCapital"),
+      themeToggleBtn: document.getElementById("themeToggleBtn"),
       restartBtn: document.getElementById("restartBtn"),
       currentMonth: document.getElementById("currentMonth"),
       currentCapital: document.getElementById("currentCapital"),
@@ -20,8 +22,36 @@
       selectedId: null,
       locked: false,
       finished: false,
+      theme: document.documentElement.dataset.theme === "dark" ? "dark" : "light",
       history: []
     };
+
+    function saveTheme(theme) {
+      try {
+        localStorage.setItem(THEME_STORAGE_KEY, theme);
+      } catch {
+        // Local storage can be unavailable in strict privacy modes.
+      }
+    }
+
+    function applyTheme(theme) {
+      const normalizedTheme = theme === "dark" ? "dark" : "light";
+      state.theme = normalizedTheme;
+      document.documentElement.dataset.theme = normalizedTheme;
+      if (els.themeToggleBtn) {
+        const nextThemeLabel = normalizedTheme === "dark" ? "浅色模式" : "暗色模式";
+        els.themeToggleBtn.textContent = normalizedTheme === "dark" ? "☀" : "☾";
+        els.themeToggleBtn.title = `切换到${nextThemeLabel}`;
+        els.themeToggleBtn.setAttribute("aria-label", `切换到${nextThemeLabel}`);
+      }
+      drawChart();
+    }
+
+    function toggleTheme() {
+      const nextTheme = state.theme === "dark" ? "light" : "dark";
+      saveTheme(nextTheme);
+      applyTheme(nextTheme);
+    }
 
     function dataset() {
       return DATA[state.year];
@@ -265,6 +295,12 @@
       const canvas = document.getElementById("capitalChart");
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
+      const rootStyle = getComputedStyle(document.documentElement);
+      const gridColor = rootStyle.getPropertyValue("--chart-grid").trim();
+      const labelColor = rootStyle.getPropertyValue("--chart-label").trim();
+      const targetLineColor = rootStyle.getPropertyValue("--target-line").trim();
+      const greenColor = rootStyle.getPropertyValue("--green").trim();
+      const goldColor = rootStyle.getPropertyValue("--gold").trim();
       const rect = canvas.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
       canvas.width = Math.max(1, Math.floor(rect.width * dpr));
@@ -304,7 +340,7 @@
         return pad.top + chartH - ((log - minLog) / (maxLog - minLog || 1)) * chartH;
       }
 
-      ctx.strokeStyle = "#dce3e8";
+      ctx.strokeStyle = gridColor;
       ctx.lineWidth = 1;
       ctx.beginPath();
       for (let i = 0; i <= 4; i += 1) {
@@ -314,7 +350,7 @@
       }
       ctx.stroke();
 
-      ctx.fillStyle = "#64727d";
+      ctx.fillStyle = labelColor;
       ctx.font = "12px Microsoft YaHei, sans-serif";
       ctx.textAlign = "right";
       ctx.textBaseline = "middle";
@@ -344,10 +380,10 @@
         });
       }
 
-      drawLine(bestPath, "#a86900");
-      drawLine(selectedPath, "#138a54");
+      drawLine(bestPath, goldColor);
+      drawLine(selectedPath, greenColor);
 
-      ctx.strokeStyle = "#c43d3d";
+      ctx.strokeStyle = targetLineColor;
       ctx.setLineDash([5, 5]);
       ctx.beginPath();
       ctx.moveTo(pad.left, y(data.targetCapital));
@@ -372,8 +408,10 @@
     }
 
     els.restartBtn.addEventListener("click", () => startGame(state.year));
+    els.themeToggleBtn.addEventListener("click", toggleTheme);
     els.initialCapital.addEventListener("change", () => startGame(state.year));
     window.addEventListener("resize", () => drawChart());
+    applyTheme(state.theme);
 
     if (years.length) {
       const selectedData = dataset();

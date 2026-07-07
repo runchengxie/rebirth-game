@@ -152,9 +152,8 @@ function renderScene(scene: StageScene, props: StagePropsSnapshot): void {
   layoutCover(scene.background, backgroundTexture, width, height);
 
   scene.overlay.clear();
-  scene.overlay.rect(0, 0, width, height).fill({ color: 0x140a1b, alpha: 0.18 });
-  scene.overlay.rect(0, 0, width * 0.34, height).fill({ color: 0xffffff, alpha: 0.5 });
-  scene.overlay.rect(0, height * 0.58, width, height * 0.42).fill({ color: tint, alpha: 0.16 });
+  scene.overlay.rect(0, 0, width, height).fill({ color: 0x140a1b, alpha: 0.12 });
+  scene.overlay.rect(0, height * 0.6, width, height * 0.4).fill({ color: tint, alpha: 0.14 });
 
   const mobile = width < 700;
   const targetHeight = Math.min(height * 0.92, mobile ? width * 1.28 : width * 0.52);
@@ -164,15 +163,16 @@ function renderScene(scene: StageScene, props: StagePropsSnapshot): void {
     const active = characterId === props.activeCharacter.id;
     const pose = active ? normalizePose(characterId, props.activePose) : defaultPose[characterId];
     sprite.texture = scene.characterTextures[characterId][pose] || scene.characterTextures[characterId][defaultPose[characterId]];
-    const focusScale = active ? 1 : mobile ? 0.78 : 0.88;
+    const focusScale = active ? 1 : 0.84;
     const baseScale = targetHeight / sprite.texture.height;
     const x = mobile && !active ? (characterId === "rina" ? 0.11 : characterId === "mei" ? 0.89 : 0.5) : characterX[characterId];
 
+    sprite.visible = active || !mobile;
     sprite.x = width * x;
     sprite.y = bottom;
     sprite.scale.set(baseScale * focusScale);
-    sprite.alpha = active ? 1 : mobile ? 0.28 : 0.54;
-    sprite.tint = active ? 0xffffff : 0xbcc1d4;
+    sprite.alpha = 1;
+    sprite.tint = active ? 0xffffff : 0x767985;
     sprite.zIndex = active ? 4 : 2;
   });
 

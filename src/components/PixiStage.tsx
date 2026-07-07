@@ -156,8 +156,8 @@ function renderScene(scene: StageScene, props: StagePropsSnapshot): void {
   scene.overlay.rect(0, height * 0.6, width, height * 0.4).fill({ color: tint, alpha: 0.14 });
 
   const mobile = width < 700;
-  const targetHeight = Math.min(height * 0.92, mobile ? width * 1.28 : width * 0.52);
-  const bottom = height + Math.min(26, height * 0.05);
+  const targetHeight = Math.min(height * (mobile ? 0.92 : 0.92), mobile ? width * 1.38 : width * 0.52);
+  const bottom = mobile ? height - Math.min(26, height * 0.045) : height + Math.min(26, height * 0.05);
   (Object.keys(scene.characterSprites) as CharacterId[]).forEach((characterId) => {
     const sprite = scene.characterSprites[characterId];
     const active = characterId === props.activeCharacter.id;

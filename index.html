@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>重生选股游戏</title>
+  <meta name="theme-color" content="#ff8ec3">
+  <title>心动K线：重生投研部</title>
   <script>
     (() => {
       const key = "rebirthGameTheme";
@@ -17,61 +18,9 @@
       document.documentElement.dataset.theme = stored || (systemDark ? "dark" : "light");
     })();
   </script>
-  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <main class="app">
-    <header class="topbar">
-      <div class="brand">
-        <h1>重生选股游戏</h1>
-        <p>从 1 万元开始，按月复利结算。</p>
-      </div>
-      <div class="controls">
-        <div class="segmented" id="yearTabs" aria-label="年份"></div>
-        <label class="money-input">
-          本金
-          <input id="initialCapital" type="number" min="100" step="100" value="10000">
-        </label>
-        <button class="icon-button theme-button" id="themeToggleBtn" type="button" title="切换暗色模式" aria-label="切换暗色模式">◐</button>
-        <button class="icon-button" id="restartBtn" type="button" title="重新开始" aria-label="重新开始">↻</button>
-      </div>
-    </header>
-
-    <section class="status-band" aria-label="状态">
-      <div class="stat">
-        <span>当前月份</span>
-        <strong id="currentMonth">--</strong>
-      </div>
-      <div class="stat">
-        <span>账户资金</span>
-        <strong id="currentCapital">--</strong>
-      </div>
-      <div class="stat">
-        <span>命中次数</span>
-        <strong id="hitCount">--</strong>
-      </div>
-      <div class="stat">
-        <span>一亿进度</span>
-        <strong id="targetProgress">--</strong>
-      </div>
-    </section>
-
-    <div id="gameRoot"></div>
-
-    <footer class="rules-note" aria-labelledby="rulesTitle">
-      <h2 id="rulesTitle">机制与规则</h2>
-      <p>这是一个本地单页重生选股游戏：从 1 万元开始，每个月在 4 个标的里选 1 个，按该股票当月真实涨跌幅复利滚动，看看一年结束能到多少钱。</p>
-      <ul>
-        <li>每个月先过滤 ST、停牌、新上市未满 120 天、月初或月末不可交易的股票。</li>
-        <li>用月初第一个交易日和月末最后一个交易日的价格计算涨跌幅。</li>
-        <li>默认使用 <code>adj_close</code> 计算收益，避免除权分红造成收益失真；可用 <code>--price-column close</code> 改成原始收盘价。</li>
-        <li>在当月成交额最高的 500 只股票里找涨幅第一名作为正确答案。</li>
-        <li>干扰项从涨幅排名约前 10% 到 30% 的股票中抽 3 只，避免题目太明显。</li>
-      </ul>
-    </footer>
-  </main>
-
-  <script src="data/game-data.js"></script>
-  <script src="app.js"></script>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>

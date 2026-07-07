@@ -6,12 +6,7 @@ function fail(message) {
 }
 
 const html = fs.readFileSync("index.html", "utf8");
-for (const required of [
-  'href="styles.css"',
-  'src="data/game-data.js"',
-  'src="app.js"',
-  'id="themeToggleBtn"',
-]) {
+for (const required of ['id="root"', 'type="module"', 'src="/src/main.tsx"']) {
   if (!html.includes(required)) {
     fail(`index.html missing ${required}`);
   }
@@ -22,14 +17,42 @@ for (const [, script] of inlineScripts) {
   new Function(script);
 }
 
-const css = fs.readFileSync("styles.css", "utf8");
-for (const required of ['data-theme="dark"', "--button-bg", "--canvas-bg"]) {
-  if (!css.includes(required)) {
-    fail(`styles.css missing ${required}`);
+const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
+for (const dependency of ["@vitejs/plugin-react", "typescript", "vite", "react", "react-dom", "pixi.js"]) {
+  const installed = packageJson.dependencies?.[dependency] || packageJson.devDependencies?.[dependency];
+  if (!installed) {
+    fail(`package.json missing ${dependency}`);
   }
 }
 
-new Function(fs.readFileSync("app.js", "utf8"));
+for (const file of [
+  "src/main.tsx",
+  "src/App.tsx",
+  "src/components/PixiStage.tsx",
+  "src/audio/bgm.ts",
+  "src/game/engine.ts",
+  "src/game/content.ts",
+  "src/data/gameData.ts",
+  "src/styles.css",
+  "vite.config.ts",
+  "tsconfig.json",
+  "tsconfig.app.json",
+  "assets/galgame-key-art.png",
+]) {
+  if (!fs.existsSync(file)) {
+    fail(`missing ${file}`);
+  }
+}
+
+const app = fs.readFileSync("src/App.tsx", "utf8");
+if (!app.includes("PixiStage") || !app.includes("FocusSelector") || !app.includes("CharacterRoutes") || !app.includes("ProceduralBgm")) {
+  fail("src/App.tsx missing expected React game panels");
+}
+
+const pixiStage = fs.readFileSync("src/components/PixiStage.tsx", "utf8");
+if (!pixiStage.includes("pixi.js") || !pixiStage.includes("galgame-key-art.png")) {
+  fail("Pixi stage should use pixi.js and the generated key art");
+}
 
 const sandbox = { window: {} };
 vm.createContext(sandbox);
@@ -50,4 +73,4 @@ for (const year of years) {
   }
 }
 
-console.log(`Validated frontend for years: ${years.join(", ")}`);
+console.log(`Validated Vite frontend for years: ${years.join(", ")}`);

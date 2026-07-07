@@ -2,7 +2,7 @@
 
 ## 日常开发流程
 
-1. 修改源码或数据生成脚本。
+1. 修改 `src/` 源码或数据生成脚本。
 2. 需要更新题库时，运行 `scripts/build_data.py`。
 3. 运行本地验证命令。
 4. 需要离线分享包时，运行 `scripts/package.ps1`。
@@ -19,7 +19,7 @@
 默认年份为 2023、2024、2025。生成脚本会输出：
 
 - 每年一个 JSON 文件。
-- `data/game-data.js`，供网页直接加载。
+- `data/game-data.js`，供数据校验和旧版兼容检查使用。
 - `data/manifest.json`，供校验和打包脚本读取。
 
 公开数据中的 `source` 字段只保留数据集名称、版本和价格字段，不写入本机路径。
@@ -38,20 +38,32 @@
 
 `scripts/validate_frontend.js` 会检查：
 
-- `index.html` 是否引用 `styles.css`、`app.js` 和 `data/game-data.js`。
-- 暗色模式按钮是否存在。
-- `styles.css` 是否包含暗色模式变量。
-- 内联脚本、`app.js` 和 `game-data.js` 是否能通过基础语法检查。
+- `index.html` 是否是 Vite 入口。
+- `package.json` 是否包含 Vite、React、TypeScript 和 PixiJS。
+- `src/` 是否包含 React 应用、Pixi 舞台、玩法引擎、程序化 BGM 和数据入口。
+- `assets/galgame-key-art.png` 是否存在。
+- 内联脚本和 `game-data.js` 是否能通过基础语法检查。
+
+前端质量检查包括：
+
+- `npm run lint`：ESLint 检查 TypeScript/React。
+- `npm run typecheck`：TypeScript 类型检查。
+- `npm run test:run`：Vitest 单元测试。
+- `npm run build`：Vite 生产构建。
+
+## 音乐策略
+
+首版 BGM 使用浏览器 Web Audio 程序化合成，不提交第三方音频文件，避免授权不清。后续如果替换为音频素材，只接受自制、CC0、公有领域或明确允许商用分发的 loop，并在 README 中记录来源和授权。
 
 ## GitHub Pages
 
-仓库通过 GitHub Pages 发布，来源为 `main` 分支根目录。
+仓库通过 GitHub Pages 发布，`.github/workflows/pages.yml` 会在 `main` 分支构建 `dist/` 并上传 Pages artifact。
 
 线上地址：
 
 <https://runchengxie.github.io/rebirth-game/>
 
-推送到 `main` 后，GitHub 会运行 CI 和 Pages 发布流程。CI 成功后，再确认线上页面和静态资源返回 200。
+推送到 `main` 后，GitHub 会运行 CI 和 Pages 发布流程。CI 成功后，再确认线上页面和 `dist/assets/` 静态资源返回 200。
 
 ## 离线分享包
 
@@ -67,4 +79,4 @@
 dist/rebirth-game-share.zip
 ```
 
-压缩包保留 `data/` 目录结构。解压后打开 `index.html` 即可游玩。
+脚本会先运行 `npm run build`，再把 `dist/` 产物打包。解压后打开 `index.html` 即可游玩。

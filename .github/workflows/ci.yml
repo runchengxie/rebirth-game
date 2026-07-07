@@ -15,6 +15,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: "npm"
+      - name: Install frontend dependencies
+        run: npm ci
       - name: Install Python tooling
         run: python -m pip install ruff basedpyright
       - name: Ruff lint
@@ -29,3 +32,11 @@ jobs:
         run: python scripts/validate_data.py
       - name: Validate frontend
         run: node scripts/validate_frontend.js
+      - name: ESLint
+        run: npm run lint
+      - name: Typecheck frontend
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm run test:run
+      - name: Build frontend
+        run: npm run build

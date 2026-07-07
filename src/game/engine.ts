@@ -1,0 +1,216 @@
+import { FOCUS_ACTIONS, SIGNAL_TYPES, STORY_ARCS } from "./content";
+import type {
+  CharacterId,
+  FocusAction,
+  GameDataYear,
+  GameState,
+  RoundOutcome,
+  StockOption,
+  StoryArc,
+} from "../types";
+
+export function clamp(value: number, min = 0, max = 100): number {
+  return Math.max(min, Math.min(max, Math.round(value)));
+}
+
+export function compactDate(raw: string): string {
+  if (!raw || raw.length !== 8) return raw || "";
+  return `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`;
+}
+
+export function formatMoney(value: number): string {
+  if (!Number.isFinite(value)) return "--";
+  const sign = value < 0 ? "-" : "";
+  const abs = Math.abs(value);
+  if (abs >= 100000000) return `${sign}¥${(abs / 100000000).toFixed(2)}亿`;
+  if (abs >= 10000) return `${sign}¥${(abs / 10000).toFixed(2)}万`;
+  return `${sign}¥${abs.toLocaleString("zh-CN", { maximumFractionDigits: 0 })}`;
+}
+
+export function formatMoneyFull(value: number): string {
+  return `¥${value.toLocaleString("zh-CN", { maximumFractionDigits: 0 })}`;
+}
+
+export function formatPct(rate: number): string {
+  if (!Number.isFinite(rate)) return "--";
+  const pct = rate * 100;
+  const sign = pct > 0 ? "+" : "";
+  return `${sign}${pct.toFixed(2)}%`;
+}
+
+export function formatDelta(value: number): string {
+  const sign = value > 0 ? "+" : "";
+  return `${sign}${value}`;
+}
+
+export function storyForMonth(index: number): StoryArc {
+  return STORY_ARCS[index % STORY_ARCS.length];
+}
+
+export function focusById(id: string): FocusAction {
+  return FOCUS_ACTIONS.find((item) => item.id === id) || FOCUS_ACTIONS[0];
+}
+
+export function signalType(option: StockOption): string {
+  const source = `${option.tsCode || ""}${option.industry || ""}`;
+  const total = Array.from(source).reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return SIGNAL_TYPES[total % SIGNAL_TYPES.length];
+}
+
+export function riskLabel(option: StockOption): string {
+  if (option.returnRank <= 10) return "闪光主线";
+  if (option.activeRank <= 50) return "热门线";
+  if (option.returnRate < 0) return "会扣血";
+  return "观察中";
+}
+
+export function createInitialState(year: string, data: GameDataYear, initialCapital?: number): GameState {
+  const capital = initialCapital && initialCapital > 0 ? initialCapital : data.initialCapital || 10000;
+  return {
+    year,
+    initialCapital: capital,
+    capital,
+    monthIndex: 0,
+    focusId: "research",
+    selectedId: null,
+    locked: false,
+    finished: false,
+    reputation: 18,
+    fatigue: 34,
+    affection: {
+      rina: 24,
+      misaki: 18,
+      mei: 16,
+    },
+    history: [],
+  };
+}
+
+export function buildOutcome(
+  option: StockOption,
+  story: StoryArc,
+  before: number,
+  after: number,
+  focus: FocusAction,
+): RoundOutcome {
+  const focusText = focus.returnBonus === 0 ? "本话没有收益修正" : `日程修正 ${formatPct(focus.returnBonus)}`;
+  if (option.isBest) {
+    return {
+      title: "闪光路线命中",
+      dialogue: `${story.speaker}开心地合上笔记本：答对啦！这就是本月最闪耀的主线，今天给你加一颗小星星。`,
+      detail: `小金库 ${formatMoneyFull(before)} → ${formatMoneyFull(after)}，${focusText}。`,
+      reputationDelta: 10,
+      fatigueDelta: -6,
+      affectionDelta: 5,
+    };
+  }
+  if (option.returnRate >= 0.2) {
+    return {
+      title: "支线也有甜甜收益",
+      dialogue: `${story.speaker}看了一眼涨幅，露出笑容：不是隐藏主线，但这张卡也很会营业呢。`,
+      detail: `小金库 ${formatMoneyFull(before)} → ${formatMoneyFull(after)}，${focusText}。`,
+      reputationDelta: 5,
+      fatigueDelta: 2,
+      affectionDelta: 2,
+    };
+  }
+  if (option.returnRate >= 0) {
+    return {
+      title: "普通支线通过",
+      dialogue: `${story.speaker}提醒你：能小赚就已经很棒了，但想进好结局，还要更勇敢一点。`,
+      detail: `小金库 ${formatMoneyFull(before)} → ${formatMoneyFull(after)}，${focusText}。`,
+      reputationDelta: 2,
+      fatigueDelta: 5,
+      affectionDelta: 1,
+    };
+  }
+  return {
+    title: "坏结局预警",
+    dialogue: `${story.speaker}没有责怪你，只把复盘模板发了过来：没关系，失败 CG 也会变成经验值。`,
+    detail: `小金库 ${formatMoneyFull(before)} → ${formatMoneyFull(after)}，${focusText}。`,
+    reputationDelta: -6,
+    fatigueDelta: 12,
+    affectionDelta: -1,
+  };
+}
+
+export function selectFocus(state: GameState, focusId: string): GameState {
+  if (state.locked || state.finished) return state;
+  return { ...state, focusId };
+}
+
+export function chooseOption(state: GameState, data: GameDataYear, option: StockOption): GameState {
+  if (state.locked || state.finished) return state;
+  const month = data.months[state.monthIndex];
+  const story = storyForMonth(state.monthIndex);
+  const focus = focusById(state.focusId);
+  const before = state.capital;
+  const finalRate = Math.max(-0.95, option.returnRate + focus.returnBonus);
+  const after = before * (1 + finalRate);
+  const outcome = buildOutcome(option, story, before, after, focus);
+  const characterId = story.characterId;
+  const nextReputation = clamp(state.reputation + outcome.reputationDelta + focus.reputationDelta);
+  const nextFatigue = clamp(state.fatigue + outcome.fatigueDelta + focus.fatigueDelta);
+  const nextAffection = clamp(
+    state.affection[characterId] + outcome.affectionDelta + focus.affectionDelta,
+  );
+
+  return {
+    ...state,
+    capital: after,
+    locked: true,
+    selectedId: option.id,
+    reputation: nextReputation,
+    fatigue: nextFatigue,
+    affection: {
+      ...state.affection,
+      [characterId]: nextAffection,
+    },
+    finished: state.monthIndex >= data.months.length - 1,
+    history: [
+      ...state.history,
+      {
+        month: month.month,
+        label: month.label,
+        story,
+        characterId,
+        selected: option,
+        best: month.best,
+        focus,
+        before,
+        marketRate: option.returnRate,
+        executionRate: focus.returnBonus,
+        finalRate,
+        after,
+        hit: Boolean(option.isBest),
+        outcome,
+        reputationAfter: nextReputation,
+        fatigueAfter: nextFatigue,
+        affectionAfter: nextAffection,
+      },
+    ],
+  };
+}
+
+export function nextMonth(state: GameState, data: GameDataYear): GameState {
+  if (state.finished) return createInitialState(state.year, data, state.initialCapital);
+  if (!state.locked) return state;
+  return {
+    ...state,
+    monthIndex: Math.min(state.monthIndex + 1, data.months.length - 1),
+    selectedId: null,
+    locked: false,
+    focusId: "research",
+  };
+}
+
+export function totalAffection(state: GameState): number {
+  return Object.values(state.affection).reduce((sum, value) => sum + value, 0);
+}
+
+export function bestRoute(state: GameState): CharacterId {
+  const sorted = (Object.entries(state.affection) as Array<[CharacterId, number]>).sort(
+    (a, b) => b[1] - a[1],
+  );
+  return sorted[0]?.[0] || "rina";
+}

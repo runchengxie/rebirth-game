@@ -1,6 +1,6 @@
-# 重生选股游戏
+# 心动K线：重生投研部
 
-这是一个纯静态网页游戏。玩家从 1 万元开始，每个月在 4 个标的里选 1 个，系统按该股票当月真实涨跌幅复利结算，最后看一年结束能到多少钱。
+这是一个 Vite + TypeScript + React + PixiJS 的日系萌系 Galgame 风格网页游戏。玩家重生回年初的投研部工位，从 1 万元小金库开始，每个月安排日程，再在璃奈、美咲、芽衣给出的 4 张心动情报卡里选 1 张。系统按对应股票当月真实涨跌幅复利结算，并叠加日程执行修正，同时推进投研部日常、闪耀度、疲劳值和三位女主好感。
 
 在线试玩：<https://runchengxie.github.io/rebirth-game/>
 
@@ -9,7 +9,11 @@
 - 支持 2023、2024、2025 三个年份。
 - 支持自定义初始本金。
 - 支持浅色模式和暗色模式，主题选择会保存在浏览器本地。
-- 选择后显示当月真实涨跌幅、最优标的和账户变化。
+- 使用 PixiJS 绘制三女主萌系 Galgame 舞台，React 渲染章节标题、角色对话框、路线卡和存档回放。
+- 每月可选择 `熬夜研报`、`角色约会`、`仓位纪律` 三种日程，改变执行修正、疲劳、闪耀和角色好感。
+- 内置 Web Audio 程序化 BGM，占位阶段不依赖外部版权音频；后续可替换为授权 loop。
+- 每月选择后显示当月真实涨跌幅、隐藏闪光路线、小金库变化和角色反馈。
+- 选择结果会影响闪耀度、疲劳值和璃奈/美咲/芽衣好感，并在年度结束后给出最高好感路线结局。
 - 展示资金曲线和月度流水。
 - 可生成离线分享包，朋友解压后直接打开 `index.html` 即可游玩。
 
@@ -25,9 +29,24 @@
 
 ```text
 rebirth-game/
+├── assets/
+│   └── galgame-key-art.png
+├── src/
+│   ├── App.tsx
+│   ├── main.tsx
+│   ├── styles.css
+│   ├── components/
+│   │   └── PixiStage.tsx
+│   ├── data/
+│   │   └── gameData.ts
+│   └── game/
+│       ├── content.ts
+│       └── engine.ts
 ├── index.html
-├── styles.css
-├── app.js
+├── vite.config.ts
+├── tsconfig.json
+├── package.json
+├── package-lock.json
 ├── data/
 │   ├── 2023.json
 │   ├── 2024.json
@@ -43,13 +62,27 @@ rebirth-game/
 │   └── maintenance.md
 ├── .github/
 │   └── workflows/
-│       └── ci.yml
+│       ├── ci.yml
+│       └── pages.yml
 ├── AGENTS.md
 ├── pyproject.toml
 └── requirements.txt
 ```
 
-运行网页只需要 `index.html`、`styles.css`、`app.js` 和 `data/` 目录。项目没有前端构建步骤。
+源码需要 Node 构建。运行 `npm run build` 后会生成纯静态 `dist/`，GitHub Pages 发布的就是这个目录。
+
+## 本地开发
+
+```bash
+npm ci
+npm run dev
+```
+
+生产构建：
+
+```bash
+npm run build
+```
 
 ## 数据来源
 
@@ -103,9 +136,9 @@ cd C:\Users\gbyha\code\rebirth-game
 dist/rebirth-game-share.zip
 ```
 
-`package.ps1` 会读取 `data/manifest.json`。以后新增年份后，重新生成数据再运行打包脚本即可。
+`package.ps1` 会先运行 `npm run build`，再把 `dist/` 构建产物打包。以后新增年份后，重新生成数据再运行打包脚本即可。
 
-压缩包会包含网页、题库数据、文档和维护脚本。游玩入口是根目录的 `index.html`。
+压缩包会包含构建后的网页资源。游玩入口是根目录的 `index.html`。
 
 ## 本地验证
 
@@ -116,7 +149,21 @@ uvx ruff format --check .
 uvx basedpyright scripts
 .\.venv\Scripts\python.exe scripts\validate_data.py
 node scripts\validate_frontend.js
+npm run lint
+npm run typecheck
+npm run test:run
+npm run build
 ```
+
+也可以一键运行前端检查：
+
+```bash
+npm run check
+```
+
+## 音乐策略
+
+当前 BGM 使用浏览器 Web Audio 程序化合成，不提交第三方音频文件，避免授权不清。后续如果替换为音频素材，只接受自制、CC0、公有领域或明确允许商用分发的 loop，并在 README 中记录来源和授权。
 
 GitHub Actions 会在 push 和 pull request 时运行同一组检查。
 

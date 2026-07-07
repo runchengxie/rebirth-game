@@ -2,45 +2,47 @@ $ErrorActionPreference = "Stop"
 
 $ProjectRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $DistDir = Join-Path $ProjectRoot "dist"
-$ShareDir = Join-Path $DistDir "rebirth-game-share"
+$PackageDir = Join-Path $ProjectRoot "dist-package"
+$ShareDir = Join-Path $PackageDir "rebirth-game-share"
 $ZipPath = Join-Path $DistDir "rebirth-game-share.zip"
-$ManifestPath = Join-Path $ProjectRoot "data\manifest.json"
 
-New-Item -ItemType Directory -Force $DistDir | Out-Null
-$DistRoot = [System.IO.Path]::GetFullPath($DistDir)
-$ShareRoot = [System.IO.Path]::GetFullPath($ShareDir)
-if (-not $ShareRoot.StartsWith($DistRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
-    throw "Share directory is outside dist: $ShareRoot"
+Push-Location -LiteralPath $ProjectRoot
+try {
+    npm run build
 }
+finally {
+    Pop-Location
+}
+
+if (-not (Test-Path -LiteralPath (Join-Path $DistDir "index.html"))) {
+    throw "Vite build output is missing dist/index.html"
+}
+
+New-Item -ItemType Directory -Force $PackageDir | Out-Null
+$PackageRoot = [System.IO.Path]::GetFullPath($PackageDir)
+$ShareRoot = [System.IO.Path]::GetFullPath($ShareDir)
+if (-not $ShareRoot.StartsWith($PackageRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw "Share directory is outside package dir: $ShareRoot"
+}
+
 if (Test-Path -LiteralPath $ShareDir) {
     Remove-Item -LiteralPath $ShareDir -Recurse -Force
 }
 New-Item -ItemType Directory -Force $ShareDir | Out-Null
-New-Item -ItemType Directory -Force (Join-Path $ShareDir "data") | Out-Null
 
-$Manifest = Get-Content -LiteralPath $ManifestPath -Raw | ConvertFrom-Json
-$RootFiles = @("index.html", "styles.css", "app.js", "README.md", "AGENTS.md", "pyproject.toml", "requirements.txt")
-$DataFiles = @("game-data.js", "manifest.json") + @($Manifest.files)
-$ProjectDirs = @("scripts", "docs", ".github")
-
-foreach ($File in $RootFiles) {
-    Copy-Item -LiteralPath (Join-Path $ProjectRoot $File) -Destination $ShareDir -Force
-}
-
-foreach ($File in ($DataFiles | Select-Object -Unique)) {
-    Copy-Item -LiteralPath (Join-Path $ProjectRoot "data\$File") -Destination (Join-Path $ShareDir "data") -Force
-}
-
-foreach ($Dir in $ProjectDirs) {
-    Copy-Item -LiteralPath (Join-Path $ProjectRoot $Dir) -Destination $ShareDir -Recurse -Force
-}
+Copy-Item -Path (Join-Path $DistDir "*") -Destination $ShareDir -Recurse -Force
+Copy-Item -LiteralPath (Join-Path $ProjectRoot "README.md") -Destination $ShareDir -Force
 
 Get-ChildItem -LiteralPath $ShareDir -Recurse -Directory -Filter "__pycache__" | Remove-Item -Recurse -Force
 Get-ChildItem -LiteralPath $ShareDir -Recurse -File -Filter "*.pyc" | Remove-Item -Force
 
+if (Test-Path -LiteralPath $ZipPath) {
+    Remove-Item -LiteralPath $ZipPath -Force
+}
+
 Push-Location -LiteralPath $ShareDir
 try {
-    Compress-Archive -Path @($RootFiles + "data" + $ProjectDirs) -DestinationPath $ZipPath -Force
+    Compress-Archive -Path @("index.html", "assets", "README.md") -DestinationPath $ZipPath -Force
 }
 finally {
     Pop-Location

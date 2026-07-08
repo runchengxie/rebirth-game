@@ -1,29 +1,25 @@
-import { GAME_DATA } from "../data/gameData";
 import { CHARACTERS } from "../game/content";
-import { bestRoute, formatMoneyFull } from "../game/engine";
+import { bestRoute, formatNav } from "../game/engine";
 import type { GameState } from "../types";
 
 export function EndingPanel({ state }: { state: GameState }) {
   if (!state.finished || state.history.length === 0) return null;
-  const data = GAME_DATA[state.year];
-  const hits = state.history.filter((item) => item.hit).length;
-  const multiple = state.capital / state.initialCapital;
-  const heroine = CHARACTERS[bestRoute(state)];
-  let title = "普通结局：可靠投研部员线";
-  let copy = "你还没有解锁传说图鉴，但每一次复盘都在让下一周目更接近好结局。";
+  const colleague = CHARACTERS[bestRoute(state)];
+  let title = "普通结局：可靠研究员线";
+  let copy = "你还没有解锁最高评价，但每一次复盘都在让下一周目更接近好结局。";
 
-  if (state.capital >= data.targetCapital) {
-    title = `真结局：${heroine.name}的亿级心动 K 线`;
-    copy = `一年时间，你把小金库推到亿级目标。${heroine.name}说，这条路线一定要存档。`;
-  } else if (multiple >= 20 && state.reputation >= 60) {
-    title = `好结局：${heroine.name}的闪耀研究员线`;
-    copy = `小金库曲线和闪耀度同时起飞，${heroine.name}开始把你的名字和主线剧情放在一起。`;
-  } else if (state.fatigue >= 82) {
+  if (state.researchCredibility >= 80 && state.teamTrust >= 70) {
+    title = `真结局：${colleague.name}认可的研究员`;
+    copy = `一年时间，你把研究可信度推到行业前沿。${colleague.name}说，你的研究札记值得存档。`;
+  } else if (state.researchCredibility >= 60 && state.lifeBalance >= 50) {
+    title = `好结局：${colleague.name}的闪耀研究员线`;
+    copy = `研究可信度和生活平衡同时在线，${colleague.name}开始把你的名字和主线研究放在一起。`;
+  } else if (state.fatigue >= 85) {
     title = "疲劳结局：深夜复盘线";
-    copy = "你赚到了一些钱，也把自己逼到极限。下一周目前，先让疲劳值降下来。";
-  } else if (hits >= 3 || multiple >= 5) {
-    title = "成长结局：主线入场线";
-    copy = "你还没有打出真结局，但终于进入女主们愿意认真期待的主线。";
+    copy = "你完成了很多研究，也把自己逼到极限。下一周目前，先让疲劳值降下来。";
+  } else if (state.committeeAdoption >= 50) {
+    title = "成长结局：投委会入场线";
+    copy = "你还没有打出真结局，但终于进入同事们愿意认真期待的主线。";
   }
 
   return (
@@ -35,19 +31,21 @@ export function EndingPanel({ state }: { state: GameState }) {
       </div>
       <dl>
         <div>
-          <dt>最终小金库</dt>
-          <dd>{formatMoneyFull(state.capital)}</dd>
+          <dt>研究可信度</dt>
+          <dd>{state.researchCredibility}/100</dd>
         </div>
         <div>
-          <dt>参考路线</dt>
-          <dd>
-            {hits}/{state.history.length}
-          </dd>
+          <dt>投委会采纳度</dt>
+          <dd>{state.committeeAdoption}/100</dd>
         </div>
         <div>
-          <dt>璃奈、美咲、芽衣</dt>
+          <dt>组合模拟净值</dt>
+          <dd>{formatNav(state.portfolioNav)}</dd>
+        </div>
+        <div>
+          <dt>林若宁、陈星禾、周明昭</dt>
           <dd>
-            {state.affection.rina}、{state.affection.misaki}、{state.affection.mei}
+            {state.relations.lin_ruoning}、{state.relations.chen_xinghe}、{state.relations.zhou_mingzhao}
           </dd>
         </div>
       </dl>

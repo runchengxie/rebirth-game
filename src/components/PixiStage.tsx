@@ -49,18 +49,19 @@ const backgroundAssets: Record<string, string> = {
   "night-cafe": bgNightCafe,
 };
 
+// Map new CharacterId → old asset paths (image files not renamed yet)
 const characterAssets: Record<CharacterId, Record<string, string>> = {
-  rina: {
+  lin_ruoning: {
     smile: rinaSmileSprite,
     thinking: rinaThinkingSprite,
     soft: rinaSoftSprite,
   },
-  misaki: {
+  chen_xinghe: {
     neutral: misakiNeutralSprite,
     excited: misakiExcitedSprite,
     focused: misakiFocusedSprite,
   },
-  mei: {
+  zhou_mingzhao: {
     neutral: meiNeutralSprite,
     serious: meiSeriousSprite,
     soft: meiSoftSprite,
@@ -68,9 +69,9 @@ const characterAssets: Record<CharacterId, Record<string, string>> = {
 };
 
 const defaultPose: Record<CharacterId, string> = {
-  rina: "smile",
-  misaki: "neutral",
-  mei: "neutral",
+  lin_ruoning: "smile",
+  chen_xinghe: "neutral",
+  zhou_mingzhao: "neutral",
 };
 
 const routeTint: Record<CharacterProfile["color"], number> = {
@@ -97,31 +98,19 @@ async function loadCharacterTextureMap(): Promise<Record<CharacterId, Record<str
 
 function normalizePose(characterId: CharacterId, pose: string): string {
   const aliases: Record<CharacterId, Record<string, string>> = {
-    rina: {
-      calm: "smile",
-      neutral: "smile",
-      smile: "smile",
-      thinking: "thinking",
-      serious: "thinking",
-      soft: "soft",
+    lin_ruoning: {
+      calm: "smile", neutral: "smile", smile: "smile",
+      thinking: "thinking", serious: "thinking", soft: "soft",
     },
-    misaki: {
-      neutral: "neutral",
-      smile: "neutral",
-      wink: "excited",
-      excited: "excited",
-      speaking: "excited",
-      focused: "focused",
-      thinking: "focused",
+    chen_xinghe: {
+      neutral: "neutral", smile: "neutral",
+      wink: "excited", excited: "excited", speaking: "excited",
+      focused: "focused", thinking: "focused",
     },
-    mei: {
-      calm: "neutral",
-      neutral: "neutral",
-      observing: "serious",
-      serious: "serious",
-      thinking: "serious",
-      soft: "soft",
-      smile: "soft",
+    zhou_mingzhao: {
+      calm: "neutral", neutral: "neutral",
+      observing: "serious", serious: "serious", thinking: "serious",
+      soft: "soft", smile: "soft",
     },
   };
   return aliases[characterId][pose] || defaultPose[characterId];
@@ -234,10 +223,10 @@ export function PixiStage({ activeCharacter, backgroundId = "research-room", act
       if (disposed) return;
 
       const background = new Sprite(backgroundTextures["research-room"]);
-      const characterSprites = {
-        rina: new Sprite(characterTextures.rina[defaultPose.rina]),
-        misaki: new Sprite(characterTextures.misaki[defaultPose.misaki]),
-        mei: new Sprite(characterTextures.mei[defaultPose.mei]),
+      const characterSprites: Record<CharacterId, Sprite> = {
+        lin_ruoning: new Sprite(characterTextures.lin_ruoning[defaultPose.lin_ruoning]),
+        chen_xinghe: new Sprite(characterTextures.chen_xinghe[defaultPose.chen_xinghe]),
+        zhou_mingzhao: new Sprite(characterTextures.zhou_mingzhao[defaultPose.zhou_mingzhao]),
       };
 
       (Object.values(characterSprites) as Sprite[]).forEach((sprite) => {
@@ -271,14 +260,8 @@ export function PixiStage({ activeCharacter, backgroundId = "research-room", act
       for (let index = 0; index < 26; index += 1) makeSparkle(index);
 
       const scene: StageScene = {
-        app,
-        host: hostElement,
-        background,
-        backgroundTextures,
-        characterTextures,
-        characterSprites,
-        overlay,
-        sparkleItems,
+        app, host: hostElement, background, backgroundTextures,
+        characterTextures, characterSprites, overlay, sparkleItems,
       };
       sceneRef.current = scene;
 

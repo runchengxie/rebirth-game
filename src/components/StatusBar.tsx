@@ -1,10 +1,9 @@
 import { GAME_DATA } from "../data/gameData";
-import { formatMoney, totalAffection } from "../game/engine";
 import type { GameState } from "../types";
 
 export function StatusBar({ state }: { state: GameState }) {
   const data = GAME_DATA[state.year];
-  const total = data.months.length;
+  const total = data.scenes.length;
   return (
     <section className="status-band" aria-label="角色状态">
       <div className="stat">
@@ -14,16 +13,16 @@ export function StatusBar({ state }: { state: GameState }) {
         </strong>
       </div>
       <div className="stat">
-        <span>小金库余额</span>
-        <strong>{formatMoney(state.capital)}</strong>
+        <span>研究可信度</span>
+        <strong>{state.researchCredibility}/100</strong>
       </div>
       <div className="stat">
-        <span>总好感</span>
-        <strong>{totalAffection(state)}/300</strong>
+        <span>团队信任</span>
+        <strong>{state.teamTrust}/100</strong>
       </div>
       <div className="stat">
-        <span>疲劳值</span>
-        <strong>{state.fatigue}/100</strong>
+        <span>生活平衡</span>
+        <strong>{state.lifeBalance}/100</strong>
       </div>
     </section>
   );

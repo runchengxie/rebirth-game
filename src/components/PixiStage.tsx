@@ -73,12 +73,6 @@ const defaultPose: Record<CharacterId, string> = {
   mei: "neutral",
 };
 
-const characterX: Record<CharacterId, number> = {
-  rina: 0.26,
-  misaki: 0.5,
-  mei: 0.74,
-};
-
 const routeTint: Record<CharacterProfile["color"], number> = {
   pink: 0xff8ec3,
   blue: 0x8fc7ff,
@@ -163,18 +157,15 @@ function renderScene(scene: StageScene, props: StagePropsSnapshot): void {
     const active = characterId === props.activeCharacter.id;
     const pose = active ? normalizePose(characterId, props.activePose) : defaultPose[characterId];
     sprite.texture = scene.characterTextures[characterId][pose] || scene.characterTextures[characterId][defaultPose[characterId]];
-    const focusScale = active ? 1 : 0.84;
     const baseScale = targetHeight / sprite.texture.height;
-    const compactInactiveX = characterId === "rina" ? 0.11 : characterId === "mei" ? 0.89 : 0.5;
-    const x = compactStage ? (active ? 0.5 : compactInactiveX) : characterX[characterId];
 
-    sprite.visible = active || !compactStage;
-    sprite.x = width * x;
+    sprite.visible = active;
+    sprite.x = width * 0.5;
     sprite.y = bottom;
-    sprite.scale.set(baseScale * focusScale);
+    sprite.scale.set(baseScale);
     sprite.alpha = 1;
-    sprite.tint = active ? 0xffffff : 0x767985;
-    sprite.zIndex = active ? 4 : 2;
+    sprite.tint = 0xffffff;
+    sprite.zIndex = active ? 4 : 0;
   });
 
   scene.sparkleItems.forEach((item) => {

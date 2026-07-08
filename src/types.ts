@@ -9,6 +9,12 @@ export interface CharacterProfile {
   intro: string;
 }
 
+export interface StockClue {
+  dimension: "fundamental" | "fund_flow" | "risk";
+  characterId: CharacterId;
+  text: string;
+}
+
 export interface StockOption {
   id: string;
   tsCode: string;
@@ -21,6 +27,7 @@ export interface StockOption {
   returnRate: number;
   tradingDays: number;
   isBest?: boolean;
+  clues?: StockClue[];
 }
 
 export interface GameMonth {
@@ -143,6 +150,16 @@ export interface RoundOutcome {
   affectionDelta: number;
 }
 
+export interface ScoreBreakdown {
+  returnScore: number;
+  logicScore: number;
+  riskScore: number;
+  disciplineScore: number;
+  characterScore: number;
+  total: number;
+  grade: string;
+}
+
 export interface RoundResult {
   month: string;
   label: string;
@@ -161,4 +178,5 @@ export interface RoundResult {
   reputationAfter: number;
   fatigueAfter: number;
   affectionAfter: number;
+  score?: ScoreBreakdown;
 }

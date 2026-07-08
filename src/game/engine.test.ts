@@ -2,12 +2,24 @@ import { describe, expect, it } from "vitest";
 import { FOCUS_ACTIONS } from "./content";
 import {
   advanceScene,
+  bestRoute,
   chooseOption,
+  clamp,
   createInitialState,
   currentSceneNode,
+  formatMoney,
+  formatMoneyFull,
+  formatPct,
+  gradeReviewText,
   nextMonth,
+  optionClues,
+  postMortem,
+  primarySignalLabel,
   sceneForMonth,
+  scoreRound,
   selectFocus,
+  storyForMonth,
+  totalAffection,
 } from "./engine";
 import type { GameDataYear, StockOption } from "../types";
 
@@ -135,5 +147,133 @@ describe("game engine", () => {
     expect(currentSceneNode(postChoice).type).toBe("line");
     expect(postChoice.monthIndex).toBe(0);
     expect(postChoice.sceneNodeIndex).toBe(stockRoundIndex + 1);
+  });
+});
+
+describe("utility functions", () => {
+  it("clamp values to [0, 100]", () => {
+    expect(clamp(-5)).toBe(0);
+    expect(clamp(0)).toBe(0);
+    expect(clamp(50)).toBe(50);
+    expect(clamp(100)).toBe(100);
+    expect(clamp(150)).toBe(100);
+  });
+
+  it("formatMoney handles typical values", () => {
+    expect(formatMoney(0)).toBe("¥0");
+    expect(formatMoney(10000)).toBe("¥1.00万");
+    expect(formatMoney(100000000)).toBe("¥1.00亿");
+    expect(formatMoney(-5000)).toBe("-¥5,000");
+  });
+
+  it("formatMoneyFull never shows 万/亿", () => {
+    expect(formatMoneyFull(12345)).toBe("¥12,345");
+  });
+
+  it("formatPct shows signed percentage", () => {
+    expect(formatPct(0.1)).toBe("+10.00%");
+    expect(formatPct(-0.05)).toBe("-5.00%");
+    expect(formatPct(0)).toBe("0.00%");
+  });
+
+  it("totalAffection sums all characters", () => {
+    const state = createInitialState("2025", fixture);
+    expect(totalAffection(state)).toBe(24 + 18 + 16);
+  });
+
+  it("bestRoute returns character with highest affection", () => {
+    const state = createInitialState("2025", fixture);
+    expect(bestRoute(state)).toBe("rina");
+  });
+});
+
+describe("clue system", () => {
+  it("generates 3 clues per option: rina, misaki, mei", () => {
+    const clues = optionClues(best);
+    expect(clues).toHaveLength(3);
+    expect(clues.map((c) => c.characterId)).toEqual(["rina", "misaki", "mei"]);
+  });
+
+  it("primarySignalLabel returns dimension-based label", () => {
+    const label = primarySignalLabel(best);
+    expect(["基本面线索", "风险线索", "资金面线索", "交易线索", "研究线索"]).toContain(label);
+  });
+});
+
+describe("scoring system", () => {
+  it("scoreRound returns all 5 dimensions with a total and grade", () => {
+    const story = storyForMonth(0, "2025");
+    const focus = FOCUS_ACTIONS.find((f) => f.id === "research")!;
+    const score = scoreRound(best, story, focus);
+
+    expect(score.returnScore).toBeGreaterThanOrEqual(0);
+    expect(score.returnScore).toBeLessThanOrEqual(40);
+    expect(score.logicScore).toBeGreaterThanOrEqual(0);
+    expect(score.logicScore).toBeLessThanOrEqual(20);
+    expect(score.riskScore).toBeGreaterThanOrEqual(0);
+    expect(score.riskScore).toBeLessThanOrEqual(15);
+    expect(score.disciplineScore).toBeGreaterThanOrEqual(0);
+    expect(score.disciplineScore).toBeLessThanOrEqual(10);
+    expect(score.characterScore).toBeGreaterThanOrEqual(0);
+    expect(score.characterScore).toBeLessThanOrEqual(15);
+    expect(score.total).toBeGreaterThanOrEqual(0);
+    expect(score.total).toBeLessThanOrEqual(100);
+    expect(["S", "A", "B", "C", "D"]).toContain(score.grade);
+  });
+
+  it("best option with research focus scores high", () => {
+    const story = storyForMonth(0, "2025");
+    const focus = FOCUS_ACTIONS.find((f) => f.id === "research")!;
+    const score = scoreRound(best, story, focus);
+    expect(score.total).toBeGreaterThanOrEqual(70);
+    expect(score.grade).toMatch(/^[SAB]$/);
+  });
+
+  it("losing option scores low", () => {
+    const loser: StockOption = {
+      id: "loser",
+      tsCode: "999999.SZ",
+      name: "破产股份",
+      industry: "退市制造",
+      activeRank: 450,
+      returnRank: 450,
+      returnRate: -0.3,
+      tradingDays: 10,
+      isBest: false,
+    };
+    const story = storyForMonth(0, "2025");
+    const focus = FOCUS_ACTIONS.find((f) => f.id === "research")!;
+    const score = scoreRound(loser, story, focus);
+    expect(score.total).toBeLessThan(60);
+  });
+
+  it("chooseOption stores score in history", () => {
+    const state = selectFocus(createInitialState("2025", fixture), "research");
+    const result = chooseOption(state, fixture, best);
+    expect(result.history[0].score).toBeDefined();
+    expect(result.history[0].score!.total).toBeGreaterThan(0);
+  });
+});
+
+describe("grade review", () => {
+  it("returns text for valid character + grade", () => {
+    const text = gradeReviewText("rina", "S");
+    expect(text.length).toBeGreaterThan(0);
+  });
+
+  it("returns empty string for invalid grade", () => {
+    expect(gradeReviewText("rina", "Z")).toBe("");
+  });
+});
+
+describe("postMortem", () => {
+  it("describes a hit", () => {
+    const text = postMortem(best, best, "2025年1月");
+    expect(text).toContain("参考路线");
+  });
+
+  it("describes a miss with positive return", () => {
+    const text = postMortem(other, best, "2025年1月");
+    expect(text).toContain("有正收益");
   });
 });

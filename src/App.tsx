@@ -2,29 +2,29 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { GAME_DATA, GAME_YEARS } from "./data/gameData";
 import { ProceduralBgm } from "./audio/bgm";
 import { NarrativeAudio } from "./audio/sfx";
-import { CHARACTERS, FOCUS_ACTIONS } from "./game/content";
+import { CHARACTERS } from "./game/content";
 import {
   advanceScene,
-  analysisNote,
-  bestRoute,
   canAdvanceScene,
   chooseOption,
   compactDate,
   createInitialState,
   currentSceneNode,
   focusById,
-  formatDelta,
-  formatMoney,
-  formatMoneyFull,
   formatPct,
-  riskLabel,
+  gradeReviewText,
+  postMortem,
   sceneForMonth,
   selectFocus,
-  signalType,
   storyForMonth,
-  totalAffection,
 } from "./game/engine";
 import type { CharacterId, GameState, HistoricalEvent, ResearchBrief, RoundResult, StockOption } from "./types";
+import { CapitalChart } from "./components/CapitalChart";
+import { EndingPanel } from "./components/EndingPanel";
+import { FocusSelector } from "./components/FocusSelector";
+import { HistoryPanel } from "./components/HistoryPanel";
+import { OptionCard } from "./components/OptionCard";
+import { StatusBar } from "./components/StatusBar";
 
 const PixiStage = lazy(() =>
   import("./components/PixiStage").then((module) => ({ default: module.PixiStage })),
@@ -73,60 +73,6 @@ function bestInitialYear() {
 
 function createState(year = bestInitialYear()): GameState {
   return createInitialState(year, GAME_DATA[year]);
-}
-
-function StatusBar({ state }: { state: GameState }) {
-  const data = GAME_DATA[state.year];
-  const total = data.months.length;
-  return (
-    <section className="status-band" aria-label="角色状态">
-      <div className="stat">
-        <span>当前话数</span>
-        <strong>
-          {state.monthIndex + 1}/{total}
-        </strong>
-      </div>
-      <div className="stat">
-        <span>小金库余额</span>
-        <strong>{formatMoney(state.capital)}</strong>
-      </div>
-      <div className="stat">
-        <span>总好感</span>
-        <strong>{totalAffection(state)}/300</strong>
-      </div>
-      <div className="stat">
-        <span>疲劳值</span>
-        <strong>{state.fatigue}/100</strong>
-      </div>
-    </section>
-  );
-}
-
-function FocusSelector({
-  state,
-  onSelect,
-}: {
-  state: GameState;
-  onSelect: (focusId: string) => void;
-}) {
-  return (
-    <div className="focus-grid" aria-label="本话日程">
-      {FOCUS_ACTIONS.map((focus) => (
-        <button
-          key={focus.id}
-          className={`focus-card ${state.focusId === focus.id ? "active" : ""}`}
-          disabled={state.locked}
-          type="button"
-          onClick={() => onSelect(focus.id)}
-        >
-          <span className="focus-icon">{focus.icon}</span>
-          <strong>{focus.label}</strong>
-          <small>{focus.short}</small>
-          <p>{focus.detail}</p>
-        </button>
-      ))}
-    </div>
-  );
 }
 
 function ResearchBriefPanel({
@@ -185,67 +131,60 @@ function HistoricalEventPanel({ event }: { event: HistoricalEvent }) {
 function StoryRecapPanel({ result }: { result: RoundResult | undefined }) {
   if (!result) return null;
   const character = CHARACTERS[result.characterId];
-  const review =
-    result.hit
-      ? "这次判断把事件、资金和标的连在了一起。下次遇到类似行情，可以先找叙事变化，再看资金是否持续确认。"
-      : result.selected.returnRate >= 0
-        ? "这次选择有收益，但和本月主线还有距离。下次可以先问一句：这条线索能解释多少资金流向。"
-        : "这次亏损适合留下来复盘。市场没有否定你这个人，只是在提醒你，交易前要先写清风险会从哪里来。";
+  const gradeReview = result.score ? gradeReviewText(result.characterId, result.score.grade) : "";
+  const pm = postMortem(result.selected, result.best, result.label);
 
   return (
     <div className={`story-recap ${character.color}`} aria-label="角色复盘">
       <span>{character.name}的复盘</span>
-      <p>{review}</p>
+      <p>{gradeReview}</p>
+      <p className="story-recap-detail">{pm}</p>
     </div>
   );
 }
 
-function OptionCard({
-  option,
-  index,
-  state,
-  onChoose,
-}: {
-  option: StockOption;
-  index: number;
-  state: GameState;
-  onChoose: (option: StockOption) => void;
-}) {
-  const optionLetter = String.fromCharCode(65 + index);
-  const locked = state.locked;
-  const selected = state.selectedId === option.id;
-  const className = [
-    "option",
-    locked && option.isBest ? (selected ? "correct" : "missed") : "",
-    locked && selected && !option.isBest ? "wrong" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
+function ScorePanel({ result }: { result: RoundResult | undefined }) {
+  if (!result || !result.score) return null;
+  const { score } = result;
+  const bars: Array<{ label: string; value: number; max: number; className: string }> = [
+    { label: "收益分", value: score.returnScore, max: 40, className: "score-return" },
+    { label: "逻辑分", value: score.logicScore, max: 20, className: "score-logic" },
+    { label: "风险分", value: score.riskScore, max: 15, className: "score-risk" },
+    { label: "纪律分", value: score.disciplineScore, max: 10, className: "score-discipline" },
+    { label: "角色分", value: score.characterScore, max: 15, className: "score-character" },
+  ];
+
+  const gradeColors: Record<string, string> = {
+    S: "#ffd700",
+    A: "#ff6b6b",
+    B: "#4ecdc4",
+    C: "#95a5a6",
+    D: "#7f8c8d",
+  };
 
   return (
-    <button className={className} disabled={locked} type="button" onClick={() => onChoose(option)}>
-      <div className="option-kicker">
-        <span>实战卡 {optionLetter}</span>
-        <span>{signalType(option)}</span>
+    <div className="score-panel" aria-label="月度评分">
+      <div className="score-head">
+        <span>月度评分</span>
+        <strong style={{ color: gradeColors[score.grade] || "#fff" }}>{score.grade}</strong>
+        <span>{score.total}/100</span>
       </div>
-      <div className="option-top">
-        <div className="stock-name">
-          <strong>{option.name}</strong>
-          <span>{option.tsCode}</span>
-        </div>
-        <span className="rank-badge">{riskLabel(option)}</span>
+      <div className="score-bars">
+        {bars.map((bar) => (
+          <div className={`score-bar ${bar.className}`} key={bar.label}>
+            <div className="score-bar-head">
+              <span>{bar.label}</span>
+              <strong>
+                {bar.value}/{bar.max}
+              </strong>
+            </div>
+            <div className="score-bar-track">
+              <i style={{ width: `${(bar.value / bar.max) * 100}%` }} />
+            </div>
+          </div>
+        ))}
       </div>
-      <div className="meta">
-        {option.industry} · {option.market || option.board || "A 股"} · 活跃 #{option.activeRank}
-      </div>
-      <p className="analysis-note">{analysisNote(option, locked)}</p>
-      <div className="option-bottom">
-        <span className={locked ? `return ${option.returnRate >= 0 ? "up" : "down"}` : "hidden-return"}>
-          {locked ? formatPct(option.returnRate) : "本话结局待揭晓"}
-        </span>
-        <span className="meta">{locked ? `涨幅 #${option.returnRank}` : `交易日 ${option.tradingDays}`}</span>
-      </div>
-    </button>
+    </div>
   );
 }
 
@@ -300,173 +239,6 @@ function Meter({ label, value, className }: { label: string; value: number; clas
         <i style={{ width: `${normalized}%` }} />
       </div>
     </div>
-  );
-}
-
-function CapitalChart({ state }: { state: GameState }) {
-  const data = GAME_DATA[state.year];
-  const selectedPath = [state.initialCapital, ...state.history.map((item) => item.after)];
-  const bestPath = [state.initialCapital];
-  data.months.forEach((month, index) => {
-    if (index < state.history.length) {
-      const prev = bestPath[bestPath.length - 1];
-      bestPath.push(prev * (1 + month.best.returnRate));
-    }
-  });
-
-  const values = [...selectedPath, ...bestPath, data.targetCapital].filter((value) => value > 0);
-  const minLog = Math.log10(Math.max(1, Math.min(...values) * 0.8));
-  const maxLog = Math.log10(Math.max(...values) * 1.15);
-  const width = 720;
-  const height = 260;
-  const pad = { left: 48, right: 20, top: 18, bottom: 32 };
-  const chartW = width - pad.left - pad.right;
-  const chartH = height - pad.top - pad.bottom;
-  const maxSteps = data.months.length;
-
-  const x = (index: number) => pad.left + (chartW * index) / maxSteps;
-  const y = (value: number) => {
-    const log = Math.log10(Math.max(1, value));
-    return pad.top + chartH - ((log - minLog) / (maxLog - minLog || 1)) * chartH;
-  };
-  const path = (items: number[]) => items.map((value, index) => `${index === 0 ? "M" : "L"}${x(index)},${y(value)}`).join(" ");
-
-  return (
-    <svg className="capital-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="小金库曲线">
-      {[0, 1, 2, 3, 4].map((item) => {
-        const yy = pad.top + (chartH * item) / 4;
-        return <line className="chart-grid-line" key={item} x1={pad.left} x2={width - pad.right} y1={yy} y2={yy} />;
-      })}
-      <text className="chart-label" x={pad.left - 8} y={y(state.initialCapital)} textAnchor="end">
-        {formatMoney(state.initialCapital)}
-      </text>
-      <text className="chart-label" x={pad.left - 8} y={y(data.targetCapital)} textAnchor="end">
-        {formatMoney(data.targetCapital)}
-      </text>
-      <line className="chart-target" x1={pad.left} x2={width - pad.right} y1={y(data.targetCapital)} y2={y(data.targetCapital)} />
-      <path className="chart-best" d={path(bestPath)} />
-      <path className="chart-current" d={path(selectedPath)} />
-      {selectedPath.map((value, index) => (
-        <circle className="chart-point current" key={`s-${index}`} cx={x(index)} cy={y(value)} r="4" />
-      ))}
-      {bestPath.map((value, index) => (
-        <circle className="chart-point best" key={`b-${index}`} cx={x(index)} cy={y(value)} r="3" />
-      ))}
-    </svg>
-  );
-}
-
-function EndingPanel({ state }: { state: GameState }) {
-  if (!state.finished || state.history.length === 0) return null;
-  const data = GAME_DATA[state.year];
-  const hits = state.history.filter((item) => item.hit).length;
-  const multiple = state.capital / state.initialCapital;
-  const heroine = CHARACTERS[bestRoute(state)];
-  let title = "普通结局：可靠投研部员线";
-  let copy = "你还没有解锁传说图鉴，但每一次复盘都在让下一周目更接近好结局。";
-
-  if (state.capital >= data.targetCapital) {
-    title = `真结局：${heroine.name}的亿级心动 K 线`;
-    copy = `一年时间，你把小金库推到亿级目标。${heroine.name}说，这条路线一定要存档。`;
-  } else if (multiple >= 20 && state.reputation >= 60) {
-    title = `好结局：${heroine.name}的闪耀研究员线`;
-    copy = `小金库曲线和闪耀度同时起飞，${heroine.name}开始把你的名字和主线剧情放在一起。`;
-  } else if (state.fatigue >= 82) {
-    title = "疲劳结局：深夜复盘线";
-    copy = "你赚到了一些钱，也把自己逼到极限。下一周目前，先让疲劳值降下来。";
-  } else if (hits >= 3 || multiple >= 5) {
-    title = "成长结局：主线入场线";
-    copy = "你还没有打出真结局，但终于进入女主们愿意认真期待的主线。";
-  }
-
-  return (
-    <section className="ending-panel">
-      <div>
-        <span className="panel-kicker">结局</span>
-        <h2>{title}</h2>
-        <p>{copy}</p>
-      </div>
-      <dl>
-        <div>
-          <dt>最终小金库</dt>
-          <dd>{formatMoneyFull(state.capital)}</dd>
-        </div>
-        <div>
-          <dt>参考路线</dt>
-          <dd>
-            {hits}/{state.history.length}
-          </dd>
-        </div>
-        <div>
-          <dt>璃奈、美咲、芽衣</dt>
-          <dd>
-            {state.affection.rina}、{state.affection.misaki}、{state.affection.mei}
-          </dd>
-        </div>
-      </dl>
-    </section>
-  );
-}
-
-function HistoryPanel({ history }: { history: RoundResult[] }) {
-  if (history.length === 0) return null;
-  return (
-    <section className="history-panel">
-      <div className="history-head">
-        <h2>存档回放</h2>
-        <span className="meta">{history.length} / 12</span>
-      </div>
-      <div className="history-table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>章节</th>
-              <th>实战选择</th>
-              <th>市场与执行</th>
-              <th>参考路线</th>
-              <th>结算</th>
-            </tr>
-          </thead>
-          <tbody>
-            {history.map((item) => (
-              <tr key={item.month}>
-                <td>
-                  {item.label}
-                  <br />
-                  <span className="meta">{item.story.title}</span>
-                </td>
-                <td>
-                  {item.selected.name}
-                  <br />
-                  <span className="meta">
-                    {CHARACTERS[item.characterId].name}路线 · {signalType(item.selected)} · {item.selected.tsCode}
-                  </span>
-                </td>
-                <td>
-                  <span className={`return ${item.marketRate >= 0 ? "up" : "down"}`}>{formatPct(item.marketRate)}</span>
-                  <br />
-                  <span className="meta">
-                    {item.focus.label} {formatPct(item.executionRate)}
-                  </span>
-                </td>
-                <td>
-                  {item.best.name}
-                  <br />
-                  <span className="meta">{formatPct(item.best.returnRate)}</span>
-                </td>
-                <td>
-                  {formatMoneyFull(item.after)}
-                  <br />
-                  <span className="meta">
-                    闪耀 {formatDelta(item.outcome.reputationDelta)} · 疲劳 {formatDelta(item.outcome.fatigueDelta)}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
   );
 }
 
@@ -860,6 +632,7 @@ export default function App() {
             </button>
           </div>
           {isStockRound ? <StoryRecapPanel result={state.locked ? last : undefined} /> : null}
+          {isStockRound ? <ScorePanel result={state.locked ? last : undefined} /> : null}
         </div>
 
         <aside className="chart-panel">

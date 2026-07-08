@@ -1837,3 +1837,82 @@ tr:last-child td {
     margin-top: 8px;
   }
 }
+
+/* ── Score panel ── */
+.score-panel {
+  margin-top: 14px;
+  padding: 16px;
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.score-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.score-head strong {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.score-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.score-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.score-bar-head {
+  display: flex;
+  justify-content: space-between;
+  width: 90px;
+  font-size: 12px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.score-bar-head strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.score-bar-track {
+  flex: 1;
+  height: 6px;
+  background: var(--line);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.score-bar-track i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.score-return .score-bar-track i  { background: var(--green); }
+.score-logic .score-bar-track i   { background: #ff6b6b; }
+.score-risk .score-bar-track i    { background: #4ecdc4; }
+.score-discipline .score-bar-track i { background: #ffe66d; }
+.score-character .score-bar-track i { background: #a29bfe; }
+
+/* ── Story recap detail ── */
+.story-recap-detail {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}

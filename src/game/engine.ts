@@ -1,4 +1,4 @@
-import { FOCUS_ACTIONS, SCENE_SCRIPTS, SIGNAL_TYPES, STORY_ARCS, YEAR_STORY_OVERRIDES } from "./content";
+import { FOCUS_ACTIONS, GRADE_REVIEWS, SCENE_SCRIPTS, SIGNAL_TYPES, STORY_ARCS, YEAR_STORY_OVERRIDES, generateClues } from "./content";
 import type {
   CharacterId,
   FocusAction,
@@ -7,6 +7,8 @@ import type {
   RoundOutcome,
   SceneNode,
   SceneScript,
+  ScoreBreakdown,
+  StockClue,
   StockOption,
   StoryArc,
 } from "../types";
@@ -128,9 +130,33 @@ export function focusById(id: string): FocusAction {
 }
 
 export function signalType(option: StockOption): string {
+  // Keep original hash-based signalType for backward compatibility
   const source = `${option.tsCode || ""}${option.industry || ""}`;
   const total = Array.from(source).reduce((sum, char) => sum + char.charCodeAt(0), 0);
   return SIGNAL_TYPES[total % SIGNAL_TYPES.length];
+}
+
+export function optionClues(option: StockOption): StockClue[] {
+  if (option.clues && option.clues.length > 0) return option.clues;
+  // Fallback: generate clues on-the-fly from tsCode/industry/activeRank
+  const generated = generateClues(option.tsCode, option.name, option.industry || "未知行业", option.activeRank);
+  return generated.map((c) => ({
+    ...c,
+    text: c.text,
+  })) as StockClue[];
+}
+
+export function clueForCharacter(option: StockOption, characterId: CharacterId): StockClue | undefined {
+  return optionClues(option).find((c) => c.characterId === characterId);
+}
+
+export function primarySignalLabel(option: StockOption): string {
+  const clues = optionClues(option);
+  const rinaClue = clues.find((c) => c.characterId === "rina");
+  if (rinaClue) return rinaClue.dimension === "fundamental" ? "基本面线索" : "风险线索";
+  const misakiClue = clues.find((c) => c.characterId === "misaki");
+  if (misakiClue) return misakiClue.dimension === "fund_flow" ? "资金面线索" : "交易线索";
+  return "研究线索";
 }
 
 export function riskLabel(option: StockOption): string {
@@ -141,23 +167,37 @@ export function riskLabel(option: StockOption): string {
 }
 
 export function analysisNote(option: StockOption, revealed = false): string {
+  const clues = optionClues(option);
+  const rinaClue = clues.find((c) => c.characterId === "rina");
+  const misakiClue = clues.find((c) => c.characterId === "misaki");
+  const meiClue = clues.find((c) => c.characterId === "mei");
+
   const liquidity =
     option.activeRank <= 50
       ? "成交活跃度极高，资金关注度很高"
       : option.activeRank <= 200
         ? "成交活跃度靠前，说明当月已经被资金反复确认"
         : "成交活跃度仍在题库前列，但需要更重视逻辑兑现";
-  const setup = `${option.industry || "未知行业"} · ${signalType(option)}。${liquidity}`;
+
   if (!revealed) {
-    return `研究假设：${setup}。先判断逻辑能否从月初延续到月末。`;
+    const clueLines = [
+      rinaClue ? `璃奈：${rinaClue.text}` : "",
+      misakiClue ? `美咲：${misakiClue.text}` : "",
+      meiClue ? `芽衣：${meiClue.text}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+    return `研究线索\n${clueLines}`;
   }
+
+  const header = `${option.industry || "未知行业"} · ${signalType(option)}。${liquidity}`;
   const review =
     option.returnRate >= 0.2
       ? "复盘结果显示这条线索兑现得很充分"
       : option.returnRate >= 0
         ? "复盘结果偏稳，强度低于主线"
         : "复盘结果为负，说明当时的风险释放快于逻辑兑现";
-  return `角色复盘：${setup}，涨幅排名 #${option.returnRank}。${review}。`;
+  return `角色复盘：${header}，涨幅排名 #${option.returnRank}。${review}。`;
 }
 
 export function createInitialState(year: string, data: GameDataYear, initialCapital?: number): GameState {
@@ -231,9 +271,101 @@ export function buildOutcome(
   };
 }
 
+export function scoreRound(
+  option: StockOption,
+  story: StoryArc,
+  focus: FocusAction,
+): ScoreBreakdown {
+  const rate = option.returnRate;
+
+  // ── Return score (0-40): based on actual return rate ──
+  let returnScore: number;
+  if (rate >= 0.3) returnScore = 40;
+  else if (rate >= 0.2) returnScore = 35;
+  else if (rate >= 0.1) returnScore = 28;
+  else if (rate >= 0.05) returnScore = 22;
+  else if (rate >= 0) returnScore = 16;
+  else if (rate >= -0.05) returnScore = 10;
+  else if (rate >= -0.1) returnScore = 5;
+  else returnScore = 0;
+
+  // ── Logic score (0-20): does the stock theme match the event? ──
+  let logicScore = 8;
+  const focusLabel = focus.id;
+  const hasClues = option.clues && option.clues.length > 0;
+  if (option.isBest) {
+    logicScore = 20;
+  } else if (rate >= 0.05) {
+    logicScore = 14;
+  } else if (hasClues && option.activeRank <= 200) {
+    // Clues exist and stock is active enough to reason about
+    logicScore = 12;
+  }
+
+  // ── Risk score (0-15): lower active rank → more liquid → lower risk → higher score ──
+  let riskScore: number;
+  if (option.activeRank <= 50) riskScore = 15;
+  else if (option.activeRank <= 100) riskScore = 12;
+  else if (option.activeRank <= 200) riskScore = 9;
+  else if (option.activeRank <= 300) riskScore = 6;
+  else riskScore = 3;
+
+  // Penalize negative return
+  if (rate < 0) riskScore = Math.max(0, riskScore - 4);
+
+  // ── Discipline score (0-10): does focus choice match the stock's profile? ──
+  let disciplineScore: number;
+  if (focusLabel === "risk" && rate >= 0.05) disciplineScore = 10;
+  else if (focusLabel === "research" && rate >= 0.1) disciplineScore = 9;
+  else if (focusLabel === "date") disciplineScore = 7;
+  else if (focusLabel === "research" && rate < 0) disciplineScore = 3;
+  else disciplineScore = 5;
+
+  // ── Character score (0-15): does the choice fit this month's character's methodology? ──
+  let characterScore = 6;
+  const characterId = story.characterId;
+  if (characterId === "rina") {
+    // Rina values fundamental analysis → moderate activity, not extreme
+    characterScore = option.activeRank >= 50 && option.activeRank <= 300 ? 12 : 7;
+    if (rate > 0) characterScore = Math.min(15, characterScore + 3);
+  } else if (characterId === "misaki") {
+    // Misaki values fund flow signals → high activity = good
+    characterScore = option.activeRank <= 150 ? 13 : 7;
+    if (option.tradingDays >= 18) characterScore = Math.min(15, characterScore + 2);
+  } else if (characterId === "mei") {
+    // Mei values risk control → higher activity rank (safer zone)
+    characterScore = option.activeRank >= 100 ? 12 : 7;
+    if (rate >= -0.05) characterScore = Math.min(15, characterScore + 3);
+  }
+
+  const total = Math.min(100, returnScore + logicScore + riskScore + disciplineScore + characterScore);
+
+  let grade = "D";
+  if (total >= 90) grade = "S";
+  else if (total >= 75) grade = "A";
+  else if (total >= 60) grade = "B";
+  else if (total >= 40) grade = "C";
+
+  return { returnScore, logicScore, riskScore, disciplineScore, characterScore, total, grade };
+}
+
 export function selectFocus(state: GameState, focusId: string): GameState {
   if (state.locked || state.finished) return state;
   return { ...state, focusId };
+}
+
+// ── Character-focus synergy ──
+
+function getSynergyAffection(characterId: CharacterId, focusId: string): number {
+  if (characterId === "rina" && focusId === "research") return 3;
+  if (characterId === "misaki" && focusId === "date") return 3;
+  if (characterId === "mei" && focusId === "risk") return 3;
+  return 0;
+}
+
+function getSynergyFatigue(characterId: CharacterId, focusId: string): number {
+  if (characterId === "rina" && focusId === "research") return -1;
+  return 0;
 }
 
 export function chooseOption(state: GameState, data: GameDataYear, option: StockOption): GameState {
@@ -246,10 +378,32 @@ export function chooseOption(state: GameState, data: GameDataYear, option: Stock
   const after = before * (1 + finalRate);
   const outcome = buildOutcome(option, story, before, after, focus);
   const characterId = story.characterId;
-  const nextReputation = clamp(state.reputation + outcome.reputationDelta + focus.reputationDelta);
-  const nextFatigue = clamp(state.fatigue + outcome.fatigueDelta + focus.fatigueDelta);
+
+  // ── Character-focus synergy bonuses ──
+  const synergyAffection = getSynergyAffection(characterId, focus.id);
+  const synergyFatigue = getSynergyFatigue(characterId, focus.id);
+
+  // ── High fatigue penalty ──
+  let fatiguePenalty = 0;
+  let reputationPenalty = 0;
+  if (state.fatigue > 80 && focus.id === "research") {
+    fatiguePenalty = 3;
+    reputationPenalty = -2;
+  }
+  // 连续两月熬夜研报且疲劳 > 60
+  const lastTwoFocuses = state.history.slice(-2).map((r) => r.focus.id);
+  if (focus.id === "research" && state.fatigue > 60 && lastTwoFocuses.length === 2 && lastTwoFocuses.every((f) => f === "research")) {
+    fatiguePenalty += 2;
+  }
+
+  const nextReputation = clamp(
+    state.reputation + outcome.reputationDelta + focus.reputationDelta + reputationPenalty,
+  );
+  const nextFatigue = clamp(
+    state.fatigue + outcome.fatigueDelta + focus.fatigueDelta + synergyFatigue + fatiguePenalty,
+  );
   const nextAffection = clamp(
-    state.affection[characterId] + outcome.affectionDelta + focus.affectionDelta,
+    state.affection[characterId] + outcome.affectionDelta + focus.affectionDelta + synergyAffection,
   );
 
   return {
@@ -284,6 +438,7 @@ export function chooseOption(state: GameState, data: GameDataYear, option: Stock
         reputationAfter: nextReputation,
         fatigueAfter: nextFatigue,
         affectionAfter: nextAffection,
+        score: scoreRound(option, story, focus),
       },
     ],
   };
@@ -322,6 +477,28 @@ export function advanceScene(state: GameState, data: GameDataYear): GameState {
 
 export function totalAffection(state: GameState): number {
   return Object.values(state.affection).reduce((sum, value) => sum + value, 0);
+}
+
+export function gradeReviewText(characterId: CharacterId, grade: string): string {
+  const reviews = GRADE_REVIEWS[characterId]?.[grade];
+  if (!reviews || reviews.length === 0) return "";
+  const seed = Array.from(grade).reduce((sum, c) => sum + c.charCodeAt(0), 0);
+  return reviews[seed % reviews.length];
+}
+
+export function postMortem(
+  selected: StockOption,
+  best: StockOption,
+  monthLabel: string,
+): string {
+  if (selected.isBest) {
+    return `${monthLabel} 你选中的 ${selected.name} 是本月参考路线。${selected.industry} 的涨幅达到 ${formatPct(selected.returnRate)}，事件和资金形成了共振。`;
+  }
+  if (selected.returnRate >= 0) {
+    const gap = selected.returnRate - best.returnRate;
+    return `${monthLabel} ${selected.name}(${formatPct(selected.returnRate)}) 有正收益，但与参考路线 ${best.name}(${formatPct(best.returnRate)}) 相差 ${formatPct(gap)}。差距在于 ${best.industry} 的事件共振更强。`;
+  }
+  return `${monthLabel} ${selected.name} 录得 ${formatPct(selected.returnRate)}。参考路线 ${best.name} 同期上涨 ${formatPct(best.returnRate)}。这次风险释放快于逻辑兑现，复盘重点是找出假设在哪一层先断裂。`;
 }
 
 export function bestRoute(state: GameState): CharacterId {

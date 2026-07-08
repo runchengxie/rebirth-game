@@ -283,6 +283,97 @@ def as_float(value: Any, digits: int | None = None) -> float | None:
     return result
 
 
+CLUE_TEMPLATES: dict[str, dict[str, list[str]]] = {
+    "rina": {
+        "fundamental": [
+            "{industry}链条近期有价格弹性，但持续性要看订单。",
+            "{industry}基本面处于景气验证阶段，估值需要业绩来支撑。",
+            "{industry}这条线有成本改善预期，兑现节奏还要跟踪下游需求。",
+        ],
+        "fund_flow": [
+            "成交额排名 #{rank}，需要确认资金是短期博弈还是中期布局。",
+        ],
+        "risk": [
+            "如果只是事件脉冲，月末可能回撤。基本面能提供安全垫吗？",
+        ],
+    },
+    "misaki": {
+        "fundamental": [
+            "{industry}的基本面我不太关心，我更想看资金有没有留下痕迹。",
+        ],
+        "fund_flow": [
+            "成交额排名 #{rank}，活跃但不是最拥挤。资金反复确认过吗？",
+            "成交额排名 #{rank}，市场热度已经起来了，现在就差方向确认。",
+            "成交额排名 #{rank}，量能信号偏强，但要区分真放量和脉冲。",
+        ],
+        "risk": [
+            "信号看起来不错，但不要只看热度。拥挤度太高反而容易回撤。",
+        ],
+    },
+    "mei": {
+        "fundamental": [
+            "{industry}的基本面故事不差，但宏观上还有几个变量没兑现。",
+        ],
+        "fund_flow": [
+            "成交额排名 #{rank}，流动性没问题，但要看它能撑多久。",
+        ],
+        "risk": [
+            "月末兑现前，估值和拥挤度可能反噬。节奏比方向更重要。",
+            "这个位置的风险收益比需要仔细评估，不要只被故事吸引。",
+            "如果只是新闻脉冲，没有业绩和资金接力，持续性存疑。",
+        ],
+    },
+}
+
+
+def generate_clues(
+    ts_code: str,
+    name: str,
+    industry: str,
+    active_rank: int,
+) -> list[dict[str, str]]:
+    """Generate 3 character-perspective research clues for a stock option.
+
+    Returns one clue per character: rina (fundamental/risk), misaki (fund_flow), mei (risk).
+    Uses a deterministic seed based on ts_code so the same stock always gets the same clues.
+    """
+    seed = sum(ord(c) for c in ts_code)
+
+    def pick(arr: list[str], offset: int) -> str:
+        return arr[offset % len(arr)]
+
+    def pick_text(templates: list[str], offset: int) -> str:
+        return (
+            pick(templates, offset)
+            .replace("{industry}", industry)
+            .replace("{rank}", str(active_rank))
+            .replace("{name}", name)
+        )
+
+    rina_fund = pick_text(CLUE_TEMPLATES["rina"]["fundamental"], seed)
+    rina_risk = pick_text(CLUE_TEMPLATES["rina"]["risk"], seed + 1)
+    misaki_fund = pick_text(CLUE_TEMPLATES["misaki"]["fund_flow"], seed)
+    mei_risk = pick_text(CLUE_TEMPLATES["mei"]["risk"], seed)
+
+    return [
+        {
+            "characterId": "rina",
+            "dimension": "fundamental" if active_rank <= 200 else "risk",
+            "text": rina_fund if active_rank <= 200 else rina_risk,
+        },
+        {
+            "characterId": "misaki",
+            "dimension": "fund_flow",
+            "text": misaki_fund,
+        },
+        {
+            "characterId": "mei",
+            "dimension": "risk",
+            "text": mei_risk,
+        },
+    ]
+
+
 def stock_payload(row: dict[str, Any]) -> dict[str, Any]:
     return {
         "id": row["ts_code"],
@@ -359,6 +450,12 @@ def build_year_payload(args: Config, con: Any, year: int) -> dict[str, Any]:
         for row in option_rows:
             payload = stock_payload(row)
             payload["isBest"] = row["ts_code"] == best_row["ts_code"]
+            payload["clues"] = generate_clues(
+                row["ts_code"],
+                row.get("name", row["ts_code"]),
+                row.get("industry") or "未分类",
+                int(row["active_rank"]),
+            )
             options.append(payload)
 
         perfect_capital *= 1 + float(best["returnRate"])

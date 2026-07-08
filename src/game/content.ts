@@ -525,3 +525,164 @@ export const FOCUS_ACTIONS: FocusAction[] = [
 ];
 
 export const SIGNAL_TYPES = ["事件驱动", "业绩反转", "资金抱团", "政策风口", "产业链暗线", "高波动机会"];
+
+// ── 评分等级角色复盘文案 ──
+
+export const GRADE_REVIEWS: Record<CharacterId, Record<string, string[]>> = {
+  rina: {
+    S: [
+      "这条路线把事件和资金连起来了，研究框架完全经得起复盘。",
+      "完美的一次判断。你提前看到了市场还没完全定价的东西。",
+    ],
+    A: [
+      "收益和逻辑都在线，下次可以考虑更早入场。",
+      "这次研究很扎实，只是还差一点超额收益。",
+    ],
+    B: [
+      "结果不差，但下次可以先问一句：这条主线能持续多久。",
+      "收益不错，但你没有完全说清楚判断依据。下次加上。",
+    ],
+    C: [
+      "只能说及格。下次不要把直觉当成研究假设，要写出证据。",
+      "勉强没赔，但这次选择更多是运气。复盘时要诚实。",
+    ],
+    D: [
+      "失败了也没关系。记录下这次判断在哪一层出了偏差。",
+      "这次亏损值得复盘。先写清风险从哪里来，再找下次机会。",
+    ],
+  },
+  misaki: {
+    S: [
+      "信号和主线共振，这就是我一直说的资金确认！",
+      "你这次盯对了成交额，而且方向也对了，太棒了。",
+    ],
+    A: [
+      "方向对了，但资金持续性还需要更多证据。继续跟踪。",
+      "不错的结果！下次可以再关注一下量能结构。",
+    ],
+    B: [
+      "成交数据看起来还行，但逻辑没有完全串起来。",
+      "下次先看资金有没有反复确认，再入场。",
+    ],
+    C: [
+      "这次信号有点弱，你可能是凭感觉选的。下次多看看数据。",
+      "我信你下次会更好。这次的数据复盘留给我吧。",
+    ],
+    D: [
+      "信号全错了，但这种失败经验比赚小钱更有用。",
+      "没关系！每一笔亏钱都在为下一笔正确买单。",
+    ],
+  },
+  mei: {
+    S: [
+      "完美的风控意识加上正确的方向，这就是职业判断。",
+      "你在高回报里也守住了风险底线，值得记录。",
+    ],
+    A: [
+      "结果不错，但要复盘一下：这中间有没有你在冒险的环节。",
+      "收益和风控还算均衡。下次可以试着更早判断主线。",
+    ],
+    B: [
+      "中规中矩。想进入更好结局，下次要更主动一些。",
+      "这次的路不太像你的风格。回看一下为什么偏离了方法论。",
+    ],
+    C: [
+      "风险释放比逻辑兑现快，这次你被市场推着走。",
+      "下次入场前先写好：最多愿意承受多少回撤。",
+    ],
+    D: [
+      "这笔交易没有守住底线。别自责，但要把它写进研究日志。",
+      "市场没有否定你，只是在提醒你交易前要先想清楚风险。",
+    ],
+  },
+};
+
+// ── 线索模板 ——
+
+export const CLUE_TEMPLATES: Record<CharacterId, Record<string, string[]>> = {
+  rina: {
+    fundamental: [
+      "{industry}链条近期有价格弹性，但持续性要看订单。",
+      "{industry}基本面处于景气验证阶段，估值需要业绩来支撑。",
+      "{industry}这条线有成本改善预期，兑现节奏还要跟踪下游需求。",
+    ],
+    fund_flow: [
+      "成交额排名 #{rank}，需要确认资金是短期博弈还是中期布局。",
+    ],
+    risk: [
+      "如果只是事件脉冲，月末可能回撤。基本面能提供安全垫吗？",
+    ],
+  },
+  misaki: {
+    fundamental: [
+      "{industry}的基本面我不太关心，我更想看资金有没有留下痕迹。",
+    ],
+    fund_flow: [
+      "成交额排名 #{rank}，活跃但不是最拥挤。资金反复确认过吗？",
+      "成交额排名 #{rank}，市场热度已经起来了，现在就差方向确认。",
+      "成交额排名 #{rank}，量能信号偏强，但要区分真放量和脉冲。",
+    ],
+    risk: [
+      "信号看起来不错，但不要只看热度。拥挤度太高反而容易回撤。",
+    ],
+  },
+  mei: {
+    fundamental: [
+      "{industry}的基本面故事不差，但宏观上还有几个变量没兑现。",
+    ],
+    fund_flow: [
+      "成交额排名 #{rank}，流动性没问题，但要看它能撑多久。",
+    ],
+    risk: [
+      "月末兑现前，估值和拥挤度可能反噬。节奏比方向更重要。",
+      "这个位置的风险收益比需要仔细评估，不要只被故事吸引。",
+      "如果只是新闻脉冲，没有业绩和资金接力，持续性存疑。",
+    ],
+  },
+};
+
+export function generateClues(
+  tsCode: string,
+  name: string,
+  industry: string,
+  activeRank: number,
+): {
+  characterId: CharacterId;
+  dimension: "fundamental" | "fund_flow" | "risk";
+  text: string;
+}[] {
+  // Deterministic seeded index based on tsCode so same stock always gets same clues
+  const seed = Array.from(tsCode).reduce((sum, c) => sum + c.charCodeAt(0), 0);
+
+  const pick = (arr: string[], offset: number): string =>
+    arr[offset % arr.length];
+
+  const pickText = (templates: string[], offset: number): string =>
+    pick(templates, offset)
+      .replace(/{industry}/g, industry)
+      .replace(/{rank}/g, String(activeRank))
+      .replace(/{name}/g, name);
+
+  const rinaFund = pickText(CLUE_TEMPLATES.rina.fundamental, seed);
+  const rinaRisk = pickText(CLUE_TEMPLATES.rina.risk, seed + 1);
+  const misakiFund = pickText(CLUE_TEMPLATES.misaki.fund_flow, seed);
+  const meiRisk = pickText(CLUE_TEMPLATES.mei.risk, seed);
+
+  return [
+    {
+      characterId: "rina",
+      dimension: activeRank <= 200 ? "fundamental" : "risk",
+      text: activeRank <= 200 ? rinaFund : rinaRisk,
+    },
+    {
+      characterId: "misaki",
+      dimension: "fund_flow",
+      text: misakiFund,
+    },
+    {
+      characterId: "mei",
+      dimension: "risk",
+      text: meiRisk,
+    },
+  ];
+}

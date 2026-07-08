@@ -78,7 +78,7 @@ export interface DialogueNode {
   bg?: string;
   bgm?: string;
   voice?: string;
-  voiceCue?: "silent" | "blip" | "key";
+  voiceCue?: "silent" | "key";
 }
 
 export interface StockRoundNode {

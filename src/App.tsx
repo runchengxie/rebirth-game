@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { GAME_DATA, GAME_YEARS } from "./data/gameData";
 import { ProceduralBgm } from "./audio/bgm";
-import { ProceduralVoice } from "./audio/voice";
+import { NarrativeAudio } from "./audio/sfx";
 import { CHARACTERS, FOCUS_ACTIONS } from "./game/content";
 import {
   advanceScene,
@@ -474,12 +474,12 @@ export default function App() {
   const [theme, setTheme] = useState<"light" | "dark">(readTheme());
   const [musicOn, setMusicOn] = useState(false);
   const [volume, setVolume] = useState(0.22);
-  const [voiceOn, setVoiceOn] = useState(false);
-  const [voiceVolume, setVoiceVolume] = useState(0.16);
+  const [soundOn, setSoundOn] = useState(false);
+  const [soundVolume, setSoundVolume] = useState(0.18);
   const [usePixiStage] = useState(canUsePixiStage);
   const bgmRef = useRef<ProceduralBgm | null>(null);
-  const voiceRef = useRef<ProceduralVoice | null>(null);
-  const lastVoiceCueRef = useRef("");
+  const audioRef = useRef<NarrativeAudio | null>(null);
+  const lastLineVoiceRef = useRef("");
   const settingsRef = useRef<HTMLDivElement | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [initialCapitalInput, setInitialCapitalInput] = useState(() => String(GAME_DATA[bestInitialYear()].initialCapital || 10000));
@@ -551,16 +551,16 @@ export default function App() {
   }, [volume]);
 
   useEffect(() => {
-    if (!voiceRef.current) {
-      voiceRef.current = new ProceduralVoice();
+    if (!audioRef.current) {
+      audioRef.current = new NarrativeAudio();
     }
-    voiceRef.current.setVolume(voiceVolume);
-  }, [voiceVolume]);
+    audioRef.current.setVolume(soundVolume);
+  }, [soundVolume]);
 
   useEffect(() => {
     return () => {
       bgmRef.current?.stop();
-      voiceRef.current?.stop();
+      audioRef.current?.stop();
     };
   }, []);
 
@@ -590,10 +590,12 @@ export default function App() {
 
   function restart(year = state.year) {
     const parsedCapital = Number(initialCapitalInput);
+    lastLineVoiceRef.current = "";
     setState(createInitialState(year, GAME_DATA[year], Number.isFinite(parsedCapital) ? parsedCapital : undefined));
   }
 
   function changeYear(year: string) {
+    lastLineVoiceRef.current = "";
     setState(createInitialState(year, GAME_DATA[year], Number(initialCapitalInput) || undefined));
   }
 
@@ -621,38 +623,60 @@ export default function App() {
     setMusicOn(true);
   }
 
-  async function toggleVoice() {
-    const controller = voiceRef.current || new ProceduralVoice();
-    voiceRef.current = controller;
-    if (voiceOn) {
+  async function toggleSound() {
+    const controller = audioRef.current || new NarrativeAudio();
+    audioRef.current = controller;
+    if (soundOn) {
       controller.stop();
-      setVoiceOn(false);
+      lastLineVoiceRef.current = "";
+      setSoundOn(false);
       return;
     }
     await controller.start();
-    controller.setVolume(voiceVolume);
-    setVoiceOn(true);
+    controller.setVolume(soundVolume);
+    lastLineVoiceRef.current = "";
+    controller.playPreview();
+    setSoundOn(true);
   }
 
-  const voiceCueKey =
-    sceneNode.type === "line"
-      ? `${state.year}-${state.monthIndex}-${state.sceneNodeIndex}-${sceneNode.speaker}`
-      : state.locked && last
-        ? `result-${last.month}-${last.selected.id}`
-        : "";
+  const lineVoiceKey =
+    sceneNode.type === "line" && sceneNode.voice && sceneNode.voiceCue !== "silent"
+      ? `${state.year}-${state.monthIndex}-${state.sceneNodeIndex}-${sceneNode.voice}`
+      : "";
 
   useEffect(() => {
-    if (!voiceOn || !voiceCueKey) return;
-    if (lastVoiceCueRef.current === voiceCueKey) return;
-    lastVoiceCueRef.current = voiceCueKey;
+    if (!soundOn || !lineVoiceKey) return;
+    if (lastLineVoiceRef.current === lineVoiceKey) return;
+    lastLineVoiceRef.current = lineVoiceKey;
     if (sceneNode.type === "line") {
-      voiceRef.current?.playLine(sceneNode);
-      return;
+      audioRef.current?.playVoiceLine(sceneNode);
     }
-    if (state.locked && last) {
-      voiceRef.current?.playResult();
+  }, [lineVoiceKey, sceneNode, soundOn]);
+
+  function advanceCurrentScene() {
+    if (!sceneCanAdvance) return;
+    if (soundOn) {
+      audioRef.current?.playAdvance();
     }
-  }, [last, sceneNode, state.locked, voiceCueKey, voiceOn]);
+    setState((current) => advanceScene(current, data));
+  }
+
+  function selectFocusWithSound(focusId: string) {
+    if (soundOn) {
+      audioRef.current?.playChoice();
+    }
+    setState((current) => selectFocus(current, focusId));
+  }
+
+  function chooseOptionWithSound(selected: StockOption) {
+    if (soundOn) {
+      audioRef.current?.playChoice();
+      window.setTimeout(() => {
+        audioRef.current?.playResult(selected.isBest ? "success" : "miss");
+      }, 130);
+    }
+    setState((current) => chooseOption(current, data, selected));
+  }
 
   return (
     <main className="app">
@@ -706,8 +730,8 @@ export default function App() {
               <button className="icon-button" type="button" title="切换背景音乐" aria-label="切换背景音乐" onClick={() => void toggleMusic()}>
                 {musicOn ? "♪" : "♩"}
               </button>
-              <button className="icon-button" type="button" title="切换语音感" aria-label="切换语音感" onClick={() => void toggleVoice()}>
-                {voiceOn ? "声" : "静"}
+              <button className="icon-button" type="button" title="切换音效" aria-label="切换音效" onClick={() => void toggleSound()}>
+                {soundOn ? "音" : "静"}
               </button>
               <label className="volume-input" title="背景音乐音量">
                 音量
@@ -720,15 +744,15 @@ export default function App() {
                   onChange={(event) => setVolume(Number(event.target.value))}
                 />
               </label>
-              <label className="volume-input" title="语音音量">
-                语音
+              <label className="volume-input" title="音效音量">
+                音效
                 <input
-                  max="0.5"
+                  max="0.45"
                   min="0"
                   step="0.01"
                   type="range"
-                  value={voiceVolume}
-                  onChange={(event) => setVoiceVolume(Number(event.target.value))}
+                  value={soundVolume}
+                  onChange={(event) => setSoundVolume(Number(event.target.value))}
                 />
               </label>
               <button className="icon-button" type="button" title="重新开始" aria-label="重新开始" onClick={() => restart(state.year)}>
@@ -774,7 +798,7 @@ export default function App() {
               className="story-next-button"
               disabled={!sceneCanAdvance}
               type="button"
-              onClick={() => setState((current) => advanceScene(current, data))}
+              onClick={advanceCurrentScene}
             >
               {advanceLabel}
             </button>
@@ -801,7 +825,7 @@ export default function App() {
                 briefs={stockRoundNode?.briefs || []}
                 title={stockRoundNode?.briefTitle || `${month.label} 实战线索`}
               />
-              <FocusSelector state={state} onSelect={(focusId) => setState((current) => selectFocus(current, focusId))} />
+              <FocusSelector state={state} onSelect={selectFocusWithSound} />
               <div className="options">
                 {topOptions.map((option, index) => (
                   <OptionCard
@@ -809,7 +833,7 @@ export default function App() {
                     key={option.id}
                     option={option}
                     state={state}
-                    onChoose={(selected) => setState((current) => chooseOption(current, data, selected))}
+                    onChoose={chooseOptionWithSound}
                   />
                 ))}
               </div>
@@ -830,7 +854,7 @@ export default function App() {
               className="primary-button"
               disabled={!sceneCanAdvance}
               type="button"
-              onClick={() => setState((current) => advanceScene(current, data))}
+              onClick={advanceCurrentScene}
             >
               {advanceLabel}
             </button>
@@ -870,7 +894,7 @@ export default function App() {
         <h2 id="rulesTitle">玩法说明</h2>
         <p>
           本页面是静态剧情游戏。主线讲历史金融事件，实战小游戏使用真实 A
-          股月度题库结算。日程行动会影响执行修正、角色状态和好感。当前背景音乐和语音感由浏览器生成，未来关键句可接入离线音频素材。
+          股月度题库结算。日程行动会影响执行修正、角色状态和好感。当前背景音乐和轻音效由浏览器生成，未来关键句可接入离线语音素材。
         </p>
       </footer>
     </main>

@@ -155,9 +155,9 @@ function renderScene(scene: StageScene, props: StagePropsSnapshot): void {
   scene.overlay.rect(0, 0, width, height).fill({ color: 0x140a1b, alpha: 0.12 });
   scene.overlay.rect(0, height * 0.6, width, height * 0.4).fill({ color: tint, alpha: 0.14 });
 
-  const mobile = width < 700;
-  const targetHeight = Math.min(height * (mobile ? 0.92 : 0.92), mobile ? width * 1.38 : width * 0.52);
-  const bottom = mobile ? height - Math.min(26, height * 0.045) : height + Math.min(26, height * 0.05);
+  const compactStage = width < 700 || (width < 1024 && height < 560);
+  const targetHeight = Math.min(height * 0.92, compactStage ? width * 1.38 : width * 0.52);
+  const bottom = compactStage ? height - Math.min(26, height * 0.045) : height + Math.min(26, height * 0.05);
   (Object.keys(scene.characterSprites) as CharacterId[]).forEach((characterId) => {
     const sprite = scene.characterSprites[characterId];
     const active = characterId === props.activeCharacter.id;
@@ -165,9 +165,10 @@ function renderScene(scene: StageScene, props: StagePropsSnapshot): void {
     sprite.texture = scene.characterTextures[characterId][pose] || scene.characterTextures[characterId][defaultPose[characterId]];
     const focusScale = active ? 1 : 0.84;
     const baseScale = targetHeight / sprite.texture.height;
-    const x = mobile && !active ? (characterId === "rina" ? 0.11 : characterId === "mei" ? 0.89 : 0.5) : characterX[characterId];
+    const compactInactiveX = characterId === "rina" ? 0.11 : characterId === "mei" ? 0.89 : 0.5;
+    const x = compactStage ? (active ? 0.5 : compactInactiveX) : characterX[characterId];
 
-    sprite.visible = active || !mobile;
+    sprite.visible = active || !compactStage;
     sprite.x = width * x;
     sprite.y = bottom;
     sprite.scale.set(baseScale * focusScale);

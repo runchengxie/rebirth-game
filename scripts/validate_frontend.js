@@ -30,6 +30,7 @@ for (const file of [
   "src/App.tsx",
   "src/components/PixiStage.tsx",
   "src/audio/bgm.ts",
+  "src/audio/sfx.ts",
   "src/game/engine.ts",
   "src/game/content.ts",
   "src/data/gameData.ts",

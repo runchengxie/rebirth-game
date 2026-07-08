@@ -68,7 +68,7 @@ def parse_args() -> Config:
 
 def require_duckdb():
     try:
-        import duckdb  # type: ignore
+        import duckdb
     except ModuleNotFoundError as exc:
         raise SystemExit(
             "Missing dependency: duckdb. Install it with `uv pip install -r requirements.txt` "
@@ -95,6 +95,7 @@ def as_float(value: Any, digits: int | None = None) -> float | None:
 # ═══════════════════════════════════════════════════════════
 # Query: monthly index returns (market-cap weighted)
 # ═══════════════════════════════════════════════════════════
+
 
 def query_index_returns(
     con: Any,
@@ -205,6 +206,7 @@ def query_index_returns(
 # Query: sector rotation (top/bottom industries per month)
 # ═══════════════════════════════════════════════════════════
 
+
 def query_sector_rotation(
     con: Any,
     year: int,
@@ -301,6 +303,7 @@ def query_sector_rotation(
 # ═══════════════════════════════════════════════════════════
 # Query: style factor approximations
 # ═══════════════════════════════════════════════════════════
+
 
 def query_style_factors(
     con: Any,
@@ -400,14 +403,21 @@ def query_style_factors(
 # Build year payload
 # ═══════════════════════════════════════════════════════════
 
+
 def build_year_payload(
     args: Config,
     con: Any,
     year: int,
 ) -> dict[str, Any]:
-    index_data = query_index_returns(con, year, args.daily_clean_dir, args.instruments, args.price_column)
-    sector_data = query_sector_rotation(con, year, args.daily_clean_dir, args.instruments, args.price_column)
-    factor_data = query_style_factors(con, year, args.daily_clean_dir, args.instruments, args.price_column)
+    index_data = query_index_returns(
+        con, year, args.daily_clean_dir, args.instruments, args.price_column
+    )
+    sector_data = query_sector_rotation(
+        con, year, args.daily_clean_dir, args.instruments, args.price_column
+    )
+    factor_data = query_style_factors(
+        con, year, args.daily_clean_dir, args.instruments, args.price_column
+    )
 
     # Build factor lookup by month
     factor_by_month: dict[str, dict[str, Any]] = {}
@@ -434,17 +444,21 @@ def build_year_payload(
 
         sector_rotation = []
         for i, s in enumerate(top_sectors):
-            sector_rotation.append({
-                "sector": s["industry"],
-                "returnRate": as_float(s["return_rate"], 4) or 0,
-                "rank": i + 1,
-            })
+            sector_rotation.append(
+                {
+                    "sector": s["industry"],
+                    "returnRate": as_float(s["return_rate"], 4) or 0,
+                    "rank": i + 1,
+                }
+            )
         for i, s in enumerate(bottom_sectors):
-            sector_rotation.append({
-                "sector": s["industry"],
-                "returnRate": as_float(s["return_rate"], 4) or 0,
-                "rank": -(i + 1),  # negative rank = bottom
-            })
+            sector_rotation.append(
+                {
+                    "sector": s["industry"],
+                    "returnRate": as_float(s["return_rate"], 4) or 0,
+                    "rank": -(i + 1),  # negative rank = bottom
+                }
+            )
 
         factors = factor_by_month.get(month_key, {})
         size_premium = as_float(factors.get("size_premium", 0), 4) or 0
@@ -463,17 +477,19 @@ def build_year_payload(
             },
         ]
 
-        months.append({
-            "month": f"{year}-{month_number:02d}",
-            "label": f"{year}年{month_number}月",
-            "marketStart": idx.get("market_start", f"{year}{month_number:02d}01"),
-            "marketEnd": idx.get("market_end", f"{year}{month_number:02d}28"),
-            "themeIndex": "000300.SH",
-            "themeReturn": as_float(idx.get("hs300_return", 0), 4) or 0,
-            "sectorRotation": sector_rotation,
-            "styleFactorReturns": style_factor_returns,
-            "eventSummary": "",  # filled by frontend from MARKET_THEMES
-        })
+        months.append(
+            {
+                "month": f"{year}-{month_number:02d}",
+                "label": f"{year}年{month_number}月",
+                "marketStart": idx.get("market_start", f"{year}{month_number:02d}01"),
+                "marketEnd": idx.get("market_end", f"{year}{month_number:02d}28"),
+                "themeIndex": "000300.SH",
+                "themeReturn": as_float(idx.get("hs300_return", 0), 4) or 0,
+                "sectorRotation": sector_rotation,
+                "styleFactorReturns": style_factor_returns,
+                "eventSummary": "",  # filled by frontend from MARKET_THEMES
+            }
+        )
 
     return {
         "year": year,
@@ -495,6 +511,7 @@ def build_year_payload(
 # ═══════════════════════════════════════════════════════════
 # Main
 # ═══════════════════════════════════════════════════════════
+
 
 def main() -> None:
     args = parse_args()

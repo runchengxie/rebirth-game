@@ -3,8 +3,8 @@ $ErrorActionPreference = "Stop"
 $ProjectRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $DistDir = Join-Path $ProjectRoot "dist"
 $PackageDir = Join-Path $ProjectRoot "dist-package"
-$ShareDir = Join-Path $PackageDir "rebirth-game-share"
-$ZipPath = Join-Path $DistDir "rebirth-game-share.zip"
+$ShareDir = Join-Path $PackageDir "rebirth-research-share"
+$ZipPath = Join-Path $DistDir "rebirth-research-share.zip"
 
 Push-Location -LiteralPath $ProjectRoot
 try {

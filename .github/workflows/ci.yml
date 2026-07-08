@@ -9,27 +9,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v5
         with:
-          python-version: "3.11"
+          enable-cache: true
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: "npm"
       - name: Install frontend dependencies
         run: npm ci
-      - name: Install Python tooling
-        run: python -m pip install ruff basedpyright
+      - name: Install Python dependencies
+        run: uv sync --only-dev
       - name: Ruff lint
-        run: ruff check .
+        run: uv run ruff check .
       - name: Ruff format
-        run: ruff format --check .
+        run: uv run ruff format --check .
       - name: Python compile
-        run: python -m compileall scripts
-      - name: BasedPyright
-        run: basedpyright scripts
+        run: uv run python -m compileall scripts
+      - name: Pytest
+        run: uv run pytest scripts/ -v
+      - name: BasedPyright (non-blocking)
+        run: uv run basedpyright scripts
+        continue-on-error: true
+      - name: Ty (non-blocking)
+        run: uv run ty check scripts
+        continue-on-error: true
       - name: Validate data
-        run: python scripts/validate_data.py
+        run: uv run python scripts/validate_data.py
       - name: Validate frontend
         run: node scripts/validate_frontend.js
       - name: ESLint

@@ -1,9 +1,31 @@
+[project]
+name = "rebirth-research"
+version = "0.1.0"
+description = "心动 K 线：重生投研部 — A-share slice-of-life visual novel"
+requires-python = ">=3.11"
+
+[dependency-groups]
+dev = [
+    "duckdb>=1.0.0",
+    "pytest>=8.0",
+    "ruff>=0.11.0",
+    "ty>=0.0.50",
+    "basedpyright>=1.30.0",
+]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["scripts"]
+python_files = ["test_*.py"]
+
+[tool.ty]
+# ty infers src from the project root; use CLI `ty check scripts` instead
 
 [tool.basedpyright]
 include = ["scripts"]

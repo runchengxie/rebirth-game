@@ -59,8 +59,8 @@
 常用约定：
 
 - 主线叫历史金融事件或主线事件。
-- 选股环节叫实战小游戏。
-- 候选项叫实战卡。
+- 选股环节叫月度选择。
+- 候选项叫月度路线。
 - 当月涨幅最高的答案叫参考路线。
 - 女主只依据公开信息和当下数据判断。男主的未来记忆只出现在内心独白里。
 - 中文段落使用中文标点。保留必要的行内代码引用，例如 `npm run check`。
@@ -77,7 +77,7 @@
 
 线上地址：
 
-<https://runchengxie.github.io/rebirth-game/>
+<https://runchengxie.github.io/rebirth-research/>
 
 推送到 `main` 后，GitHub 会运行持续集成和 Pages 发布流程。持续集成成功后，再确认线上页面和 `dist/assets/` 静态资源返回 200。
 
@@ -92,7 +92,7 @@
 生成：
 
 ```text
-dist/rebirth-game-share.zip
+dist/rebirth-research-share.zip
 ```
 
 脚本会先运行 `npm run build`，再把 `dist/` 产物打包。解压后打开 `index.html` 即可游玩。

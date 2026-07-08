@@ -85,18 +85,19 @@ export function createInitialState(year: string): GameState {
     // Research career metrics
     // portfolioNav = 研究推荐跟踪净值 (模拟跟踪研究员推荐组合的表现)
     // 基准参考另算，不与净值直接比较
-    researchCredibility: 20,
-    committeeAdoption: 15,
+    // 实习生起点：研究积累和团队信任远低于正式研究员
+    researchCredibility: 8,
+    committeeAdoption: 5,
     portfolioNav: 1.0,
-    viewAccuracy: 15,
-    clientFeedback: 15,
-    teamTrust: 25,
-    fatigue: 30,
-    lifeBalance: 50,
+    viewAccuracy: 8,
+    clientFeedback: 5,
+    teamTrust: 14,
+    fatigue: 15,
+    lifeBalance: 55,
     relations: {
-      lin_ruoning: 25,
-      chen_xinghe: 18,
-      zhou_mingzhao: 16,
+      lin_ruoning: 12,
+      chen_xinghe: 10,
+      zhou_mingzhao: 8,
     },
     history: [],
   };

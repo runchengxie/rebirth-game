@@ -564,8 +564,8 @@ export default function App() {
           <CharacterRoutes activeId={activeCharacter.id} state={state} />
           <PortfolioChart state={state} />
           <div className="legend">
-            <span><i className="key" /> 我的净值</span>
-            <span><i className="key best" /> 基准参考</span>
+            <span><i className="key" /> 推荐净值</span>
+            <span><i className="key best" /> 沪深300</span>
           </div>
         </aside>
       </section>

@@ -39,7 +39,7 @@ export function EndingPanel({ state }: { state: GameState }) {
           <dd>{state.committeeAdoption}/100</dd>
         </div>
         <div>
-          <dt>组合模拟净值</dt>
+          <dt>推荐跟踪净值</dt>
           <dd>{formatNav(state.portfolioNav)}</dd>
         </div>
         <div>

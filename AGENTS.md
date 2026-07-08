@@ -14,10 +14,10 @@ Python 工具链通过 `uv` 管理（`pyproject.toml` 的 `[dependency-groups] d
 
 - 优先保持构建后纯静态部署，GitHub Pages 由 `.github/workflows/pages.yml` 构建并发布 `dist/`。
 - 页面运行时不要依赖 Z 盘、本地 Python 环境或网络接口。
-- 新增年份时，先运行 `uv run python scripts/build_data.py`，再运行 `uv run python scripts/validate_data.py`。
+- 需要更新市场复盘数据时，运行 `uv run python scripts/build_data.py`，然后将生成的 `market-review-*.json` 接入前端 `src/data/gameData.ts`。
 - 分享包由 `scripts/package.ps1` 生成，`dist/` 目录不提交到 Git。
 - 发布数据不要包含本机文件路径。
-- 文档以中文为主，尽量使用中文标点。命令、文件名和参数保留行内代码格式。
+- 文档以中文为主，使用中文标点。命令、文件名和参数保留行内代码格式。
 - 前端新增玩法时优先改 `src/game/content.ts` 和 `src/game/engine.ts`，避免把业务逻辑塞进 React 组件。音乐逻辑在 `src/audio/bgm.ts`，不要提交授权不明的第三方音频。
 
 ## 提交前检查
@@ -44,14 +44,15 @@ uv run python scripts/check.py          # 阻塞检查
 uv run python scripts/check.py --all     # 含非阻塞类型检查
 ```
 
-前端改动后，还需要确认 `npm run dev` 和 `npm run build` 都能正常启动/构建。
+前端改动后，还需要确认 `npm run dev` 和 `npm run build` 都能正常启动和构建。
 
 ## 常见文件
 
-- `scripts/build_data.py`：从本地行情数据生成游戏题库。
-- `scripts/validate_data.py`：校验 JSON 和 `game-data.js` 是否一致。
+- `scripts/build_data.py`：从本地行情数据生成市场复盘 JSON（指数收益、行业轮动、风格因子）。
+- `scripts/validate_data.py`：校验已发布数据文件的格式和完整性。
 - `scripts/validate_frontend.js`：校验 Vite/React/Pixi 源码结构和数据引用。
 - `scripts/test_build_data.py`：pytest 单元测试，覆盖纯函数和参数解析。
 - `scripts/check.py`：统一检查入口，支持 `--python` / `--frontend` / `--all`。
 - `scripts/package.ps1`：生成离线分享包。
+- `src/game/engine.test.ts`：Vitest 玩法引擎测试。
 - `.github/workflows/ci.yml`：GitHub Actions 检查流程。

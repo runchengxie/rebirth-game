@@ -5,7 +5,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["dist", "dist-package", "node_modules", "*.tsbuildinfo", "data/game-data.js"],
+    ignores: ["dist", "dist-package", "node_modules", ".venv", "*.tsbuildinfo", "data/game-data.js"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

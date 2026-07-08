@@ -434,6 +434,8 @@ export default function App() {
   const [volume, setVolume] = useState(0.22);
   const [usePixiStage] = useState(canUsePixiStage);
   const bgmRef = useRef<ProceduralBgm | null>(null);
+  const settingsRef = useRef<HTMLDivElement | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [initialCapitalInput, setInitialCapitalInput] = useState(() => String(GAME_DATA[bestInitialYear()].initialCapital || 10000));
   const [state, setState] = useState<GameState>(() => createState());
   const data = GAME_DATA[state.year];
@@ -506,6 +508,30 @@ export default function App() {
     return () => bgmRef.current?.stop();
   }, []);
 
+  useEffect(() => {
+    if (!settingsOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target;
+      if (target instanceof Node && !settingsRef.current?.contains(target)) {
+        setSettingsOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setSettingsOpen(false);
+      }
+    }
+
+    window.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [settingsOpen]);
+
   function restart(year = state.year) {
     const parsedCapital = Number(initialCapitalInput);
     setState(createInitialState(year, GAME_DATA[year], Number.isFinite(parsedCapital) ? parsedCapital : undefined));
@@ -547,45 +573,66 @@ export default function App() {
           <h1>心动 K 线：重生投研部</h1>
           <p>你回到年初投研部工位，和三位研究员一起用真实行情、日程安排和研究判断改写新周目。</p>
         </div>
-        <div className="controls">
-          <div className="segmented" aria-label="年份">
-            {GAME_YEARS.map((year) => (
-              <button className={year === state.year ? "active" : ""} key={year} type="button" onClick={() => changeYear(year)}>
-                {year}线
+        <div className="top-actions" ref={settingsRef}>
+          <button
+            className={`menu-button ${settingsOpen ? "active" : ""}`}
+            type="button"
+            title="打开设置"
+            aria-controls="settingsMenu"
+            aria-expanded={settingsOpen}
+            aria-label="打开设置"
+            onClick={() => setSettingsOpen((open) => !open)}
+          >
+            <span aria-hidden="true" />
+            <span aria-hidden="true" />
+            <span aria-hidden="true" />
+          </button>
+          <div className={`settings-menu ${settingsOpen ? "open" : ""}`} id="settingsMenu">
+            <div className="settings-menu-head">
+              <strong>游戏设置</strong>
+              <span>{state.year} 线</span>
+            </div>
+            <div className="controls">
+              <div className="segmented" aria-label="年份">
+                {GAME_YEARS.map((year) => (
+                  <button className={year === state.year ? "active" : ""} key={year} type="button" onClick={() => changeYear(year)}>
+                    {year}线
+                  </button>
+                ))}
+              </div>
+              <label className="money-input">
+                小金库
+                <input
+                  min="100"
+                  step="100"
+                  type="number"
+                  value={initialCapitalInput}
+                  onChange={(event) => setInitialCapitalInput(event.target.value)}
+                  onBlur={() => restart(state.year)}
+                />
+              </label>
+              <button className="icon-button theme-button" type="button" title="切换主题" aria-label="切换主题" onClick={toggleTheme}>
+                {theme === "dark" ? "☀" : "☾"}
               </button>
-            ))}
+              <button className="icon-button" type="button" title="切换背景音乐" aria-label="切换背景音乐" onClick={() => void toggleMusic()}>
+                {musicOn ? "♪" : "♩"}
+              </button>
+              <label className="volume-input" title="背景音乐音量">
+                音量
+                <input
+                  max="0.7"
+                  min="0"
+                  step="0.01"
+                  type="range"
+                  value={volume}
+                  onChange={(event) => setVolume(Number(event.target.value))}
+                />
+              </label>
+              <button className="icon-button" type="button" title="重新开始" aria-label="重新开始" onClick={() => restart(state.year)}>
+                ↻
+              </button>
+            </div>
           </div>
-          <label className="money-input">
-            小金库
-            <input
-              min="100"
-              step="100"
-              type="number"
-              value={initialCapitalInput}
-              onChange={(event) => setInitialCapitalInput(event.target.value)}
-              onBlur={() => restart(state.year)}
-            />
-          </label>
-          <button className="icon-button theme-button" type="button" title="切换主题" aria-label="切换主题" onClick={toggleTheme}>
-            {theme === "dark" ? "☀" : "☾"}
-          </button>
-          <button className="icon-button" type="button" title="切换背景音乐" aria-label="切换背景音乐" onClick={() => void toggleMusic()}>
-            {musicOn ? "♪" : "♩"}
-          </button>
-          <label className="volume-input" title="背景音乐音量">
-            音量
-            <input
-              max="0.7"
-              min="0"
-              step="0.01"
-              type="range"
-              value={volume}
-              onChange={(event) => setVolume(Number(event.target.value))}
-            />
-          </label>
-          <button className="icon-button" type="button" title="重新开始" aria-label="重新开始" onClick={() => restart(state.year)}>
-            ↻
-          </button>
         </div>
       </header>
 

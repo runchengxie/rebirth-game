@@ -144,6 +144,75 @@ button:disabled {
   line-height: 1.6;
 }
 
+.top-actions {
+  position: relative;
+  z-index: 10;
+  flex: 0 0 auto;
+}
+
+.menu-button {
+  width: 44px;
+  height: 44px;
+  display: inline-grid;
+  align-content: center;
+  justify-items: center;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-strong);
+  color: var(--pink);
+  box-shadow: 0 10px 28px rgba(226, 88, 151, 0.12);
+}
+
+.menu-button span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.menu-button.active,
+.menu-button:hover {
+  border-color: var(--button-bg);
+  background: var(--pink-soft);
+}
+
+.settings-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(420px, calc(100vw - 32px));
+  display: none;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-strong);
+  box-shadow: var(--shadow);
+}
+
+.settings-menu.open {
+  display: block;
+}
+
+.settings-menu-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.settings-menu-head strong {
+  font-size: 15px;
+}
+
+.settings-menu-head span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .controls {
   display: flex;
   align-items: center;
@@ -314,6 +383,30 @@ button:disabled {
   background:
     linear-gradient(90deg, rgba(255, 247, 252, 0.92), rgba(255, 247, 252, 0.28)),
     url("../assets/vn/backgrounds/research-room.png") center / cover;
+}
+
+.pixi-stage-fallback::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -18px;
+  width: min(38vw, 420px);
+  height: 92%;
+  transform: translateX(-50%);
+  background: center bottom / contain no-repeat;
+  filter: drop-shadow(0 22px 30px rgba(47, 22, 51, 0.22));
+}
+
+.vn-stage.character-pink .pixi-stage-fallback::after {
+  background-image: url("../assets/vn/characters/rina-smile.png");
+}
+
+.vn-stage.character-blue .pixi-stage-fallback::after {
+  background-image: url("../assets/vn/characters/misaki-neutral.png");
+}
+
+.vn-stage.character-lavender .pixi-stage-fallback::after {
+  background-image: url("../assets/vn/characters/mei-neutral.png");
 }
 
 .vn-stage-content {
@@ -1199,12 +1292,10 @@ tr:last-child td {
 @media (max-width: 980px) {
   .topbar {
     align-items: flex-start;
-    flex-direction: column;
   }
 
-  .controls {
-    width: 100%;
-    justify-content: flex-start;
+  .settings-menu {
+    right: 0;
   }
 
   .status-band {
@@ -1230,16 +1321,55 @@ tr:last-child td {
 
 @media (max-width: 720px) {
   .app {
-    width: min(100% - 20px, 1240px);
-    padding-top: 14px;
+    width: min(100% - 16px, 1240px);
+    padding-top: 8px;
+  }
+
+  .topbar {
+    align-items: center;
+    gap: 10px;
+    padding: 2px 0 8px;
+  }
+
+  .brand-kicker {
+    display: none;
   }
 
   .brand h1 {
-    font-size: 34px;
+    margin-top: 0;
+    font-size: 24px;
+    line-height: 1.05;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .brand p {
+    display: none;
+  }
+
+  .top-actions {
+    margin-left: auto;
+  }
+
+  .menu-button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .settings-menu {
+    position: fixed;
+    top: 54px;
+    right: 8px;
+    left: 8px;
+    width: auto;
+    max-height: calc(100svh - 68px);
+    overflow-y: auto;
   }
 
   .controls {
     align-items: stretch;
+    flex-direction: column;
   }
 
   .segmented,
@@ -1254,43 +1384,138 @@ tr:last-child td {
   }
 
   .status-band {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .stat,
   .stat:nth-child(2) {
-    border-right: 0;
-    border-bottom: 1px solid var(--line);
+    padding: 8px 7px;
+    border-right: 1px solid var(--line);
+    border-bottom: 0;
+  }
+
+  .stat:nth-child(2n) {
+    border-right: 1px solid var(--line);
   }
 
   .stat:last-child {
-    border-bottom: 0;
+    border-right: 0;
+  }
+
+  .stat span {
+    margin-bottom: 3px;
+    font-size: 10px;
+    line-height: 1.15;
+  }
+
+  .stat strong {
+    font-size: 16px;
+    line-height: 1.1;
   }
 
   .vn-stage,
   .vn-stage-content {
-    min-height: 560px;
+    min-height: clamp(620px, 86svh, 780px);
+  }
+
+  .vn-stage {
+    margin-top: 10px;
+  }
+
+  .pixi-stage-fallback::after {
+    bottom: clamp(148px, 22%, 190px);
+    width: min(86vw, 390px);
+    height: 74%;
   }
 
   .vn-stage-content {
-    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    justify-content: space-between;
+    padding: 12px;
   }
 
   .moe-badges {
-    position: static;
-    justify-content: flex-start;
-    margin-bottom: 10px;
+    top: 10px;
+    right: 10px;
+    gap: 6px;
+    max-width: 38%;
   }
 
-  .chapter-card,
-  .dialogue-box {
-    width: 100%;
+  .moe-badges span {
+    min-height: 24px;
+    padding: 0 7px;
+    font-size: 10px;
   }
 
   .chapter-card {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 4px;
+    width: min(58%, 286px);
+    min-height: 0;
+    align-items: center;
+    flex-direction: row;
+    gap: 7px;
+    padding: 7px 8px;
+    background: rgba(38, 24, 48, 0.58);
+  }
+
+  .chapter-card span {
+    min-height: 21px;
+    padding: 0 6px;
+    font-size: 10px;
+  }
+
+  .chapter-card h2 {
+    font-size: 14px;
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .chapter-card p {
+    display: none;
+  }
+
+  .dialogue-box {
+    width: 100%;
+    max-height: 34%;
+    margin-top: auto;
+    padding: 10px;
+    background: color-mix(in srgb, var(--glass) 76%, transparent);
+  }
+
+  .speaker-row {
+    gap: 8px;
+    margin-bottom: 7px;
+  }
+
+  .speaker-name {
+    min-height: 26px;
+    padding: 0 10px;
+    font-size: 13px;
+  }
+
+  .speaker-role {
+    font-size: 12px;
+  }
+
+  .dialogue-box p {
+    max-height: 6.2em;
+    overflow-y: auto;
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  .dialogue-box small {
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .story-next-button {
+    height: 38px;
+    margin-top: 10px;
   }
 
   .focus-grid,

@@ -16,6 +16,8 @@ function buildYearData(year: number): GameDataYear {
       marketEnd: `${year}1231`,
       themeIndex: "000300.SH",
       themeReturn: 0,
+      sectorRotation: [],
+      styleFactorReturns: [],
       eventSummary: scene.theme.publicContext,
     });
   }

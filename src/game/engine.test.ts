@@ -170,14 +170,16 @@ describe("scoring system", () => {
     const result = makeDecision(state, data, d);
     const score = result.history[0].score!;
 
-    expect(score.logicScore).toBeGreaterThanOrEqual(0);
-    expect(score.logicScore).toBeLessThanOrEqual(30);
-    expect(score.riskScore).toBeGreaterThanOrEqual(0);
-    expect(score.riskScore).toBeLessThanOrEqual(25);
+    expect(score.evidenceScore).toBeGreaterThanOrEqual(0);
+    expect(score.evidenceScore).toBeLessThanOrEqual(20);
+    expect(score.clarityScore).toBeGreaterThanOrEqual(0);
+    expect(score.clarityScore).toBeLessThanOrEqual(20);
+    expect(score.riskAwarenessScore).toBeGreaterThanOrEqual(0);
+    expect(score.riskAwarenessScore).toBeLessThanOrEqual(20);
     expect(score.communicationScore).toBeGreaterThanOrEqual(0);
-    expect(score.communicationScore).toBeLessThanOrEqual(25);
-    expect(score.lifeScore).toBeGreaterThanOrEqual(0);
-    expect(score.lifeScore).toBeLessThanOrEqual(20);
+    expect(score.communicationScore).toBeLessThanOrEqual(20);
+    expect(score.lifeBalanceScore).toBeGreaterThanOrEqual(0);
+    expect(score.lifeBalanceScore).toBeLessThanOrEqual(15);
     expect(score.total).toBeGreaterThanOrEqual(0);
     expect(score.total).toBeLessThanOrEqual(100);
     expect(["S", "A", "B", "C", "D"]).toContain(score.grade);
@@ -185,11 +187,11 @@ describe("scoring system", () => {
 
   it("life choice scores high on life balance", () => {
     const decision = buildMonthScene(0, "2025").nodes.find((n) => n.type === "decision")!;
-    const lifeChoice = decision.decisions!.find((d) => d.category === "life")!;
+    const lifeChoice = decision.decisions!.find((d) => d.category === "self_care")!;
     const state = selectFocus(makeTestState(), "self_care");
     const result = makeDecision(state, emptyYear(), lifeChoice);
     const score = result.history[0].score!;
-    expect(score.lifeScore).toBeGreaterThanOrEqual(10);
+    expect(score.lifeBalanceScore).toBeGreaterThanOrEqual(10);
   });
 });
 

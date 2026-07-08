@@ -142,10 +142,11 @@ function ScorePanel({ result }: { result: RoundResult | undefined }) {
   if (!result || !result.score) return null;
   const { score } = result;
   const bars: Array<{ label: string; value: number; max: number; className: string }> = [
-    { label: "逻辑分", value: score.logicScore, max: 30, className: "score-logic" },
-    { label: "风控分", value: score.riskScore, max: 25, className: "score-risk" },
-    { label: "协作分", value: score.communicationScore, max: 25, className: "score-discipline" },
-    { label: "生活分", value: score.lifeScore, max: 20, className: "score-character" },
+    { label: "证据分", value: score.evidenceScore, max: 20, className: "score-logic" },
+    { label: "清晰分", value: score.clarityScore, max: 20, className: "score-risk" },
+    { label: "风控分", value: score.riskAwarenessScore, max: 20, className: "score-discipline" },
+    { label: "协作分", value: score.communicationScore, max: 20, className: "score-discipline" },
+    { label: "生活分", value: score.lifeBalanceScore, max: 15, className: "score-character" },
   ];
 
   const gradeColors: Record<string, string> = {
@@ -392,7 +393,7 @@ export default function App() {
     if (soundOn) {
       audioRef.current?.playChoice();
       window.setTimeout(() => {
-        audioRef.current?.playResult(decision.category === "research" || decision.category === "communication" ? "success" : "miss");
+        audioRef.current?.playResult(decision.category === "deep_research" || decision.category === "roadshow" || decision.category === "committee_defense" ? "success" : "miss");
       }, 130);
     }
     setState((current) => makeDecision(current, data, decision));

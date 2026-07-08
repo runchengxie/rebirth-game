@@ -7,6 +7,7 @@ export interface CharacterProfile {
   tag: string;
   color: "pink" | "blue" | "lavender";
   intro: string;
+  methodology?: string; // 角色研究框架简述
 }
 
 export interface CharacterRelation {
@@ -14,15 +15,31 @@ export interface CharacterRelation {
   value: number; // 0-100
 }
 
-// ── Research decisions (replacing stock options) ──
+// ── Research decisions (expanded pool, not just 4 per month) ──
+
+export type DecisionCategory =
+  | "deep_research"      // 熬夜写深度研报
+  | "expert_interview"   // 约专家电话会
+  | "roadshow"           // 跟销售去路演
+  | "risk_alert"         // 写风险提示
+  | "self_care"          // 准时下班/生活优先
+  | "help_colleague"     // 帮同事改模型/补数据
+  | "committee_defense"  // 参加投委会答辩
+  | "data_deep_dive";    // 拆成交数据/跑回测
 
 export interface ResearchDecision {
   id: string;
   label: string;           // e.g. "连夜写《低成本推理对应用软件的影响》"
-  category: "research" | "life" | "communication" | "risk";
+  category: DecisionCategory;
   description: string;
   effects: DecisionEffects;
   backgroundNote?: string; // market context shown after choice
+
+  // New: what this decision demonstrates (for richer scoring)
+  evidenceLevel: number;   // 0-20: how much evidence work this involves
+  clarityLevel: number;    // 0-20: how well this makes hypotheses testable
+  riskAwareness: number;   // 0-20: how much risk awareness this shows
+  reflectionValue: number; // 0-15: how much self-reflection this enables
 }
 
 export interface DecisionEffects {
@@ -41,11 +58,12 @@ export interface DecisionEffects {
 
 export interface MarketTheme {
   id: string;
-  period: string;           // e.g. "2025年1月"
-  title: string;            // e.g. "AI叙事升温"
-  publicContext: string;    // 公开信息层面
-  protagonistMemory: string; // 男主知道的未来信息
+  period: string;           // e.g. "一月"
+  title: string;            // e.g. "AI叙事重构"
+  publicContext: string;    // 公开信息层面的事件描述（含具体历史锚点但不用真实公司名）
+  protagonistMemory: string; // 男主知道的历史走向（但不直接给答案）
   gameHook: string;         // 本话引导
+  historicalPrototype?: string; // 设计注释：参考了哪个历史事件（不在游戏内展示）
 }
 
 export interface SceneNode {
@@ -100,16 +118,30 @@ export interface MonthScene {
   nodes: SceneNode[];
 }
 
-// ── Game month data (backend market results for post-mortem) ──
+// ── Game month data (market post-mortem from real data) ──
 
 export interface MarketSnapshot {
   month: string;           // "2025-01"
   label: string;
   marketStart: string;     // "20250102"
   marketEnd: string;
-  themeIndex: string;      // reference index performance
+  themeIndex: string;      // reference index (e.g. "000300.SH")
   themeReturn: number;     // reference index monthly return
-  eventSummary: string;    // what actually happened
+  sectorRotation: SectorReturn[];   // top/bottom sectors this month
+  styleFactorReturns: StyleFactorReturn[]; // Barra-style factor returns
+  eventSummary: string;    // what actually happened (from build_data.py)
+}
+
+export interface SectorReturn {
+  sector: string;          // e.g. "AI应用", "光模块", "消费电子"
+  returnRate: number;      // monthly return
+  rank: number;            // 1 = top performer
+}
+
+export interface StyleFactorReturn {
+  factor: string;          // e.g. "size", "momentum", "value", "volatility"
+  returnRate: number;      // factor premium this month
+  direction: string;       // "小盘溢价" / "大盘溢价" etc.
 }
 
 export interface GameDataYear {
@@ -149,7 +181,7 @@ export interface GameState {
   locked: boolean;
   finished: boolean;
 
-  // Research career metrics (replacing capital)
+  // Research career metrics
   researchCredibility: number;   // 0-100
   committeeAdoption: number;     // 0-100
   portfolioNav: number;          // 组合模拟净值，起点 1.000
@@ -174,12 +206,15 @@ export interface RoundOutcome {
 }
 
 export interface DecisionScore {
-  logicScore: number;        // 0-30  研究逻辑合理性
-  riskScore: number;         // 0-25  风险控制
-  communicationScore: number; // 0-25 沟通协作
-  lifeScore: number;         // 0-20  生活平衡
-  total: number;             // 0-100
-  grade: string;             // S/A/B/C/D
+  // New multi-dimensional scoring
+  evidenceScore: number;      // 0-20  证据是否充分
+  clarityScore: number;       // 0-20  假设是否清晰可验证
+  riskAwarenessScore: number; // 0-20  是否识别反身性和拥挤度
+  communicationScore: number; // 0-20  晨会/路演/内部讨论表现
+  lifeBalanceScore: number;   // 0-15  是否守住了生活节奏
+  portfolioScore: number;     // 0-5   模拟组合表现（弱权重）
+  total: number;              // 0-100
+  grade: string;              // S/A/B/C/D
 }
 
 export interface RoundResult {

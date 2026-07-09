@@ -1,4 +1,6 @@
 import type { CharacterId, CharacterProfile, FocusAction, MarketTheme, MonthScene, ResearchDecision, SceneNode, StoryArc as StoryArcType } from "../types";
+import { THEMES_2025, makeDecisions2025 } from "./content2025";
+import { THEMES_2023, makeDecisions2023 } from "./content2023";
 // Re-export StoryArc for engine.ts
 export type StoryArc = StoryArcType;
 
@@ -46,7 +48,7 @@ export const PROTAGONIST = {
 // Market Themes — 12个月金融主题（2024年历史事件为原型）
 // ═══════════════════════════════════════════════════════════
 
-export const MARKET_THEMES: MarketTheme[] = [
+const THEMES_2024: MarketTheme[] = [
   {
     id: "jan-crash",
     period: "一月",
@@ -182,6 +184,22 @@ export const MARKET_THEMES: MarketTheme[] = [
 ];
 
 // ═══════════════════════════════════════════════════════════
+// Year-specific theme arrays imported from content2023.ts / content2025.ts
+// THEMES_2024 is defined locally below
+// ═══════════════════════════════════════════════════════════
+
+export const YEAR_THEMES: Record<string, MarketTheme[]> = {
+  "2023": THEMES_2023,
+  "2024": THEMES_2024,
+  "2025": THEMES_2025,
+};
+
+export function getTheme(year: string, monthIndex: number): MarketTheme {
+  const themes = YEAR_THEMES[year] || THEMES_2024;
+  return themes[monthIndex % themes.length];
+}
+
+// ═══════════════════════════════════════════════════════════
 // Story Arcs — 12 章剧情
 // ═══════════════════════════════════════════════════════════
 
@@ -194,7 +212,7 @@ export const STORY_ARCS: StoryArc[] = [
     mood: "温柔",
     line: "你在年初的投研部工位醒来，屏幕旁贴着一张便签：这次的研究记录，由我来监督你哦。",
     mission: "林若宁把四个研究方向摆在桌上。选一个，再安排本话日程。",
-    theme: MARKET_THEMES[0],
+    theme: THEMES_2024[0],
   },
   {
     characterId: "lin_ruoning",
@@ -204,7 +222,7 @@ export const STORY_ARCS: StoryArc[] = [
     mood: "认真",
     line: "房租、通勤和咖啡预算同时报警。林若宁敲了敲你的桌面：模型改对了，才有资格想房租的事。",
     mission: "本话选择会影响你的研究可信度，看你拿不拿得出可以被验证的判断。",
-    theme: MARKET_THEMES[1],
+    theme: THEMES_2024[1],
   },
   {
     characterId: "chen_xinghe",
@@ -214,7 +232,7 @@ export const STORY_ARCS: StoryArc[] = [
     mood: "兴奋",
     line: "午休还没开始，陈星禾就把平板推过来：今天早盘的订单流结构很有意思。大单净买集中在三个方向，但盘口厚度同时也在收窄。你觉得这是真放量还是脉冲？",
     mission: "陈星禾把因子拆解和订单流摆在你面前，帮她在四个研究方向里选一个她愿意下单的方向。",
-    theme: MARKET_THEMES[2],
+    theme: THEMES_2024[2],
   },
   {
     characterId: "lin_ruoning",
@@ -224,7 +242,7 @@ export const STORY_ARCS: StoryArc[] = [
     mood: "温柔",
     line: "雨点敲着玻璃，林若宁把一叠财报推到桌子中间：这份中报，毛利率回升但经营现金流在降。你觉得这个数据矛盾该怎么解释？",
     mission: "选择本月研究路径：你是去深挖上下游合同和订单，还是先跟陈星禾对照成交数据，还是相信第一印象？",
-    theme: MARKET_THEMES[3],
+    theme: THEMES_2024[3],
   },
   {
     characterId: "zhou_mingzhao",
@@ -234,7 +252,7 @@ export const STORY_ARCS: StoryArc[] = [
     mood: "沉着",
     line: "周明昭在白板上画了一条估值分位数曲线：当一个方向被所有人挂在嘴边的时候，它的风险溢价已经接近于零。你们看到的是机会，我看到的是拥挤度。",
     mission: "本话要你在三种分析框架之间做判断：基本面、资金面还是宏观风控。周明昭不会直接给你答案，但她的白板不会骗人。",
-    theme: MARKET_THEMES[4],
+    theme: THEMES_2024[4],
   },
   {
     characterId: "lin_ruoning",
@@ -244,7 +262,7 @@ export const STORY_ARCS: StoryArc[] = [
     mood: "害羞",
     line: "末班车里很安静。林若宁望着窗外：你上一次怀疑自己的判断是什么时候？我在想你的分析框架有没有漏掉关键变量，而不是在怀疑结果。",
     mission: "本话会拉开分歧：你相信估值终将回归、相信资金流向不可逆、还是相信你自己亲手验证过的数据？",
-    theme: MARKET_THEMES[5],
+    theme: THEMES_2024[5],
   },
   {
     characterId: "chen_xinghe",
@@ -254,7 +272,7 @@ export const STORY_ARCS: StoryArc[] = [
     mood: "兴奋",
     line: "半年过去，很多人从自信变成了沉默。陈星禾调出一张因子收益热力图：你看，这几个月动量因子和波动率因子的相关性在飙升。市场在同时追涨和避险，这是教科书级的矛盾信号。",
     mission: "用一笔选择回答她：你的判断到底是靠框架验证出来的，还是靠直觉撑过来的。",
-    theme: MARKET_THEMES[6],
+    theme: THEMES_2024[6],
   },
   {
     characterId: "zhou_mingzhao",
@@ -264,7 +282,7 @@ export const STORY_ARCS: StoryArc[] = [
     mood: "观察",
     line: "投委会的灯亮起来。周明昭把你的研究记录标上记号：这次你没有只讲方向，你把概率和赔率都写出来了。这条线，开始有说服力了。",
     mission: "选对了方向，你从边缘座位进入主线讨论。选错了，明天继续改演示稿。",
-    theme: MARKET_THEMES[7],
+    theme: THEMES_2024[7],
   },
   {
     characterId: "lin_ruoning",
@@ -274,7 +292,7 @@ export const STORY_ARCS: StoryArc[] = [
     mood: "在意",
     line: "电话那头停顿了很久。林若宁说：这次我不替你选。三个同事有三种框架，我的基本面、陈星禾的量化信号、周明昭的风控。你决定跟谁站在一起，就会走进谁的叙事，就会走进谁的叙事。",
     mission: "四个选项背后是四种研究路线，结果会反馈在各个维度上。",
-    theme: MARKET_THEMES[8],
+    theme: THEMES_2024[8],
   },
   {
     characterId: "chen_xinghe",
@@ -284,7 +302,7 @@ export const STORY_ARCS: StoryArc[] = [
     mood: "高涨",
     line: "所有群都在刷同一个方向。陈星禾把alpha衰减曲线拉出来：三天前这个信号的预测力还在，今天已经掉到噪音区间了。你还想冲进去吗？",
     mission: "在喧嚣里选择：跟随市场情绪、逆向下注、还是等信号重新确认。",
-    theme: MARKET_THEMES[9],
+    theme: THEMES_2024[9],
   },
   {
     characterId: "zhou_mingzhao",
@@ -294,7 +312,7 @@ export const STORY_ARCS: StoryArc[] = [
     mood: "紧张",
     line: "年末排名倒计时。周明昭难得露出笑意：有人为了排名放弃了方法论，有人守住了框架但落后了排名。你今年的研究档案，会成为哪种人？",
     mission: "这次选择决定结局基调：闪耀研究员、可靠打工人，还是疲劳值爆表的研究机器。",
-    theme: MARKET_THEMES[10],
+    theme: THEMES_2024[10],
   },
   {
     characterId: "lin_ruoning",
@@ -304,7 +322,7 @@ export const STORY_ARCS: StoryArc[] = [
     mood: "心动",
     line: "最后一个月，城市灯光像一张温柔的走势图。林若宁看着你：不要说赚了多少，告诉我你今年学到的框架，够不够陪你走进下一年。",
     mission: "完成最后一次选择，结算研究可信度、团队信任、生活平衡和三位同事关系。",
-    theme: MARKET_THEMES[11],
+    theme: THEMES_2024[11],
   },
 ];
 
@@ -312,7 +330,15 @@ export const STORY_ARCS: StoryArc[] = [
 // Monthly Decision Pool — 每月5-6个工作/生活选择
 // ═══════════════════════════════════════════════════════════
 
-function makeResearchDecisions(monthIndex: number): ResearchDecision[] {
+function makeResearchDecisions(year: string, monthIndex: number): ResearchDecision[] {
+  // Route to year-specific decision pools
+  if (year === "2025") {
+    return makeDecisions2025(monthIndex);
+  }
+  if (year === "2023") {
+    return makeDecisions2023(monthIndex);
+  }
+  // Default: 2024 decision pool
   const allMonths: ResearchDecision[][] = [
     // ══ 一月：流动性冲击与雪球敲入链 ══
     [
@@ -1001,18 +1027,19 @@ function makeResearchDecisions(monthIndex: number): ResearchDecision[] {
 // ═══════════════════════════════════════════════════════════
 
 export function buildMonthScene(monthIndex: number, year?: string): MonthScene {
+  const actualYear = year || "2025";
   const story = STORY_ARCS[monthIndex % STORY_ARCS.length];
   const monthNum = monthIndex + 1;
-  const month = `${year || "2025"}-${String(monthNum).padStart(2, "0")}`;
-  const label = `${year || "2025"}年${monthNum}月`;
-  const theme = story.theme;
+  const month = `${actualYear}-${String(monthNum).padStart(2, "0")}`;
+  const label = `${actualYear}年${monthNum}月`;
+  const theme = getTheme(actualYear, monthIndex);
 
-  if (year === "2025" && monthIndex === 0) {
+  if (actualYear === "2025" && monthIndex === 0) {
     return build2025Prologue(month, label, theme);
   }
 
-  // Default scene for non-2025 or non-prologue months
-  const decisions = makeResearchDecisions(monthIndex);
+  // Default scene for non-prologue months
+  const decisions = makeResearchDecisions(actualYear, monthIndex);
   const nodes: SceneNode[] = [
     {
       id: `m${monthIndex}-memory`,
@@ -1070,7 +1097,7 @@ export function buildMonthScene(monthIndex: number, year?: string): MonthScene {
 }
 
 function build2025Prologue(month: string, label: string, theme: MarketTheme): MonthScene {
-  const decisions = makeResearchDecisions(0);
+  const decisions = makeResearchDecisions("2025", 0);
   const nodes: SceneNode[] = [
     {
       id: "2025p-memory",
@@ -1229,6 +1256,8 @@ function build2025Prologue(month: string, label: string, theme: MarketTheme): Mo
 // ═══════════════════════════════════════════════════════════
 
 export const YEAR_SCENE_BUILDERS: Record<string, (monthIndex: number) => MonthScene> = {
+  "2023": (monthIndex: number) => buildMonthScene(monthIndex, "2023"),
+  "2024": (monthIndex: number) => buildMonthScene(monthIndex, "2024"),
   "2025": (monthIndex: number) => buildMonthScene(monthIndex, "2025"),
 };
 

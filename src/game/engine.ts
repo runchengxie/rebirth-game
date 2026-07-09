@@ -1,4 +1,4 @@
-import { FOCUS_ACTIONS, GRADE_REVIEWS, STORY_ARCS, buildMonthScene } from "./content";
+import { FOCUS_ACTIONS, GRADE_REVIEWS, STORY_ARCS, buildMonthScene, getTheme } from "./content";
 import type {
   CharacterId,
   DecisionCategory,
@@ -45,15 +45,17 @@ export function formatDelta(value: number): string {
 // Story / scene lookup
 // ═══════════════════════════════════════════════════════════
 
-export function storyForMonth(index: number): StoryArc {
-  return STORY_ARCS[index % STORY_ARCS.length];
+export function storyForMonth(index: number, year?: string): StoryArc {
+  const arc = STORY_ARCS[index % STORY_ARCS.length];
+  if (year) {
+    const theme = getTheme(year, index);
+    return { ...arc, theme };
+  }
+  return arc;
 }
 
 export function sceneForMonth(index: number, year?: string): MonthScene {
-  if (year === "2025") {
-    return buildMonthScene(index, "2025");
-  }
-  return buildMonthScene(index);
+  return buildMonthScene(index, year);
 }
 
 export function currentSceneNode(state: GameState): MonthScene["nodes"][number] {
@@ -254,7 +256,7 @@ export function selectFocus(state: GameState, focusId: string): GameState {
 
 export function makeDecision(state: GameState, _data: GameDataYear, decision: ResearchDecision): GameState {
   if (state.locked || state.finished) return state;
-  const story = storyForMonth(state.monthIndex);
+  const story = storyForMonth(state.monthIndex, state.year);
   const focus = focusById(state.focusId);
   const outcome = buildOutcome(decision, story, focus);
   const characterId = story.characterId;

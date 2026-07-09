@@ -248,7 +248,7 @@ export default function App() {
   const sceneNode = currentSceneNode(state);
   const decisionNode = sceneNode.type === "decision" ? sceneNode : null;
   const isDecision = Boolean(decisionNode);
-  const story = storyForMonth(state.monthIndex);
+  const story = storyForMonth(state.monthIndex, state.year);
   const lineCharacterId: CharacterId = sceneNode.type === "dialogue" ? sceneNode.characterId : story.characterId;
   const activeCharacter = CHARACTERS[lineCharacterId];
   const sceneBackground = sceneNode.type === "dialogue" ? sceneNode.bg || "research-room" : decisionNode?.bg || "briefing-room";

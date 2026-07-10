@@ -185,31 +185,33 @@ function CharacterRoutes({
 }) {
   return (
     <div className="character-routes" aria-label="同事关系">
-      {Object.values(CHARACTERS).map((character) => {
-        const relation = state.relations[character.id];
-        return (
-          <div
-            className={`character-card ${character.color} ${character.id === activeId ? "active" : ""}`}
-            key={character.id}
-          >
-            <div className="character-avatar" aria-hidden="true">
-              {character.name.slice(0, 1)}
-            </div>
-            <div className="character-copy">
-              <div className="character-head">
-                <strong>{character.name}</strong>
-                <span>{character.role}</span>
+      {Object.values(CHARACTERS)
+        .filter((character) => character.kind !== "peer")
+        .map((character) => {
+          const relation = state.relations[character.id];
+          return (
+            <div
+              className={`character-card ${character.color} ${character.id === activeId ? "active" : ""}`}
+              key={character.id}
+            >
+              <div className="character-avatar" aria-hidden="true">
+                {character.name.slice(0, 1)}
               </div>
-              <p>{character.intro}</p>
-              <div className="mini-meter">
-                <span>{character.tag}</span>
-                <b>{relation}/100</b>
-                <i style={{ width: `${Math.max(0, Math.min(100, relation))}%` }} />
+              <div className="character-copy">
+                <div className="character-head">
+                  <strong>{character.name}</strong>
+                  <span>{character.role}</span>
+                </div>
+                <p>{character.intro}</p>
+                <div className="mini-meter">
+                  <span>{character.tag}</span>
+                  <b>{relation}/100</b>
+                  <i style={{ width: `${Math.max(0, Math.min(100, relation))}%` }} />
+                </div>
               </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
     </div>
   );
 }
@@ -530,11 +532,13 @@ export default function App() {
       </header>
 
       {state.milestone ? (() => {
-        const isPeer = CHARACTERS[state.milestone]?.kind === "peer";
+        // peer（赵承宇）的关系进度当作隐藏彩蛋，常规 UI 不弹里程碑横幅，
+        // 免得反而把「搭档默契」泄露出来。导师线照常显示关系升温。
+        if (CHARACTERS[state.milestone]?.kind === "peer") return null;
         return (
-          <div className={isPeer ? "milestone-banner peer" : "milestone-banner"} role="status" aria-label={isPeer ? "搭档默契" : "关系升温"}>
-            <span>{isPeer ? "搭档默契" : "关系升温"}</span>
-            <strong>{isPeer ? `你和${CHARACTERS[state.milestone].name}的搭档默契又深了一层` : `你和${CHARACTERS[state.milestone].name}的关系更近了一步`}</strong>
+          <div className="milestone-banner" role="status" aria-label="关系升温">
+            <span>关系升温</span>
+            <strong>你和{CHARACTERS[state.milestone].name}的关系更近了一步</strong>
           </div>
         );
       })() : null}

@@ -414,15 +414,6 @@ button:disabled {
   background-image: none;
 }
 
-/* 里程碑横幅：peer（赵承宇）用 slate 冷色调去浪漫化，和导师的暖色关系升温区分开。 */
-.milestone-banner.peer {
-  border-left: 3px solid var(--slate, #5b6b7a);
-  color: var(--slate, #5b6b7a);
-}
-.milestone-banner.peer strong {
-  color: var(--slate, #5b6b7a);
-}
-
 .vn-stage-content {
   position: relative;
   z-index: 2;

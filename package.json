@@ -8,7 +8,10 @@
     "test": "vitest",
     "test:run": "vitest run",
     "typecheck": "tsc -b",
-    "validate:frontend": "node scripts/validate_frontend.js"
+    "validate:frontend": "node scripts/validate_frontend.js",
+    "dump:2023": "node scripts/content-dumps/dump2023.mjs",
+    "dump:2024": "node scripts/content-dumps/dump2024.mjs",
+    "dump:content": "npm run dump:2023 && npm run dump:2024"
   },
   "dependencies": {
     "@drincs/pixi-vn": "^1.8.22",

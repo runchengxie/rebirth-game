@@ -448,6 +448,130 @@ const PEER_BRANCH: Branch = {
   },
 };
 
+// ── 赵承宇（同级同事）全年「在场」+ 延迟后果弧 ──
+// 三处分支共同构成一条干净的 peer 线：第一话求助（埋种）→ 年中实战压力测试
+// （再加一次在场）→ 第九话还人情（延迟后果兑现）。全部不进浪漫线、不进图鉴，
+// framework 一律借给陈星禾；基调是同级同事之间「记人情、互相兜底」的正向友情。
+
+// 第一话：赵承宇卡在一笔因子回测上，玩家可抽半天帮一把。选了则好感给赵承宇，
+// 并在引擎里埋下 helped_zhao 旗标（第九话还人情）。month gte 1 = 第一话（序章为 0）。
+const PEER_HELP_BRANCH: Branch = {
+  id: "peer-zhao-help",
+  label: "赵承宇卡在因子回测上",
+  when: { kind: "month", gte: 1 },
+  once: true,
+  injectAt: "after-memory",
+  contribute: {
+    nodes: [
+      {
+        id: "peer-zhao-help-setup",
+        type: "dialogue",
+        characterId: "zhao_chengyu",
+        speaker: "赵承宇",
+        role: "交易台同级同事",
+        mood: "随意",
+        text: "赵承宇端着咖啡蹭到你工位：有个因子回测卡住了，分组收益怎么都对不齐基准。你们研究员不是最会抠这种细节吗？帮我把这口气顺了，下回你那份东西要上盘口，我给你盯着成交。",
+        prompt: "点击继续。",
+        pose: "soft",
+        bg: "research-room",
+        bgm: "morning-loop",
+        voiceCue: "key",
+      },
+    ],
+    decisions: [
+      {
+        ...d({
+          id: "peer-zhao-help-offer",
+          label: "抽半天帮赵承宇顺一遍因子回测",
+          category: "help_colleague",
+          description: "同事卡住了，顺手帮一把。代价是少了半天写研报的时间，但交易台欠你一次人情。",
+          to: "zhao_chengyu",
+          val: 3,
+          fx: { teamTrust: 6, researchCredibility: 2, fatigue: 4, lifeBalance: -2 },
+          ev: 8, cl: 8, rk: 6, rf: 6,
+          note: "实战派的账本记在盘口上：你帮过他，他就会记得。",
+        }),
+        // 教学归属借给陈星禾（量价/因子），赵承宇本人不进知识卡图鉴。
+        framework: "chen_xinghe",
+      },
+    ],
+    setFlags: { peer_zhao_met: true },
+  },
+};
+
+// 年中：在 PEER_BRANCH 之外，给夏天再加一次「在场」。把研究 vs 成交的张力再摆
+// 一次，也暴露他信成交胜过框架、容易在热闹里追涨的毛病。
+const PEER_MID_BRANCH: Branch = {
+  id: "peer-zhao-mid",
+  label: "赵承宇的盘中喊话",
+  when: {
+    kind: "and",
+    of: [
+      { kind: "flag", key: "peer_zhao_met" },
+      { kind: "month", gte: 5 },
+    ],
+  },
+  once: true,
+  injectAt: "after-memory",
+  contribute: {
+    nodes: [
+      {
+        id: "peer-zhao-mid-banter",
+        type: "dialogue",
+        characterId: "zhao_chengyu",
+        speaker: "赵承宇",
+        role: "交易台同级同事",
+        mood: "兴奋",
+        text: "赵承宇隔着工位喊：你上回那份推演，今早盘口真给面子——放量站上去了。不过别飘，量价齐升第三天最容易是赶顶。要信成交，也要留根风控的绳子，别学我光顾着冲。",
+        prompt: "点击继续。",
+        pose: "soft",
+        bg: "research-room",
+        bgm: "morning-loop",
+        voiceCue: "key",
+      },
+    ],
+    decisions: [
+      {
+        ...d({
+          id: "peer-zhao-mid-check",
+          label: "跟赵承宇对照一次盘中信号与研究的偏差",
+          category: "data_deep_dive",
+          description: "研究说向好，盘口却在收窄。去交易台看一眼真实承接，免得在热闹里追涨。代价是半天案头时间。",
+          to: "zhao_chengyu",
+          val: 4,
+          fx: { viewAccuracy: 8, teamTrust: 6, researchCredibility: 4, fatigue: 4, lifeBalance: -2 },
+          ev: 10, cl: 10, rk: 8, rf: 8,
+          note: "他信成交胜过框架，但你俩合起来，研究才不被盘口带节奏。",
+        }),
+        framework: "chen_xinghe",
+      },
+    ],
+    setFlags: { peer_zhao_mid: true },
+  },
+};
+
+// 第九话：呼应第一话的 helped_zhao 旗标，做延迟后果兑现。只在玩家真的帮过他时
+// 触发。基调是同级同事之间「记人情、互相兜底」的正向友情，不进浪漫线、不进图鉴。
+const PEER_DEBT_BRANCH: Branch = {
+  id: "peer-zhao-payback",
+  label: "赵承宇的人情返还",
+  when: {
+    kind: "and",
+    of: [{ kind: "flag", key: "helped_zhao" }, { kind: "month", gte: 8 }],
+  },
+  once: true,
+  contribute: {
+    nodes: [
+      monoNode(
+        "peer-zhao-payback",
+        "zhao_chengyu",
+        "认真",
+        "你还记得年初帮我顺因子那次吗？上个月投委会临时要人顶一个席位，我点了你的名——能扛住研究、也看得懂盘口的人，交易台认。以后这种门，我给你留着。",
+      ),
+    ],
+  },
+};
+
 export const BRANCHES: Branch[] = [
   {
     id: "route-research",
@@ -627,6 +751,9 @@ export const BRANCHES: Branch[] = [
   // 同级同事赵承宇的实战插话：不进浪漫线、不进图鉴。teamTrust 够高（你是个体面
   // 队友）且在年中之后触发一次，用盘口视角给研究做压力测试，也暴露他自己的毛病——
   // 他信成交胜过信框架，容易在热闹里追涨。framework 指给陈星禾，避免给玩家塞知识卡。
+  PEER_HELP_BRANCH,
+  PEER_MID_BRANCH,
+  PEER_DEBT_BRANCH,
   PEER_BRANCH,
 ];
 

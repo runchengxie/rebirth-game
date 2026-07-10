@@ -321,9 +321,13 @@ export function makeDecision(state: GameState, _data: GameDataYear, decision: Re
   if (score.grade === "S") nextFlags[`respect_${framework}`] = true;
   if (score.grade === "D") nextFlags[`watch_${framework}`] = true;
   if (isParachuted) nextFlags[`parachuted_${framework}`] = true;
-  // Delayed-consequence seed: helping 陈星禾 early earns a later closed-door seat.
-  if (decision.category === "help_colleague" && framework === "chen_xinghe") {
-    nextFlags.helped_xinghe = true;
+  // Delayed-consequence seeds: helping a colleague early earns a later favour.
+  // 陈星禾 → 闭门席位；赵承宇 → 第九话人情返还。两者都靠「帮同事」这一选择埋种，
+  // 用主要好感对象区分，而非 framework（赵承宇的教学归属借给陈星禾，本就不进图鉴）。
+  if (decision.category === "help_colleague") {
+    const primaryRel = decision.effects.characterRelations[0]?.characterId;
+    if (primaryRel === "chen_xinghe") nextFlags.helped_xinghe = true;
+    if (primaryRel === "zhao_chengyu") nextFlags.helped_zhao = true;
   }
   const businessVerdict = buildBusinessVerdict(decision, story.theme, story, score);
 

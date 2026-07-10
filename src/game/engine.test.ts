@@ -141,6 +141,48 @@ describe("game engine", () => {
   });
 });
 
+describe("赵承宇 peer 弧（延迟后果）", () => {
+  function stateAtMonth(m: number, flags: Record<string, boolean | number> = {}): GameState {
+    const base = createInitialState("2025");
+    return { ...base, monthIndex: m, locked: false, sceneNodeIndex: 0, selectedId: null, flags: { ...base.flags, ...flags } };
+  }
+
+  it("第一话帮赵承宇埋下 helped_zhao 旗标，第九话兑现人情返还", () => {
+    const data = emptyYear();
+    const month1 = stateAtMonth(1);
+    const scene1 = buildMonthScene(1, "2025", month1);
+    const decisionNode1 = scene1.nodes.find((n) => n.type === "decision")!;
+    const helpDecision = decisionNode1.decisions!.find((d) => d.id === "peer-zhao-help-offer");
+    expect(helpDecision).toBeDefined();
+
+    const afterHelp = makeDecision(month1, data, helpDecision!);
+    expect(getFlag(afterHelp, "helped_zhao")).toBe(true);
+    expect(getFlag(afterHelp, "peer_zhao_met")).toBe(true);
+    expect(afterHelp.relations.zhao_chengyu).toBeGreaterThan(10);
+
+    // 第九话（monthIndex 8）：旗标已立，payback 节点应被注入。
+    const month9 = { ...afterHelp, monthIndex: 8, locked: false, selectedId: null };
+    const scene9 = buildMonthScene(8, "2025", month9);
+    const payback = scene9.nodes.find((n) => n.id === "peer-zhao-payback");
+    expect(payback).toBeDefined();
+  });
+
+  it("若第一话没帮赵承宇，第九话不触发人情返还", () => {
+    const data = emptyYear();
+    const month1 = stateAtMonth(1);
+    const scene1 = buildMonthScene(1, "2025", month1);
+    const decisionNode1 = scene1.nodes.find((n) => n.type === "decision")!;
+    const other = decisionNode1.decisions!.find((d) => d.id !== "peer-zhao-help-offer")!;
+    const afterOther = makeDecision(month1, data, other);
+    expect(getFlag(afterOther, "helped_zhao")).not.toBe(true);
+
+    const month9 = { ...afterOther, monthIndex: 8, locked: false, selectedId: null };
+    const scene9 = buildMonthScene(8, "2025", month9);
+    const payback = scene9.nodes.find((n) => n.id === "peer-zhao-payback");
+    expect(payback).toBeUndefined();
+  });
+});
+
 describe("utility functions", () => {
   it("clamp values to [0, 100]", () => {
     expect(clamp(-5)).toBe(0);

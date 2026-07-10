@@ -24,6 +24,11 @@ import { FocusSelector } from "./components/FocusSelector";
 import { HistoryPanel } from "./components/HistoryPanel";
 import { DecisionCard } from "./components/DecisionCard";
 import { StatusBar } from "./components/StatusBar";
+// Phase 3 spike：用 @drincs/pixi-vn 接管第一话的 VN runtime（仅 ?pixivn=1 时启用）。
+// 用 lazy 加载，确保 @drincs/pixi-vn 只在开启 spike 时才会被打包进运行时。
+const Chapter1Spike = lazy(() =>
+  import("./spike/pixivn/Chapter1Spike").then((module) => ({ default: module.Chapter1Spike })),
+);
 
 const PixiStage = lazy(() =>
   import("./components/PixiStage").then((module) => ({ default: module.PixiStage })),
@@ -238,6 +243,9 @@ export default function App() {
   const [soundOn, setSoundOn] = useState(false);
   const [soundVolume, setSoundVolume] = useState(0.18);
   const [usePixiStage] = useState(canUsePixiStage);
+  const [usePixivnSpike] = useState(
+    () => new URLSearchParams(window.location.search).get("pixivn") === "1",
+  );
   const bgmRef = useRef<ProceduralBgm | null>(null);
   const audioRef = useRef<NarrativeAudio | null>(null);
   const lastLineVoiceRef = useRef("");
@@ -398,6 +406,20 @@ export default function App() {
       }, 130);
     }
     setState((current) => makeDecision(current, data, decision));
+  }
+
+  if (usePixivnSpike) {
+    // Phase 3 概念验证：Pixi'VN 驱动第一话的叙事状态机，React 面板与
+    // 财务引擎原样复用。不会触碰主游戏逻辑，也不会合并到 main。
+    return (
+      <Suspense fallback={<div className="app"><p>加载 Pixi'VN 第一话 spike…</p></div>}>
+        <Chapter1Spike
+          state={state}
+          onDecision={makeDecisionWithSound}
+          onFocus={selectFocusWithSound}
+        />
+      </Suspense>
+    );
   }
 
   return (

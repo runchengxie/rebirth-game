@@ -11,6 +11,7 @@
     "validate:frontend": "node scripts/validate_frontend.js"
   },
   "dependencies": {
+    "@drincs/pixi-vn": "^1.8.22",
     "pixi.js": "^8.19.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"

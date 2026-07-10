@@ -1,10 +1,12 @@
 import { CHARACTERS, AFFINITY_GATE, AFFINITY_TRUE, MENTOR_TEACHINGS } from "../game/content";
-import { bestRoute, formatNav } from "../game/engine";
+import { bestRoute, formatNav, isBestPartner } from "../game/engine";
 import type { GameState, MentorId } from "../types";
 
 export function EndingPanel({ state }: { state: GameState }) {
   if (!state.finished || state.history.length === 0) return null;
-  const leadId = bestRoute(state);
+  // 「最佳搭档」结局优先于导师浪漫线：命中时 leadId 切到赵承宇，走并肩搭档分支。
+  const partner = isBestPartner(state);
+  const leadId = partner ? "zhao_chengyu" : bestRoute(state);
   const lead = CHARACTERS[leadId];
   const leadRelation = state.relations[leadId];
 
@@ -19,7 +21,11 @@ export function EndingPanel({ state }: { state: GameState }) {
   let title = "普通结局：可靠研究员线";
   let copy = "你还没有解锁最高评价，但每一次复盘都在让下一周目更接近好结局。";
 
-  if (leadRelation >= AFFINITY_TRUE && state.researchCredibility >= 80 && state.teamTrust >= 70) {
+  if (partner) {
+    // 并肩搭档结局，与浪漫心动线彻底分流：一个看框架、一个看盘口，组合收益最高。
+    title = "最佳搭档线：框架与盘口的双人舞";
+    copy = "你没和谁谈恋爱，但你和赵承宇成了投研部最稳的一对搭档——一个把假设钉进框架，一个把框架压进盘口。这一年组合收益最高的几笔，都写着你们俩的名字。";
+  } else if (leadRelation >= AFFINITY_TRUE && state.researchCredibility >= 80 && state.teamTrust >= 70) {
     title = `真结局·心动线：${lead.name}的认可`;
     copy = `你不仅把研究可信度推到行业前沿，和${lead.name}的关系也走到了最深处。这一年的研究札记里，最值得存档的不是研报，是你们一起验证过的信任。`;
   } else if (leadRelation >= AFFINITY_GATE && state.researchCredibility >= 60 && state.lifeBalance >= 50) {

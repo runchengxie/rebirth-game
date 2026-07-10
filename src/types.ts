@@ -57,6 +57,10 @@ export interface ResearchDecision {
   teaches?: KnowledgeCard;
   // Short, plain-language framing of the business angle this choice probes.
   businessAngle?: string;
+  // Optional flags this specific choice writes back to GameState. Lets a single
+  // branch carry several mutually-exclusive decisions (e.g. a peer disagreement
+  // with 认同/吵架/和解 stances) without the engine special-casing decision ids.
+  setsFlags?: Record<string, boolean | number>;
 }
 
 // A knowledge card: a concept taught by a colleague *in their own voice*,

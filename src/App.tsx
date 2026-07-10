@@ -529,12 +529,15 @@ export default function App() {
         </div>
       </header>
 
-      {state.milestone ? (
-        <div className="milestone-banner" role="status" aria-label="关系升温">
-          <span>关系升温</span>
-          <strong>你和{CHARACTERS[state.milestone].name}的关系更近了一步</strong>
-        </div>
-      ) : null}
+      {state.milestone ? (() => {
+        const isPeer = CHARACTERS[state.milestone]?.kind === "peer";
+        return (
+          <div className={isPeer ? "milestone-banner peer" : "milestone-banner"} role="status" aria-label={isPeer ? "搭档默契" : "关系升温"}>
+            <span>{isPeer ? "搭档默契" : "关系升温"}</span>
+            <strong>{isPeer ? `你和${CHARACTERS[state.milestone].name}的搭档默契又深了一层` : `你和${CHARACTERS[state.milestone].name}的关系更近了一步`}</strong>
+          </div>
+        );
+      })() : null}
 
       <StatusBar state={state} />
 

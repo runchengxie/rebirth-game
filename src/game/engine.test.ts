@@ -7,6 +7,7 @@ import {
   getFlag,
   gradeReviewText,
   hasFlag,
+  isBestPartner,
   makeDecision,
   selectFocus,
   setFlag,
@@ -180,6 +181,68 @@ describe("赵承宇 peer 弧（延迟后果）", () => {
     const scene9 = buildMonthScene(8, "2025", month9);
     const payback = scene9.nodes.find((n) => n.id === "peer-zhao-payback");
     expect(payback).toBeUndefined();
+  });
+});
+
+describe("赵承宇 分歧张力线（认同/吵架/和解）", () => {
+  function peerState(m: number, flags: Record<string, boolean | number> = {}): GameState {
+    const base = createInitialState("2025");
+    return { ...base, monthIndex: m, locked: false, sceneNodeIndex: 0, selectedId: null, flags: { ...base.flags, peer_zhao_met: true, ...flags } };
+  }
+
+  it("年中注入三种立场的分歧决策", () => {
+    const scene = buildMonthScene(3, "2025", peerState(3));
+    const dNode = scene.nodes.find((n) => n.type === "decision")!;
+    const ids = dNode.decisions!.map((d) => d.id);
+    expect(ids).toContain("peer-clash-stand");
+    expect(ids).toContain("peer-clash-yield");
+    expect(ids).toContain("peer-clash-fence");
+  });
+
+  it("选「当场驳他」→ 后期只走和解走向，不触发认同/中性", () => {
+    const data = emptyYear();
+    const scene = buildMonthScene(3, "2025", peerState(3));
+    const stand = scene.nodes.find((n) => n.type === "decision")!.decisions!.find((d) => d.id === "peer-clash-stand")!;
+    const after = makeDecision(peerState(3), data, stand);
+    expect(getFlag(after, "peer_stand")).toBe(true);
+    expect(getFlag(after, "peer_tension")).toBe(true);
+    expect(getFlag(after, "peer_yield")).not.toBe(true);
+
+    const later = { ...after, monthIndex: 7, locked: false, selectedId: null };
+    const scene7 = buildMonthScene(7, "2025", later);
+    expect(scene7.nodes.find((n) => n.id === "peer-zhao-resolve-stand")).toBeDefined();
+    expect(scene7.nodes.find((n) => n.id === "peer-zhao-resolve-yield")).toBeUndefined();
+    expect(scene7.nodes.find((n) => n.id === "peer-zhao-resolve-fence")).toBeUndefined();
+  });
+
+  it("选「先顺盘口」→ 后期走认同走向", () => {
+    const data = emptyYear();
+    const scene = buildMonthScene(3, "2025", peerState(3));
+    const yieldD = scene.nodes.find((n) => n.type === "decision")!.decisions!.find((d) => d.id === "peer-clash-yield")!;
+    const after = makeDecision(peerState(3), data, yieldD);
+    expect(getFlag(after, "peer_yield")).toBe(true);
+
+    const later = { ...after, monthIndex: 7, locked: false, selectedId: null };
+    const scene7 = buildMonthScene(7, "2025", later);
+    expect(scene7.nodes.find((n) => n.id === "peer-zhao-resolve-yield")).toBeDefined();
+    expect(scene7.nodes.find((n) => n.id === "peer-zhao-resolve-stand")).toBeUndefined();
+  });
+});
+
+describe("赵承宇 最佳搭档结局", () => {
+  function partnerState(zhao: number, trust: number): GameState {
+    const base = createInitialState("2025");
+    return { ...base, relations: { ...base.relations, zhao_chengyu: zhao }, teamTrust: trust };
+  }
+
+  it("赵承宇关系高 + teamTrust 高 → 解锁最佳搭档", () => {
+    expect(isBestPartner(partnerState(45, 65))).toBe(true);
+  });
+  it("关系够但 teamTrust 不够 → 不解锁", () => {
+    expect(isBestPartner(partnerState(50, 30))).toBe(false);
+  });
+  it("teamTrust 够但赵承宇关系不够 → 不解锁", () => {
+    expect(isBestPartner(partnerState(20, 65))).toBe(false);
   });
 });
 

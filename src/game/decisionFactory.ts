@@ -22,6 +22,7 @@ export type DecisionInput = {
   rk?: number; // riskAwareness
   rf?: number; // reflectionValue
   note?: string; // backgroundNote
+  setsFlags?: Record<string, boolean | number>; // choice-specific flags written on pick
 };
 
 export function d(input: DecisionInput): ResearchDecision {
@@ -57,5 +58,6 @@ export function d(input: DecisionInput): ResearchDecision {
     riskAwareness: input.rk ?? 0,
     reflectionValue: input.rf ?? 0,
     backgroundNote: input.note,
+    setsFlags: input.setsFlags,
   };
 }

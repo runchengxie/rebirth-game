@@ -1,4 +1,4 @@
-import { AFFINITY_GATE, BRANCHES, CHARACTERS, FOCUS_ACTIONS, GRADE_REVIEWS, STORY_ARCS, getTheme, pickKnowledgeCard } from "./content";
+import { AFFINITY_GATE, BRANCHES, CHARACTERS, FOCUS_ACTIONS, GRADE_REVIEWS, PEER_PARTNER_RELATION, PEER_PARTNER_TRUST, STORY_ARCS, getTheme, pickKnowledgeCard } from "./content";
 import { branchFlagsForMonth } from "./branching";
 import type {
   CharacterId,
@@ -302,8 +302,10 @@ export function makeDecision(state: GameState, _data: GameDataYear, decision: Re
   (Object.keys(nextRelations) as CharacterId[]).forEach((cid) => {
     const before = state.relations[cid] ?? 0;
     const after = nextRelations[cid];
-    if (after >= AFFINITY_GATE) nextFlags[`affinity_${cid}`] = after;
-    if (before < AFFINITY_GATE && after >= AFFINITY_GATE && !milestone) milestone = cid;
+    // 同级同事（peer）走友谊/搭档线，用更低的专属门槛，不与浪漫心动线的 60 同标。
+    const gate = CHARACTERS[cid]?.kind === "peer" ? PEER_PARTNER_RELATION : AFFINITY_GATE;
+    if (after >= gate) nextFlags[`affinity_${cid}`] = after;
+    if (before < gate && after >= gate && !milestone) milestone = cid;
   });
 
   // Record the route branches that were active while playing this month (they
@@ -329,6 +331,9 @@ export function makeDecision(state: GameState, _data: GameDataYear, decision: Re
     if (primaryRel === "chen_xinghe") nextFlags.helped_xinghe = true;
     if (primaryRel === "zhao_chengyu") nextFlags.helped_zhao = true;
   }
+  // 决策自带的旗标（如 peer 分歧里把「立场」写进 peer_stand/yield/fence）。
+  // 放在帮忙埋种之后，统一在此合并——避免引擎为每个决策 id 写特例。
+  if (decision.setsFlags) Object.assign(nextFlags, decision.setsFlags);
   const businessVerdict = buildBusinessVerdict(decision, story.theme, story, score);
 
   // Office accumulates meaning through props, not exposition.
@@ -458,6 +463,13 @@ export function bestRoute(state: GameState): CharacterId {
     .filter(([cid]) => CHARACTERS[cid]?.kind !== "peer")
     .sort((a, b) => b[1] - a[1]);
   return sorted[0]?.[0] || "lin_ruoning";
+}
+
+// 「最佳搭档」结局判定：赵承宇关系够高（肯跟他搭档）+ 你是个够体面的队友
+// （teamTrust 够高）。与浪漫心动线彻底分流——这是并肩搭档结局，不是恋爱结局。
+// 命中时 EndingPanel 会改走搭档分支，bestRoute 的导师筛选照常不参与。
+export function isBestPartner(state: GameState): boolean {
+  return (state.relations.zhao_chengyu ?? 0) >= PEER_PARTNER_RELATION && state.teamTrust >= PEER_PARTNER_TRUST;
 }
 
 export function totalRelations(state: GameState): number {

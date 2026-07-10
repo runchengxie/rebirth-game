@@ -63,6 +63,12 @@ export const PROTAGONIST = {
 export const AFFINITY_GATE = 60;
 export const AFFINITY_TRUE = 80;
 
+// peer（同级同事，如赵承宇）走友谊/搭档线，不进浪漫门槛，故用更低的专属门槛：
+// 关系条长到这份上已是「可靠搭档」，不必追上心动线的 60。teamTrust 高代表你是
+// 个体面队友——两者齐备才解锁「最佳搭档」并肩结局，与浪漫心动线彻底分流。
+export const PEER_PARTNER_RELATION = 40;
+export const PEER_PARTNER_TRUST = 60;
+
 
 // ═══════════════════════════════════════════════════════════
 // Year-specific theme arrays are imported from content2023.ts /
@@ -397,15 +403,21 @@ const DEBT_BRANCH: Branch = {
 // make the player's accumulated choices visibly reshape the story.
 // ═══════════════════════════════════════════════════════════
 
-// 赵承宇（同级同事）的实战插话分支：把「研究 vs 成交」的张力摆到玩家面前。
-const PEER_BRANCH: Branch = {
-  id: "peer-zhao-execution",
-  label: "赵承宇的盘口插话",
+// 赵承宇「分歧张力」线：把原来单次 once 的盘口插话，升级成带走向的多节点弧。
+// 第一话(已有)埋种 → 年中(本线)分歧/吵架 → 后期按立场分流 和解/认同/中性。
+// 全程不进浪漫线、不进图鉴，framework 借给陈星禾；基调是同级同事「能掐架也能兜底」。
+
+// 分歧 beat：赵承宇和你在一笔交易上掐起来。三个选项各自带 setsFlags，把「你这
+// 次的立场」写进 peer_stand / peer_yield / peer_fence，并统一置 peer_tension 防重复触发。
+const PEER_CLASH_BRANCH: Branch = {
+  id: "peer-zhao-clash",
+  label: "赵承宇和你掐起来了",
   when: {
     kind: "and",
     of: [
-      { kind: "metric", key: "teamTrust", gte: 50 },
-      { kind: "month", gte: 2 },
+      { kind: "flag", key: "peer_zhao_met" },
+      { kind: "not", of: { kind: "flag", key: "peer_tension" } },
+      { kind: "month", gte: 3 },
     ],
   },
   once: true,
@@ -413,13 +425,13 @@ const PEER_BRANCH: Branch = {
   contribute: {
     nodes: [
       {
-        id: "peer-zhao-banter",
+        id: "peer-zhao-clash-setup",
         type: "dialogue",
         characterId: "zhao_chengyu",
         speaker: "赵承宇",
         role: "交易台同级同事",
-        mood: "随意",
-        text: "赵承宇把椅子转过来，手里转着笔：你们研究员又在会议室拆框架了？说真的，你上次那份东西逻辑我看了，挺顺。但市场认不认，得看有没有人真金白银接。要不要我带你看看盘口怎么说话？",
+        mood: "认真",
+        text: "赵承宇把平板往你桌上一扣：你这票我看了，逻辑漂亮，可盘口在撤单、量比在掉。你信你的框架，我信我的成交——这次咱俩必有一错。你打算怎么收场？",
         prompt: "点击继续。",
         pose: "soft",
         bg: "research-room",
@@ -430,21 +442,154 @@ const PEER_BRANCH: Branch = {
     decisions: [
       {
         ...d({
-          id: "peer-zhao-exec-check",
-          label: "跟赵承宇去交易台看一笔真实成交",
-          category: "data_deep_dive",
-          description: "研究说得再漂亮，没承接就是纸上谈兵。去盘口看真实买单怎么说话。代价是少了半天写研报的时间。",
+          id: "peer-clash-stand",
+          label: "当场用框架驳他：撤单不等于反转，先等确认",
+          category: "committee_defense",
+          description: "你坚持框架，把成交的扰动当成噪声。他皱了眉，但没再压你。这一下有点僵，但锚不能丢。",
           to: "zhao_chengyu",
-          val: 5,
-          fx: { viewAccuracy: 8, teamTrust: 8, researchCredibility: 4, fatigue: 4, lifeBalance: -2 },
-          ev: 10, cl: 10, rk: 8, rf: 8,
-          note: "实战派的视角：成交是研究的试金石，但别被分时图带节奏。",
+          val: 10,
+          fx: { researchCredibility: 4, teamTrust: 2, fatigue: 2 },
+          ev: 10, cl: 12, rk: 10, rf: 8,
+          note: "框架是你的锚，但锚太硬也会错过盘口的真信号。",
+          setsFlags: { peer_stand: true, peer_tension: true },
         }),
-        // 教学归属给陈星禾（量价信号），赵承宇本人不进知识卡图鉴。
+        framework: "chen_xinghe",
+      },
+      {
+        ...d({
+          id: "peer-clash-yield",
+          label: "先顺他的盘口看看，不急着下结论",
+          category: "data_deep_dive",
+          description: "你压下自己的框架，先去盘口看一眼。他挑眉：哟，研究员也会低头看成交？",
+          to: "zhao_chengyu",
+          val: 10,
+          fx: { viewAccuracy: 4, teamTrust: 4, fatigue: 2 },
+          ev: 8, cl: 10, rk: 8, rf: 8,
+          note: "有时候成交比框架快半拍——但只看成交，迟早被分时图带节奏。",
+          setsFlags: { peer_yield: true, peer_tension: true },
+        }),
+        framework: "chen_xinghe",
+      },
+      {
+        ...d({
+          id: "peer-clash-fence",
+          label: "各退半步：约好收盘一起复盘",
+          category: "help_colleague",
+          description: "你俩谁也说服不了谁，干脆约好收盘后对着盘口和研报一起过。专业人的体面。",
+          to: "zhao_chengyu",
+          val: 10,
+          fx: { teamTrust: 6, researchCredibility: 2, fatigue: 2 },
+          ev: 8, cl: 8, rk: 8, rf: 10,
+          note: "分歧不可怕，可怕的是分歧之后不再坐到一张桌上。",
+          setsFlags: { peer_fence: true, peer_tension: true },
+        }),
         framework: "chen_xinghe",
       },
     ],
-    setFlags: { peer_zhao_met: true },
+  },
+};
+
+// 结算 beat：按 peer_clash 的取向，分流成 和解 / 认同 / 中性 三种走向。
+// 每条 only 在对应立场旗标为真、且进入下半年（month>=7）时触发一次。
+const PEER_RESOLVE_STAND: Branch = {
+  id: "peer-zhao-resolve-stand",
+  label: "赵承宇服了你的框架",
+  when: { kind: "and", of: [{ kind: "flag", key: "peer_stand" }, { kind: "month", gte: 7 }] },
+  once: true,
+  injectAt: "after-memory",
+  contribute: {
+    nodes: [
+      monoNode(
+        "peer-zhao-resolve-stand",
+        "zhao_chengyu",
+        "认真",
+        "赵承宇靠在门框上：上次那票，收盘一看，居然真是假突破。你那套框架，拦住了我一次。以后你认框架、我认盘口，咱俩分开看、合起来用。",
+      ),
+    ],
+    decisions: [
+      {
+        ...d({
+          id: "peer-resolve-stand-close",
+          label: "和他碰个拳，约好下一笔一起盯",
+          category: "help_colleague",
+          description: "研究认框架、成交认盘口，你们成了投研部最稳的一对眼睛。",
+          to: "zhao_chengyu",
+          val: 10,
+          fx: { teamTrust: 6, researchCredibility: 2 },
+          ev: 6, cl: 8, rk: 8, rf: 8,
+          note: "一个看框架，一个看盘口——组合收益最高的几笔，都写着你们俩。",
+        }),
+        framework: "chen_xinghe",
+      },
+    ],
+  },
+};
+
+const PEER_RESOLVE_YIELD: Branch = {
+  id: "peer-zhao-resolve-yield",
+  label: "赵承宇得意，但你也不亏",
+  when: { kind: "and", of: [{ kind: "flag", key: "peer_yield" }, { kind: "month", gte: 7 }] },
+  once: true,
+  injectAt: "after-memory",
+  contribute: {
+    nodes: [
+      monoNode(
+        "peer-zhao-resolve-yield",
+        "zhao_chengyu",
+        "兴奋",
+        "赵承宇敲着你桌子：服不服？那次盘口真给了信号，比你框架快半拍。不过他也挠头：没你那套框架兜底，我那会儿早冲进去了。咱俩，一个快一个稳。",
+      ),
+    ],
+    decisions: [
+      {
+        ...d({
+          id: "peer-resolve-yield-close",
+          label: "笑着拍他肩：下次你快、我稳，搭档着来",
+          category: "help_colleague",
+          description: "成交认快、框架认稳，你们把长短板拼成了一张完整的图。",
+          to: "zhao_chengyu",
+          val: 10,
+          fx: { teamTrust: 6, viewAccuracy: 2 },
+          ev: 6, cl: 8, rk: 8, rf: 8,
+          note: "他快你稳，搭档着来，谁也不抢谁的风头。",
+        }),
+        framework: "chen_xinghe",
+      },
+    ],
+  },
+};
+
+const PEER_RESOLVE_FENCE: Branch = {
+  id: "peer-zhao-resolve-fence",
+  label: "你们真的坐到了一张桌上",
+  when: { kind: "and", of: [{ kind: "flag", key: "peer_fence" }, { kind: "month", gte: 7 }] },
+  once: true,
+  injectAt: "after-memory",
+  contribute: {
+    nodes: [
+      monoNode(
+        "peer-zhao-resolve-fence",
+        "zhao_chengyu",
+        "随意",
+        "赵承宇把复盘笔记推过来：上次约的复盘，咱真坐下了。成交和研究头一回在一张桌上对完——没谁服谁，但下一次，咱会先对一遍再下单。",
+      ),
+    ],
+    decisions: [
+      {
+        ...d({
+          id: "peer-resolve-fence-close",
+          label: "和他击掌：下笔之前先对一遍",
+          category: "help_colleague",
+          description: "分歧没消，但你们建起了先对齐再动手的默契。",
+          to: "zhao_chengyu",
+          val: 10,
+          fx: { teamTrust: 6, researchCredibility: 2 },
+          ev: 6, cl: 8, rk: 8, rf: 8,
+          note: "专业人的体面：可以不认同，但先对齐再动手。",
+        }),
+        framework: "chen_xinghe",
+      },
+    ],
   },
 };
 
@@ -486,7 +631,7 @@ const PEER_HELP_BRANCH: Branch = {
           category: "help_colleague",
           description: "同事卡住了，顺手帮一把。代价是少了半天写研报的时间，但交易台欠你一次人情。",
           to: "zhao_chengyu",
-          val: 3,
+          val: 10,
           fx: { teamTrust: 6, researchCredibility: 2, fatigue: 4, lifeBalance: -2 },
           ev: 8, cl: 8, rk: 6, rf: 6,
           note: "实战派的账本记在盘口上：你帮过他，他就会记得。",
@@ -538,7 +683,7 @@ const PEER_MID_BRANCH: Branch = {
           category: "data_deep_dive",
           description: "研究说向好，盘口却在收窄。去交易台看一眼真实承接，免得在热闹里追涨。代价是半天案头时间。",
           to: "zhao_chengyu",
-          val: 4,
+          val: 10,
           fx: { viewAccuracy: 8, teamTrust: 6, researchCredibility: 4, fatigue: 4, lifeBalance: -2 },
           ev: 10, cl: 10, rk: 8, rf: 8,
           note: "他信成交胜过框架，但你俩合起来，研究才不被盘口带节奏。",
@@ -754,7 +899,10 @@ export const BRANCHES: Branch[] = [
   PEER_HELP_BRANCH,
   PEER_MID_BRANCH,
   PEER_DEBT_BRANCH,
-  PEER_BRANCH,
+  PEER_CLASH_BRANCH,
+  PEER_RESOLVE_STAND,
+  PEER_RESOLVE_YIELD,
+  PEER_RESOLVE_FENCE,
 ];
 
 // The three colleagues each form a defensible hypothesis from the same future

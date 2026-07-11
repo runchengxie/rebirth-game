@@ -445,3 +445,39 @@ describe("affection system & branching", () => {
     });
   });
 });
+
+// 守卫：同事寒暄按年份轮换，同月份跨年不应再雷同。锁死这点，防止以后有人把
+// buildMonthScene 里的 arcLine 改回 story.line，让 2023/2025 重新和 2024 说同一句。
+describe("同事寒暄按年份轮换（跨年不雷同）", () => {
+  const colleagueText = (year: string, m: number): string => {
+    const scene = buildMonthScene(m, year);
+    const node = scene.nodes.find((n) => n.id === `m${m}-colleague`);
+    if (!node || typeof node.text !== "string") {
+      throw new Error(`year=${year} m=${m} 找不到 colleague 台词`);
+    }
+    return node.text;
+  };
+
+  it("2023 与 2024 同月份寒暄不同", () => {
+    for (let m = 0; m < 12; m++) {
+      expect(colleagueText("2023", m)).not.toBe(colleagueText("2024", m));
+    }
+  });
+
+  it("2025 与 2024 同月份寒暄不同（2025 M0 走专属 prologue，跳过）", () => {
+    for (let m = 1; m < 12; m++) {
+      expect(colleagueText("2025", m)).not.toBe(colleagueText("2024", m));
+    }
+  });
+
+  it("年份专属 line 确实生效：2023 M2 是陈星禾的「两会+中特估」口吻", () => {
+    const t = colleagueText("2023", 2);
+    expect(t).toContain("两会");
+    expect(t).toContain("中特估");
+  });
+
+  it("无年份专属覆盖时回退到 STORY_ARCS 原 line（2024 不崩）", () => {
+    const t = colleagueText("2024", 2);
+    expect(t).toContain("订单流结构");
+  });
+});

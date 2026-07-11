@@ -5,24 +5,24 @@ import { d } from "./decisionFactory";
 // ── In-voice monologues for the grade-driven / liability branches ──
 const GRADE_MONO: Record<"respect" | "watch" | "liability", Record<MentorId, string>> = {
   respect: {
-    lin_ruoning: "这条线你不是蒙对的。推导链我反复看过了——下次这种判断，我放心交给你。",
+    lin_ruoning: "这条线你不是蒙对的。推导链我反复看过了，下次这种判断，我放心交给你。",
     chen_xinghe: "量价信号没骗你，你也没骗自己。这种诚实，比一次 Alpha 更值钱。",
     zhou_mingzhao: "结果之外，我更看重你给风险留的位置。能守住框架的人，才走得远。",
   },
   watch: {
-    lin_ruoning: "这次我得盯紧你。结论漂亮，但中间的跳步我数不清——下个月我要看你的推导。",
+    lin_ruoning: "这次我得盯紧你。结论漂亮，但中间的跳步我数不清，下个月我要看你的推导。",
     chen_xinghe: "信号你这次没读透。没关系，但再乱下结论，我就不帮你兜底了。",
     zhou_mingzhao: "风口上谁都能喊对一次。你这次边界没划清，我得看着你，别被反身性反噬。",
   },
   liability: {
-    lin_ruoning: "结论对，可你是空降的——像提前看到了答案。我要的是你能把每一步讲给我听。",
+    lin_ruoning: "结论对，可你是空降的，像提前看到了答案。我要的是你能把每一步讲给我听。",
     chen_xinghe: "你这结论来得比我信号还快。数据呢？把推导链摊开，我要看中间那几步。",
     zhou_mingzhao: "你跳过了验证直接给答案，这让我不安。答案会过期，能复用的方法不会。",
   },
 };
 
 const DEBT_MONO =
-  "你还记得年初帮我跑因子的那次吗？下周的闭门路演，我给你留了座——自己人才能进的门。";
+  "你还记得年初帮我跑因子的那次吗？下周的闭门路演，我给你留了座，自己人才能进的门。";
 
 function monoNode(id: string, cid: CharacterId, mood: string, text: string): SceneNode {
   return {
@@ -112,7 +112,7 @@ const PEER_CLASH_BRANCH: Branch = {
         speaker: "赵承宇",
         role: "量化组同级同事",
         mood: "认真",
-        text: "赵承宇把平板往你桌上一扣：你这因子我复算了一遍，样本区间挑得巧，幸存者偏差没剔干净。你认你的框架，我认我的数据——咱俩得对一遍才能落槌。你说怎么收？",
+        text: "赵承宇把平板往你桌上一扣：你这因子我复算了一遍，样本区间挑得巧，幸存者偏差没剔干净。你认你的框架，我认我的数据，咱俩得对一遍才能落槌。你说怎么收？",
         prompt: "点击继续。",
         pose: "soft",
         bg: "research-room",
@@ -146,7 +146,7 @@ const PEER_CLASH_BRANCH: Branch = {
           val: 10,
           fx: { viewAccuracy: 4, teamTrust: 4, fatigue: 2 },
           ev: 8, cl: 10, rk: 8, rf: 8,
-          note: "有时候数据比框架快半拍——但只看回测，迟早被过拟合带节奏。",
+          note: "有时候数据比框架快半拍，但只看回测，迟早被过拟合带节奏。",
           setsFlags: { peer_yield: true, peer_tension: true },
         }),
         framework: "chen_xinghe",
@@ -198,7 +198,7 @@ const PEER_RESOLVE_STAND: Branch = {
           val: 10,
           fx: { teamTrust: 6, researchCredibility: 2 },
           ev: 6, cl: 8, rk: 8, rf: 8,
-          note: "一个看框架，一个看数据——组合里回撤最可控的几笔，都写着你们俩。",
+          note: "一个看框架，一个看数据，组合里回撤最可控的几笔，都写着你们俩。",
         }),
         framework: "chen_xinghe",
       },
@@ -252,7 +252,7 @@ const PEER_RESOLVE_FENCE: Branch = {
         "peer-zhao-resolve-fence",
         "zhao_chengyu",
         "随意",
-        "赵承宇把复盘笔记推过来：上次约的复盘，咱真坐下了。数据和研究头一回在一张桌上对完——没谁服谁，但下一次，咱会先对一遍再出数。",
+        "赵承宇把复盘笔记推过来：上次约的复盘，咱真坐下了。数据和研究头一回在一张桌上对完，没谁服谁，但下一次，咱会先对一遍再出数。",
       ),
     ],
     decisions: [
@@ -348,7 +348,7 @@ const PEER_MID_BRANCH: Branch = {
         speaker: "赵承宇",
         role: "量化组同级同事",
         mood: "兴奋",
-        text: "赵承宇隔着工位喊：你上回那份推演，今早数据真给面子——分组收益站上去了。不过别飘，动量因子拥挤第三天最容易是回撤。要信框架，也要留根风控的绳子，别学我光顾着冲。",
+        text: "赵承宇隔着工位喊：你上回那份推演，今早数据真给面子，分组收益站上去了。不过别飘，动量因子拥挤第三天最容易是回撤。要信框架，也要留根风控的绳子，别学我光顾着冲。",
         prompt: "点击继续。",
         pose: "soft",
         bg: "research-room",
@@ -392,7 +392,7 @@ const PEER_DEBT_BRANCH: Branch = {
         "peer-zhao-payback",
         "zhao_chengyu",
         "认真",
-        "你还记得年初帮我顺因子那次吗？上个月投委会临时要人顶一个席位，我点了你的名——能扛住研究、也看得懂数据的人，量化组认。以后这种门，我给你留着。",
+        "你还记得年初帮我顺因子那次吗？上个月投委会临时要人顶一个席位，我点了你的名，能扛住研究、也看得懂数据的人，量化组认。以后这种门，我给你留着。",
       ),
     ],
   },
@@ -418,7 +418,7 @@ export const BRANCHES: Branch[] = [
           speaker: "林若宁",
           role: "投研部前辈",
           mood: "认真",
-          text: "林若宁把一份还冒热气的早餐推到你手边：你这一周第三次半夜把研报发我了。我不是嫌烦——我是怕你先把身体熬没了。不过…你这版框架，确实比上个月利落。",
+          text: "林若宁把一份还冒热气的早餐推到你手边：你这一周第三次半夜把研报发我了。我不是嫌烦，我是怕你先把身体熬没了。不过…你这版框架，确实比上个月利落。",
           prompt: "点击继续。",
           pose: "soft",
           bg: "research-room",
@@ -465,7 +465,7 @@ export const BRANCHES: Branch[] = [
       ],
       overrideDecision: {
         text: "你盯着屏幕，眼睛发酸。也许今天该先把自己救回来，再谈研究。",
-        prompt: "先安排本话日程——这一次，别再无视身体。",
+        prompt: "先安排本话日程，这一次，别再无视身体。",
         decisionPrompt: "这一话，要不要给自己留一条退路？",
       },
       decisions: [
@@ -507,7 +507,7 @@ export const BRANCHES: Branch[] = [
           speaker: "陈星禾",
           role: "量化/资金信号研究员",
           mood: "俏皮",
-          text: "陈星禾压低声音：你帮我把那版模型兜底之后，我欠你一个人情。下周的闭门路演，我偷偷给你留了个席位——别声张，算是「自己人」的待遇。",
+          text: "陈星禾压低声音：你帮我把那版模型兜底之后，我欠你一个人情。下周的闭门路演，我偷偷给你留了个席位，别声张，算是「自己人」的待遇。",
           prompt: "点击继续。",
           pose: "excited",
           bg: "research-room",
@@ -550,7 +550,7 @@ export const BRANCHES: Branch[] = [
           speaker: "林若宁",
           role: "投研部前辈",
           mood: "温柔",
-          text: "林若宁笑了笑：你最近状态不太一样，不像上个月那样绷着。下午茶的时候你突然说「其实动量因子在退潮」，我愣了一下——那是只有脑子清亮的人才看得到的缝。",
+          text: "林若宁笑了笑：你最近状态不太一样，不像上个月那样绷着。下午茶的时候你突然说「其实动量因子在退潮」，我愣了一下，那是只有脑子清亮的人才看得到的缝。",
           prompt: "点击继续。",
           pose: "smile",
           bg: "research-room",

@@ -73,7 +73,7 @@ export const THEMES_DEMO: MarketTheme[] = [
     publicContext:
       "开年，一家做办公协作的软件公司放出预告，说要把推理成本打下来一个数量级。市场把它当成又一个 AI 概念，讨论热度一下起来了。",
     protagonistMemory:
-      "你记得后来这件事真正改变的不是股价，而是中小公司用得起大模型这件事本身——但你现在说不出哪个月落地、落地成什么样。",
+      "你记得后来真正改写局面的，是中小公司用得起大模型这件事本身，股价只是表象。可你现在说不清它哪个月落地、落地成什么样。",
     gameHook: "把未来记忆翻译成一个说得通的研究假设，再选一个你愿意负责的方向。",
     historicalPrototype: "设计注释：参考大模型推理成本下降带动应用爆发的产业规律，不对应任何具体公司。",
     knownEvent: "年底，行业里出现了一批按月付费、单价极低的标准化推理 API，中小团队真的开始把它们接进产品。",
@@ -111,7 +111,7 @@ export const THEMES_DEMO: MarketTheme[] = [
     publicContext:
       "消费数据看着冷，但几个平价连锁品牌同店还在涨。有人说是消费降级，有人说是性价比回归。",
     protagonistMemory:
-      "你记得后来跑出来的不是最便宜的，也不是最贵的，是平价但更好用那档——供应链效率高的公司吃下了中间层。",
+      "你记得后来跑出来的不是最便宜的，也不是最贵的，是平价但更好用那档，供应链效率高的公司吃下了中间层。",
     gameHook: "在冷数据里找结构。降级和升级可能是一件事的两面。",
     historicalPrototype: "设计注释：参考性价比消费的结构性机会。",
     knownEvent: "年末，供应链效率高、SKU 周转快的那几家用平价吃下了中间价格带，纯低价和白牌反而被挤。",
@@ -130,7 +130,7 @@ export const THEMES_DEMO: MarketTheme[] = [
     publicContext:
       "一条国产半导体设备验证通过的消息被刷屏，但真正在产线上跑起来的比例，外人很难看清。",
     protagonistMemory:
-      "你记得后来真正拉开差距的不是有没有做出来，而是能在几条线上稳不稳、良率爬坡快不快。",
+      "你记得后来真正拉开差距的，是能不能在几条线上稳住、良率爬坡快不快，做没做出来反而不是关键。",
     gameHook: "慢变量最容易被情绪淹没。把验证、爬坡、复购拆开看。",
     historicalPrototype: "设计注释：参考半导体设备国产化从验证到规模化的爬坡规律。",
     knownEvent: "年末，能在多条产线稳定跑、良率持续爬坡的少数几家拿到了重复订单，多数停留在样机新闻。",
@@ -464,8 +464,8 @@ function buildDemoCompetingNode(theme: MarketTheme, monthIndex: number): SceneNo
   if (ch?.chen) parts.push(`陈星禾的量价说：${ch.chen}`);
   if (ch?.zhou) parts.push(`周明昭的风控说：${ch.zhou}`);
   const body = parts.length > 0
-    ? `${parts.join("；")}。没有哪个是标准答案——你站哪边，哪边就认你，哪边也会在后面盯着你。`
-    : "三种框架摆在你面前，没有哪个是标准答案——你站哪边，哪边就认你，哪边也会在后面盯着你。";
+    ? `${parts.join("，")}。没有哪个是标准答案，你站哪边，哪边就认你，哪边也会在后面盯着你。`
+    : "三种框架摆在你面前，没有哪个是标准答案，你站哪边，哪边就认你，哪边也会在后面盯着你。";
   return {
     id: `demo-m${monthIndex}-competing`,
     type: "dialogue",
@@ -536,7 +536,7 @@ export function buildDemoChapter(monthIndex: number, state?: GameState): MonthSc
     speaker: "赵承宇",
     role: "量化组同级同事",
     mood: "随意",
-    text: "量化组的赵承宇探进头来：顾研究员，你又在会议室拆框架啦？你那套逻辑我信一半——另一半得看数据认不认。回头一起过回测？",
+    text: "量化组的赵承宇探进头来：顾研究员，你又在会议室拆框架啦？你那套逻辑我信一半，另一半得看数据认不认。回头一起过回测？",
     prompt: "点击继续，进入本月研究选择。",
     pose: "soft",
     bg: "research-room",

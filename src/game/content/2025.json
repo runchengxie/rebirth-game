@@ -51,7 +51,7 @@
       "period": "六月",
       "title": "半导体国产化加速与AI推理芯片突破",
       "publicContext": "海外芯片限制加码背景下，国产AI推理芯片取得关键突破，设备国产化率加速提升。半导体产业链估值重新定价，但各环节技术成熟度差异巨大。",
-      "protagonistMemory": "你知道国产化是长期趋势，但短期技术突破的节奏很难预测。关键不是谁在说突破，而是下游客户是否真的在下订单。",
+      "protagonistMemory": "你知道国产化是长期趋势，但短期技术突破的节奏很难预测。关键看下游客户是否真的在下订单，谁在喊突破反而不重要。",
       "gameHook": "半导体国产化的叙事很强，但你需要在技术突破和订单验证之间找到交叉确认的信号。",
       "historicalPrototype": "2025年6月国产AI推理芯片突破，设备国产化率提升，海外芯片限制加码催化自主可控。"
     },
@@ -69,7 +69,7 @@
       "period": "八月",
       "title": "中报落地与三中全会政策预期",
       "publicContext": "中报披露收尾，业绩修正后市场重新定价。三中全会政策预期升温，改革方向成为市场讨论焦点。成交缩量但主题活跃度不减。",
-      "protagonistMemory": "你知道中报兑现后的分歧最能暴露研究框架的漏洞。业绩miss不一定是坏事——如果miss的原因是可逆的，反而是研究机会。",
+      "protagonistMemory": "你知道中报兑现后的分歧最能暴露研究框架的漏洞。业绩miss不一定是坏事，如果miss的原因是可逆的，反而是研究机会。",
       "gameHook": "复盘会比任何一个单月判断都重要。诚实记录假设偏差，比追寻下一个热点更有长期价值。",
       "historicalPrototype": "2025年8月中报收尾，三中全会改革预期升温，市场在缩量中等待政策信号。"
     },
@@ -191,7 +191,7 @@
         "clarityLevel": 10,
         "riskAwareness": 10,
         "reflectionValue": 4,
-        "backgroundNote": "和三个企业的CIO聊完后发现，付费意愿比市场预期的更分化——大企业积极、中小企业观望。"
+        "backgroundNote": "和三个企业的CIO聊完后发现，付费意愿比市场预期的更分化，大企业积极、中小企业观望。"
       },
       {
         "id": "2025jan-risk",
@@ -272,7 +272,7 @@
         "clarityLevel": 4,
         "riskAwareness": 10,
         "reflectionValue": 10,
-        "backgroundNote": "信息爆炸的时候，最稀缺的不是信息量，而是安静的判断力。"
+        "backgroundNote": "信息爆炸的时候，最稀缺的是安静的判断力，不是信息量。"
       }
     ],
     [
@@ -328,7 +328,7 @@
         "clarityLevel": 14,
         "riskAwareness": 12,
         "reflectionValue": 4,
-        "backgroundNote": "ARR增速是最诚实的指标——企业级客户不会为概念续费，只有真正解决痛点的产品才有留存。"
+        "backgroundNote": "ARR增速是最诚实的指标，企业级客户不会为概念续费，只有真正解决痛点的产品才有留存。"
       },
       {
         "id": "2025feb-roadshow",
@@ -608,7 +608,7 @@
         "id": "2025apr-cross",
         "label": "做一季报交叉验证：AI应用收入×毛利率×客户留存",
         "category": "deep_research",
-        "description": "不只看AI应用公司的营收增速，同时拆毛利率变化、客户留存率和海外收入占比——关税冲击下这三个维度比营收增速更重要。",
+        "description": "不只看AI应用公司的营收增速，同时拆毛利率变化、客户留存率和海外收入占比，关税冲击下这三个维度比营收增速更重要。",
         "effects": {
           "researchCredibility": 16,
           "committeeAdoption": 8,
@@ -629,7 +629,7 @@
         "clarityLevel": 18,
         "riskAwareness": 12,
         "reflectionValue": 8,
-        "backgroundNote": "一季报中有三家AI应用公司的毛利率在下滑但营收在增长——客户获取成本在上升，这是危险信号。"
+        "backgroundNote": "一季报中有三家AI应用公司的毛利率在下滑但营收在增长，客户获取成本在上升，这是危险信号。"
       },
       {
         "id": "2025apr-tariff",
@@ -874,7 +874,7 @@
         "clarityLevel": 2,
         "riskAwareness": 2,
         "reflectionValue": 2,
-        "backgroundNote": "不是所有消费品类都受益于以旧换新。你漏掉了消费分层——高收入群体和低收入群体的修复节奏完全不同。"
+        "backgroundNote": "不是所有消费品类都受益于以旧换新。你漏掉了消费分层，高收入群体和低收入群体的修复节奏完全不同。"
       },
       {
         "id": "2025may-defense",
@@ -932,7 +932,7 @@
         "clarityLevel": 6,
         "riskAwareness": 6,
         "reflectionValue": 10,
-        "backgroundNote": "在商场亲眼看到餐饮排长队但服饰门店冷冷清清——这种体感数据比任何研究报告都直观。"
+        "backgroundNote": "在商场亲眼看到餐饮排长队但服饰门店冷冷清清，这种体感数据比任何研究报告都直观。"
       }
     ],
     [
@@ -1048,7 +1048,7 @@
         "id": "2025jun-help",
         "label": "帮陈星禾校准国产替代因子的回测参数",
         "category": "help_colleague",
-        "description": "她的国产替代因子回测需要一个基本面视角的参数校准——哪些公司的国产化受益确定性更高。",
+        "description": "她的国产替代因子回测需要一个基本面视角的参数校准，哪些公司的国产化受益确定性更高。",
         "effects": {
           "researchCredibility": 5,
           "committeeAdoption": 4,
@@ -1125,7 +1125,7 @@
         "clarityLevel": 18,
         "riskAwareness": 12,
         "reflectionValue": 8,
-        "backgroundNote": "中报显示算力租赁毛利率在提升但AI应用的销售费用率也在飙升——产业链上游在赚钱，下游在烧钱抢市场。"
+        "backgroundNote": "中报显示算力租赁毛利率在提升但AI应用的销售费用率也在飙升，产业链上游在赚钱，下游在烧钱抢市场。"
       },
       {
         "id": "2025jul-revenue",
@@ -1179,7 +1179,7 @@
         "clarityLevel": 16,
         "riskAwareness": 14,
         "reflectionValue": 8,
-        "backgroundNote": "投委会最关心的问题是：「分化会持续多久？」——恰好是你框架里最难回答的部分，也是最值得深挖的部分。"
+        "backgroundNote": "投委会最关心的问题是：「分化会持续多久？」，恰好是你框架里最难回答的部分，也是最值得深挖的部分。"
       },
       {
         "id": "2025jul-miss",
@@ -1233,7 +1233,7 @@
         "clarityLevel": 8,
         "riskAwareness": 6,
         "reflectionValue": 6,
-        "backgroundNote": "帮她改模型的过程中，你学会了如何判断一个DCF假设是否过于乐观——这是研究员最基础也最难的能力。"
+        "backgroundNote": "帮她改模型的过程中，你学会了如何判断一个DCF假设是否过于乐观，这是研究员最基础也最难的能力。"
       },
       {
         "id": "2025jul-life",
@@ -1349,7 +1349,7 @@
         "id": "2025aug-blame",
         "label": "把中报判断失误归咎于市场不可预测",
         "category": "risk_alert",
-        "description": "不反思自己的研究框架——中报不准是因为市场太复杂。",
+        "description": "不反思自己的研究框架，中报不准是因为市场太复杂。",
         "effects": {
           "researchCredibility": -12,
           "committeeAdoption": -6,
@@ -1370,7 +1370,7 @@
         "clarityLevel": 0,
         "riskAwareness": 0,
         "reflectionValue": 0,
-        "backgroundNote": "甩锅是职业生涯最快的退步方式。市场是复杂的，但研究框架可以越来越好——如果你愿意面对错误。"
+        "backgroundNote": "甩锅是职业生涯最快的退步方式。市场是复杂的，但研究框架可以越来越好，如果你愿意面对错误。"
       },
       {
         "id": "2025aug-help",
@@ -1511,7 +1511,7 @@
         "clarityLevel": 14,
         "riskAwareness": 12,
         "reflectionValue": 6,
-        "backgroundNote": "一位量化基金经理听完你的讲解后说：「这是我今年听到的最实操的解读。」——但你知道，验证还在后面。"
+        "backgroundNote": "一位量化基金经理听完你的讲解后说：「这是我今年听到的最实操的解读。」，但你知道，验证还在后面。"
       },
       {
         "id": "2025sep-ignore",
@@ -1702,13 +1702,13 @@
         "clarityLevel": 2,
         "riskAwareness": 0,
         "reflectionValue": 2,
-        "backgroundNote": "为了排名放弃框架的研究员，排名结束后会发现——客户记得的不是你的排名，是你的每一次错误推荐。"
+        "backgroundNote": "为了排名放弃框架的研究员，排名结束后会发现，客户记得的不是你的排名，是你的每一次错误推荐。"
       },
       {
         "id": "2025oct-help",
         "label": "帮陈星禾做年末排名博弈模型的回测验证",
         "category": "help_colleague",
-        "description": "她的排名博弈量化模型需要一个基本面视角来校准——哪些公司有真实业绩支撑可以安全抱团。",
+        "description": "她的排名博弈量化模型需要一个基本面视角来校准，哪些公司有真实业绩支撑可以安全抱团。",
         "effects": {
           "researchCredibility": 5,
           "committeeAdoption": 4,
@@ -1735,7 +1735,7 @@
         "id": "2025oct-life",
         "label": "在排名焦虑中守住作息纪律",
         "category": "self_care",
-        "description": "同事都在通宵调模型——你选择按时下班，睡够七小时。",
+        "description": "同事都在通宵调模型，你选择按时下班，睡够七小时。",
         "effects": {
           "researchCredibility": 2,
           "committeeAdoption": -1,
@@ -1845,7 +1845,7 @@
         "id": "2025nov-extrapolate",
         "label": "简单外推今年趋势到明年",
         "category": "risk_alert",
-        "description": "AI应用全年涨势最好——明年直接线性外推就行了。",
+        "description": "AI应用全年涨势最好，明年直接线性外推就行了。",
         "effects": {
           "researchCredibility": -10,
           "committeeAdoption": -4,

@@ -125,7 +125,7 @@ function makeResearchDecisions(year: string, monthIndex: number): ResearchDecisi
   if (year === "2024") {
     return makeDecisions2024(monthIndex);
   }
-  // 已知年份都已路由；未知年份返回空池。
+  // 已知年份都已路由，未知年份返回空池。
   return [];
 }
 
@@ -139,8 +139,8 @@ function buildCompetingNode(story: StoryArc, theme: MarketTheme, monthIndex: num
   if (ch?.chen) parts.push(`陈星禾的量价说：${ch.chen}`);
   if (ch?.zhou) parts.push(`周明昭的风控说：${ch.zhou}`);
   const body = parts.length > 0
-    ? `${parts.join("；")}。没有哪个是标准答案——你站哪边，哪边就认你，哪边也会在后面盯着你。`
-    : "三种框架摆在你面前，没有哪个是标准答案——你站哪边，哪边就认你，哪边也会在后面盯着你。";
+    ? `${parts.join("，")}。没有哪个是标准答案，你站哪边，哪边就认你，哪边也会在后面盯着你。`
+    : "三种框架摆在你面前，没有哪个是标准答案，你站哪边，哪边就认你，哪边也会在后面盯着你。";
   return {
     id: `m${monthIndex}-competing`,
     type: "dialogue",
@@ -308,7 +308,7 @@ function build2025Prologue(month: string, label: string, theme: MarketTheme): Mo
       role: "只有你知道",
       mood: "警觉",
       text: `我知道一个具体的事实：${theme.knownEvent ?? "有些事会真的发生，但不是以价格告诉我的方式。"}
-但我不能直接喊方向——我得把它翻译成当下能验证的研究假设，再选一个框架去落地。`,
+但我不能直接喊方向，我得把它翻译成当下能验证的研究假设，再选一个框架去落地。`,
       prompt: "点击继续，把未来记忆压成可以说出口的研究假设。",
       pose: "thinking",
       bg: "research-room",

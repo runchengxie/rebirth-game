@@ -324,7 +324,7 @@ export function makeDecision(state: GameState, _data: GameDataYear, decision: Re
   if (score.grade === "D") nextFlags[`watch_${framework}`] = true;
   if (isParachuted) nextFlags[`parachuted_${framework}`] = true;
   // Delayed-consequence seeds: helping a colleague early earns a later favour.
-  // 陈星禾 → 闭门席位；赵承宇 → 第九话人情返还。两者都靠「帮同事」这一选择埋种，
+  // 陈星禾 → 闭门席位，赵承宇 → 第九话人情返还。两者都靠「帮同事」这一选择埋种，
   // 用主要好感对象区分，而非 framework（赵承宇的教学归属借给陈星禾，本就不进图鉴）。
   if (decision.category === "help_colleague") {
     const primaryRel = decision.effects.characterRelations[0]?.characterId;
@@ -332,7 +332,7 @@ export function makeDecision(state: GameState, _data: GameDataYear, decision: Re
     if (primaryRel === "zhao_chengyu") nextFlags.helped_zhao = true;
   }
   // 决策自带的旗标（如 peer 分歧里把「立场」写进 peer_stand/yield/fence）。
-  // 放在帮忙埋种之后，统一在此合并——避免引擎为每个决策 id 写特例。
+  // 放在帮忙埋种之后，统一在此合并，避免引擎为每个决策 id 写特例。
   if (decision.setsFlags) Object.assign(nextFlags, decision.setsFlags);
   const businessVerdict = buildBusinessVerdict(story.theme, score);
 
@@ -439,11 +439,11 @@ export function buildBusinessVerdict(
 ): string {
   const outcome = theme.businessOutcome;
   const fallback =
-    "业务事实在月末才慢慢显形。价格会吵吵闹闹，但生意自己会说话——你这次的框架，经得起回头看吗？";
+    "业务事实在月末才慢慢显形。价格会吵吵闹闹，但生意自己会说话，你这次的框架，经得起回头看吗？";
   const base = outcome && outcome.length > 0 ? outcome : fallback;
 
   if (score.reasoningScore >= 18) {
-    return `${base} 更难得的是，你这次的推导链经得起业务事实的检验——不是蒙对的，是想通的。`;
+    return `${base} 更难得的是，你这次的推导链经得起业务事实的检验，不是蒙对的，是想通的。`;
   }
   if (score.reasoningScore <= 8) {
     return `${base} 可惜你的判断来得太快：中间那几步推导没铺开，连你自己都说不清为什么。答案会过期，方法不会。`;

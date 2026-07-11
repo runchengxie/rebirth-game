@@ -8,7 +8,10 @@ function buildYearData(year: string): GameDataYear {
   for (let i = 0; i < 12; i++) {
     const scene = buildMonthScene(i, year);
     scenes.push(scene);
-    // Placeholder benchmark — real data would come from build_data.py
+    // 轻量叙事快照：由当月场景的 publicContext 派生，供复盘面板使用。
+    // 注意：scripts/build_data.py 产出的市场复盘数据（data/*.json + game-data.js）
+    // 走独立的 Python 校验链路（validate_data.py），目前并未接入运行时——本
+    // benchmarks 与它是两套东西，勿混淆。
     benchmarks.push({
       month: scene.month,
       label: scene.label,

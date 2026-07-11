@@ -11,18 +11,23 @@ import argparse
 import datetime as dt
 import json
 import math
+import os
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal, TypedDict, cast
 
-DEFAULT_DAILY_CLEAN_DIR = (
+# 默认指向作者本机的 tushare 清洗数据盘。其他人通过环境变量覆盖即可，
+# 无需改动本文件（CI 不跑 build_data.py，仅本地生成 data/ 用）。
+DEFAULT_DAILY_CLEAN_DIR = os.environ.get(
+    "REBIRTH_DAILY_CLEAN_DIR",
     r"Z:\market-data-platform\assets\tushare\a_share\daily"
-    r"\a_share_all_20150101_20260703_daily_clean"
+    r"\a_share_all_20150101_20260703_daily_clean",
 )
-DEFAULT_INSTRUMENTS_FILE = (
+DEFAULT_INSTRUMENTS_FILE = os.environ.get(
+    "REBIRTH_INSTRUMENTS_FILE",
     r"Z:\market-data-platform\assets\tushare\a_share\instruments"
-    r"\a_share_all_instruments_latest.parquet"
+    r"\a_share_all_instruments_latest.parquet",
 )
 DEFAULT_YEARS = (2023, 2024, 2025)
 PriceColumn = Literal["adj_close", "close"]

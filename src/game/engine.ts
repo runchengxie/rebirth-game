@@ -334,7 +334,7 @@ export function makeDecision(state: GameState, _data: GameDataYear, decision: Re
   // 决策自带的旗标（如 peer 分歧里把「立场」写进 peer_stand/yield/fence）。
   // 放在帮忙埋种之后，统一在此合并——避免引擎为每个决策 id 写特例。
   if (decision.setsFlags) Object.assign(nextFlags, decision.setsFlags);
-  const businessVerdict = buildBusinessVerdict(decision, story.theme, story, score);
+  const businessVerdict = buildBusinessVerdict(story.theme, score);
 
   // Office accumulates meaning through props, not exposition.
   const nextOffice: OfficeState = {
@@ -434,9 +434,7 @@ export function frameworkOf(decision: ResearchDecision, story: StoryArc): Charac
 // plus how well the player reasoned (so a correct-but-thin answer is called
 // out, and a wrong-but-rigorous one is still respected).
 export function buildBusinessVerdict(
-  decision: ResearchDecision,
   theme: MarketTheme,
-  story: StoryArc,
   score: DecisionScore,
 ): string {
   const outcome = theme.businessOutcome;

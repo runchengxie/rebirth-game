@@ -481,3 +481,38 @@ describe("同事寒暄按年份轮换（跨年不雷同）", () => {
     expect(t).toContain("订单流结构");
   });
 });
+
+// 守卫：决策提示 mission 同样按年份轮换，同月份跨年不应再雷同。锁死这点，防止以后
+// 有人把 buildMonthScene 里的 arcMission 改回 story.mission，让 2023/2025 重新和 2024
+// 用同一句 functional prompt。
+describe("决策提示 mission 按年份轮换（跨年不雷同）", () => {
+  const decisionPrompt = (year: string, m: number): string => {
+    const scene = buildMonthScene(m, year);
+    const node = scene.nodes.find((n) => n.id === `m${m}-decision`);
+    if (!node || typeof node.prompt !== "string") {
+      throw new Error(`year=${year} m=${m} 找不到 decision 节点的 prompt`);
+    }
+    return node.prompt;
+  };
+
+  it("2023 与 2024 同月份 mission 不同", () => {
+    for (let m = 1; m < 12; m++) {
+      expect(decisionPrompt("2023", m)).not.toBe(decisionPrompt("2024", m));
+    }
+  });
+
+  it("2025 与 2024 同月份 mission 不同", () => {
+    for (let m = 1; m < 12; m++) {
+      expect(decisionPrompt("2025", m)).not.toBe(decisionPrompt("2024", m));
+    }
+  });
+
+  it("年份专属 mission 确实生效：2023 M2 含「中特估」、2025 M2 含「AI+行动」", () => {
+    expect(decisionPrompt("2023", 2)).toContain("中特估");
+    expect(decisionPrompt("2025", 2)).toContain("AI+行动");
+  });
+
+  it("无年份专属覆盖时回退到 STORY_ARCS 原 mission（2024 不崩）", () => {
+    expect(decisionPrompt("2024", 2)).toContain("因子拆解和订单流");
+  });
+});

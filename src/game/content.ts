@@ -43,12 +43,12 @@ export const CHARACTERS: Record<CharacterId, CharacterProfile> = {
   zhao_chengyu: {
     id: "zhao_chengyu",
     name: "赵承宇",
-    role: "交易台同级同事",
-    tag: "实战交易线",
+    role: "量化组同级同事",
+    tag: "量化数据线",
     color: "slate",
     kind: "peer",
-    intro: "交易台那边的同级同事。嘴上嫌研究员慢，真到下单前又会跑来问你这边的逻辑。",
-    methodology: "成交驱动，盘中验证。研究说得再漂亮，没承接就是纸上谈兵。",
+    intro: "量化组那边的同级同事。嘴上嫌研究员慢，真到因子对不齐基准时又会跑来问你这边的逻辑。",
+    methodology: "数据驱动，回测验证。研究说得再漂亮，回测不收敛就是空中楼阁。",
   },
 };
 
@@ -403,11 +403,11 @@ const DEBT_BRANCH: Branch = {
 // make the player's accumulated choices visibly reshape the story.
 // ═══════════════════════════════════════════════════════════
 
-// 赵承宇「分歧张力」线：把原来单次 once 的盘口插话，升级成带走向的多节点弧。
-// 第一话(已有)埋种 → 年中(本线)分歧/吵架 → 后期按立场分流 和解/认同/中性。
+// 赵承宇「分歧张力」线：把原来单次 once 的数据插话，升级成带走向的多节点弧。
+// 赵现为量化组同事，张力从「研究框架 vs 交易盘口」改为「研究框架 vs 量化数据」。
 // 全程不进浪漫线、不进图鉴，framework 借给陈星禾；基调是同级同事「能掐架也能兜底」。
 
-// 分歧 beat：赵承宇和你在一笔交易上掐起来。三个选项各自带 setsFlags，把「你这
+// 分歧 beat：赵承宇和你在一笔数据上掐起来。三个选项各自带 setsFlags，把「你这
 // 次的立场」写进 peer_stand / peer_yield / peer_fence，并统一置 peer_tension 防重复触发。
 const PEER_CLASH_BRANCH: Branch = {
   id: "peer-zhao-clash",
@@ -429,9 +429,9 @@ const PEER_CLASH_BRANCH: Branch = {
         type: "dialogue",
         characterId: "zhao_chengyu",
         speaker: "赵承宇",
-        role: "交易台同级同事",
+        role: "量化组同级同事",
         mood: "认真",
-        text: "赵承宇把平板往你桌上一扣：你这票我看了，逻辑漂亮，可盘口在撤单、量比在掉。你信你的框架，我信我的成交——这次咱俩必有一错。你打算怎么收场？",
+        text: "赵承宇把平板往你桌上一扣：你这因子我复算了一遍，样本区间挑得巧，幸存者偏差没剔干净。你信你的框架，我信我的数据——这次咱俩必有一错。你打算怎么收场？",
         prompt: "点击继续。",
         pose: "soft",
         bg: "research-room",
@@ -443,14 +443,14 @@ const PEER_CLASH_BRANCH: Branch = {
       {
         ...d({
           id: "peer-clash-stand",
-          label: "当场用框架驳他：撤单不等于反转，先等确认",
+          label: "当场用框架驳他：样本剔除是口径问题，先等交叉验证",
           category: "committee_defense",
-          description: "你坚持框架，把成交的扰动当成噪声。他皱了眉，但没再压你。这一下有点僵，但锚不能丢。",
+          description: "你坚持框架，把数据的扰动当成噪声。他皱了眉，但没再压你。这一下有点僵，但锚不能丢。",
           to: "zhao_chengyu",
           val: 10,
           fx: { researchCredibility: 4, teamTrust: 2, fatigue: 2 },
           ev: 10, cl: 12, rk: 10, rf: 8,
-          note: "框架是你的锚，但锚太硬也会错过盘口的真信号。",
+          note: "框架是你的锚，但锚太硬也会错过数据里的真信号。",
           setsFlags: { peer_stand: true, peer_tension: true },
         }),
         framework: "chen_xinghe",
@@ -458,14 +458,14 @@ const PEER_CLASH_BRANCH: Branch = {
       {
         ...d({
           id: "peer-clash-yield",
-          label: "先顺他的盘口看看，不急着下结论",
+          label: "先顺他的数据看看，不急着下结论",
           category: "data_deep_dive",
-          description: "你压下自己的框架，先去盘口看一眼。他挑眉：哟，研究员也会低头看成交？",
+          description: "你压下自己的框架，先去数据里看一眼。他挑眉：哟，研究员也会低头看回测？",
           to: "zhao_chengyu",
           val: 10,
           fx: { viewAccuracy: 4, teamTrust: 4, fatigue: 2 },
           ev: 8, cl: 10, rk: 8, rf: 8,
-          note: "有时候成交比框架快半拍——但只看成交，迟早被分时图带节奏。",
+          note: "有时候数据比框架快半拍——但只看回测，迟早被过拟合带节奏。",
           setsFlags: { peer_yield: true, peer_tension: true },
         }),
         framework: "chen_xinghe",
@@ -475,7 +475,7 @@ const PEER_CLASH_BRANCH: Branch = {
           id: "peer-clash-fence",
           label: "各退半步：约好收盘一起复盘",
           category: "help_colleague",
-          description: "你俩谁也说服不了谁，干脆约好收盘后对着盘口和研报一起过。专业人的体面。",
+          description: "你俩谁也说服不了谁，干脆约好收盘后对着数据和研报一起过。专业人的体面。",
           to: "zhao_chengyu",
           val: 10,
           fx: { teamTrust: 6, researchCredibility: 2, fatigue: 2 },
@@ -503,7 +503,7 @@ const PEER_RESOLVE_STAND: Branch = {
         "peer-zhao-resolve-stand",
         "zhao_chengyu",
         "认真",
-        "赵承宇靠在门框上：上次那票，收盘一看，居然真是假突破。你那套框架，拦住了我一次。以后你认框架、我认盘口，咱俩分开看、合起来用。",
+        "赵承宇靠在门框上：上次那票，回测一跑，居然真是样本偏差。你那套框架，拦住了我一次。以后你认框架、我认数据，咱俩分开看、合起来用。",
       ),
     ],
     decisions: [
@@ -512,12 +512,12 @@ const PEER_RESOLVE_STAND: Branch = {
           id: "peer-resolve-stand-close",
           label: "和他碰个拳，约好下一笔一起盯",
           category: "help_colleague",
-          description: "研究认框架、成交认盘口，你们成了投研部最稳的一对眼睛。",
+          description: "研究认框架、数据认回测，你们成了投研部最稳的一对眼睛。",
           to: "zhao_chengyu",
           val: 10,
           fx: { teamTrust: 6, researchCredibility: 2 },
           ev: 6, cl: 8, rk: 8, rf: 8,
-          note: "一个看框架，一个看盘口——组合收益最高的几笔，都写着你们俩。",
+          note: "一个看框架，一个看数据——组合里回撤最可控的几笔，都写着你们俩。",
         }),
         framework: "chen_xinghe",
       },
@@ -537,7 +537,7 @@ const PEER_RESOLVE_YIELD: Branch = {
         "peer-zhao-resolve-yield",
         "zhao_chengyu",
         "兴奋",
-        "赵承宇敲着你桌子：服不服？那次盘口真给了信号，比你框架快半拍。不过他也挠头：没你那套框架兜底，我那会儿早冲进去了。咱俩，一个快一个稳。",
+        "赵承宇敲着你桌子：服不服？那次数据真给了信号，比你框架快半拍。不过他也挠头：没你那套框架兜底，我那会儿早冲进过拟合里去了。咱俩，一个快一个稳。",
       ),
     ],
     decisions: [
@@ -546,7 +546,7 @@ const PEER_RESOLVE_YIELD: Branch = {
           id: "peer-resolve-yield-close",
           label: "笑着拍他肩：下次你快、我稳，搭档着来",
           category: "help_colleague",
-          description: "成交认快、框架认稳，你们把长短板拼成了一张完整的图。",
+          description: "数据认快、框架认稳，你们把长短板拼成了一张完整的图。",
           to: "zhao_chengyu",
           val: 10,
           fx: { teamTrust: 6, viewAccuracy: 2 },
@@ -571,7 +571,7 @@ const PEER_RESOLVE_FENCE: Branch = {
         "peer-zhao-resolve-fence",
         "zhao_chengyu",
         "随意",
-        "赵承宇把复盘笔记推过来：上次约的复盘，咱真坐下了。成交和研究头一回在一张桌上对完——没谁服谁，但下一次，咱会先对一遍再下单。",
+        "赵承宇把复盘笔记推过来：上次约的复盘，咱真坐下了。数据和研究头一回在一张桌上对完——没谁服谁，但下一次，咱会先对一遍再出数。",
       ),
     ],
     decisions: [
@@ -593,8 +593,8 @@ const PEER_RESOLVE_FENCE: Branch = {
   },
 };
 
-// ── 赵承宇（同级同事）全年「在场」+ 延迟后果弧 ──
-// 三处分支共同构成一条干净的 peer 线：第一话求助（埋种）→ 年中实战压力测试
+// ── 赵承宇（量化组同级同事）全年「在场」+ 延迟后果弧 ──
+// 三处分支共同构成一条干净的 peer 线：第一话求助（埋种）→ 年中数据压力测试
 // （再加一次在场）→ 第九话还人情（延迟后果兑现）。全部不进浪漫线、不进图鉴，
 // framework 一律借给陈星禾；基调是同级同事之间「记人情、互相兜底」的正向友情。
 
@@ -613,9 +613,9 @@ const PEER_HELP_BRANCH: Branch = {
         type: "dialogue",
         characterId: "zhao_chengyu",
         speaker: "赵承宇",
-        role: "交易台同级同事",
+        role: "量化组同级同事",
         mood: "随意",
-        text: "赵承宇端着咖啡蹭到你工位：有个因子回测卡住了，分组收益怎么都对不齐基准。你们研究员不是最会抠这种细节吗？帮我把这口气顺了，下回你那份东西要上盘口，我给你盯着成交。",
+        text: "赵承宇端着咖啡蹭到你工位：有个因子回测卡住了，分组收益怎么都对不齐基准。你们研究员不是最会抠这种细节吗？帮我把这口气顺了，下回你那份研报要过投委会，我帮你把数据先核一遍。",
         prompt: "点击继续。",
         pose: "soft",
         bg: "research-room",
@@ -629,12 +629,12 @@ const PEER_HELP_BRANCH: Branch = {
           id: "peer-zhao-help-offer",
           label: "抽半天帮赵承宇顺一遍因子回测",
           category: "help_colleague",
-          description: "同事卡住了，顺手帮一把。代价是少了半天写研报的时间，但交易台欠你一次人情。",
+          description: "同事卡住了，顺手帮一把。代价是少了半天写研报的时间，但量化组欠你一次人情。",
           to: "zhao_chengyu",
           val: 10,
           fx: { teamTrust: 6, researchCredibility: 2, fatigue: 4, lifeBalance: -2 },
           ev: 8, cl: 8, rk: 6, rf: 6,
-          note: "实战派的账本记在盘口上：你帮过他，他就会记得。",
+          note: "数据人的账本记在回测上：你帮过他，他就会记得。",
         }),
         // 教学归属借给陈星禾（量价/因子），赵承宇本人不进知识卡图鉴。
         framework: "chen_xinghe",
@@ -644,11 +644,11 @@ const PEER_HELP_BRANCH: Branch = {
   },
 };
 
-// 年中：在 PEER_BRANCH 之外，给夏天再加一次「在场」。把研究 vs 成交的张力再摆
-// 一次，也暴露他信成交胜过框架、容易在热闹里追涨的毛病。
+// 年中：在 PEER_BRANCH 之外，给夏天再加一次「在场」。把研究 vs 数据的张力再摆
+// 一次，也暴露他信数据胜过框架、容易在拥挤里追涨的毛病。
 const PEER_MID_BRANCH: Branch = {
   id: "peer-zhao-mid",
-  label: "赵承宇的盘中喊话",
+  label: "赵承宇的量化喊话",
   when: {
     kind: "and",
     of: [
@@ -665,9 +665,9 @@ const PEER_MID_BRANCH: Branch = {
         type: "dialogue",
         characterId: "zhao_chengyu",
         speaker: "赵承宇",
-        role: "交易台同级同事",
+        role: "量化组同级同事",
         mood: "兴奋",
-        text: "赵承宇隔着工位喊：你上回那份推演，今早盘口真给面子——放量站上去了。不过别飘，量价齐升第三天最容易是赶顶。要信成交，也要留根风控的绳子，别学我光顾着冲。",
+        text: "赵承宇隔着工位喊：你上回那份推演，今早数据真给面子——分组收益站上去了。不过别飘，动量因子拥挤第三天最容易是回撤。要信框架，也要留根风控的绳子，别学我光顾着冲。",
         prompt: "点击继续。",
         pose: "soft",
         bg: "research-room",
@@ -679,14 +679,14 @@ const PEER_MID_BRANCH: Branch = {
       {
         ...d({
           id: "peer-zhao-mid-check",
-          label: "跟赵承宇对照一次盘中信号与研究的偏差",
+          label: "跟赵承宇对照一次数据与研究的偏差",
           category: "data_deep_dive",
-          description: "研究说向好，盘口却在收窄。去交易台看一眼真实承接，免得在热闹里追涨。代价是半天案头时间。",
+          description: "研究说向好，因子却在拥挤。去量化组看一眼真实分布，免得在热闹里追涨。代价是半天案头时间。",
           to: "zhao_chengyu",
           val: 10,
           fx: { viewAccuracy: 8, teamTrust: 6, researchCredibility: 4, fatigue: 4, lifeBalance: -2 },
           ev: 10, cl: 10, rk: 8, rf: 8,
-          note: "他信成交胜过框架，但你俩合起来，研究才不被盘口带节奏。",
+          note: "他信数据胜过框架，但你俩合起来，研究才不被噪声带节奏。",
         }),
         framework: "chen_xinghe",
       },
@@ -711,7 +711,7 @@ const PEER_DEBT_BRANCH: Branch = {
         "peer-zhao-payback",
         "zhao_chengyu",
         "认真",
-        "你还记得年初帮我顺因子那次吗？上个月投委会临时要人顶一个席位，我点了你的名——能扛住研究、也看得懂盘口的人，交易台认。以后这种门，我给你留着。",
+        "你还记得年初帮我顺因子那次吗？上个月投委会临时要人顶一个席位，我点了你的名——能扛住研究、也看得懂数据的人，量化组认。以后这种门，我给你留着。",
       ),
     ],
   },
@@ -893,9 +893,9 @@ export const BRANCHES: Branch[] = [
   },
   ...GRADE_BRANCHES,
   DEBT_BRANCH,
-  // 同级同事赵承宇的实战插话：不进浪漫线、不进图鉴。teamTrust 够高（你是个体面
-  // 队友）且在年中之后触发一次，用盘口视角给研究做压力测试，也暴露他自己的毛病——
-  // 他信成交胜过信框架，容易在热闹里追涨。framework 指给陈星禾，避免给玩家塞知识卡。
+  // 同级同事赵承宇（量化组）的在场弧：不进浪漫线、不进图鉴。teamTrust 够高（你是个体面
+  // 队友）且在年中之后触发一次，用数据视角给研究做压力测试，也暴露他自己的毛病——
+  // 他信数据胜过信框架，容易在拥挤里追涨。framework 指给陈星禾，避免给玩家塞知识卡。
   PEER_HELP_BRANCH,
   PEER_MID_BRANCH,
   PEER_DEBT_BRANCH,

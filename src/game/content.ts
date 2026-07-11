@@ -933,6 +933,24 @@ function buildCompetingNode(story: StoryArc, theme: MarketTheme, monthIndex: num
   };
 }
 
+// 决策面板里三位导师的「研究视角」短句。原来写死同一句、每月重复，玩家会察觉。
+// 这里给每人 3 条按月份轮换的镜头（季度焦点感），既不再逐月雷同，也避免与
+// competingNode 里当月专属的 competingHypotheses 三连台词撞车（后者是本月分歧）。
+const MENTOR_LENS: { chen: string; zhou: string }[] = [
+  {
+    chen: "成交结构和大单流向会先于价格给出方向确认，量比价诚实。",
+    zhou: "别只盯机会。能说清楚风险边界、估值分位和反身性，才有资格入场。",
+  },
+  {
+    chen: "因子拥挤度比方向更重要：所有人都挤一个坑时，风险溢价已经归零。",
+    zhou: "你看拐点不看趋势。最拥挤的地方，往往离拐点最近。",
+  },
+  {
+    chen: "Barra 归因拆得开的是能力，拆不开的是运气——先看收益里因子占了几成。",
+    zhou: "先把错的可能性标出来，再算对的赔率。边界画不清，判断就是赌。",
+  },
+];
+
 export function buildMonthScene(
   monthIndex: number,
   year?: string,
@@ -1024,8 +1042,8 @@ export function buildMonthScene(
     briefTitle: `${theme.period}：${theme.title}`,
     briefs: [
       { characterId: "lin_ruoning", label: "基本面视角", text: theme.publicContext.split("。")[0] + "。" },
-      { characterId: "chen_xinghe", label: "量化信号", text: "成交结构和大单流向会先于价格给出方向确认，量比价诚实。" },
-      { characterId: "zhou_mingzhao", label: "宏观风控", text: "别只盯机会。能说清楚风险边界、估值分位和反身性，才有资格入场。" },
+      { characterId: "chen_xinghe", label: "量化信号", text: MENTOR_LENS[monthIndex % MENTOR_LENS.length].chen },
+      { characterId: "zhou_mingzhao", label: "宏观风控", text: MENTOR_LENS[monthIndex % MENTOR_LENS.length].zhou },
     ],
   };
 

@@ -14,6 +14,8 @@ import rinaSoftSprite from "../../assets/vn/characters/rina-soft.png";
 import rinaThinkingSprite from "../../assets/vn/characters/rina-thinking.png";
 // 赵承宇立绘（已生成统一画风；当前仍为休眠彩蛋，不激活 route）。
 import zhaoNeutralSprite from "../../assets/vn/characters/zhao-neutral.png";
+import zhaoReliefSprite from "../../assets/vn/characters/zhao-relief.png";
+import zhaoThinkingSprite from "../../assets/vn/characters/zhao-thinking.png";
 import type { CharacterId, CharacterProfile } from "../types";
 
 interface PixiStageProps {
@@ -72,6 +74,8 @@ const characterAssets: Partial<Record<CharacterId, Record<string, string>>> = {
   // 同级同事立绘：赵承宇真图已生成，仍保留未来可被 route 唤醒的插槽。
   zhao_chengyu: {
     neutral: zhaoNeutralSprite,
+    relief: zhaoReliefSprite,
+    thinking: zhaoThinkingSprite,
   },
 };
 
@@ -120,6 +124,11 @@ function normalizePose(characterId: CharacterId, pose: string): string {
       calm: "neutral", neutral: "neutral",
       observing: "serious", serious: "serious", thinking: "serious",
       soft: "soft", smile: "soft",
+    },
+    zhao_chengyu: {
+      neutral: "neutral", calm: "neutral", serious: "thinking",
+      thinking: "thinking", observing: "thinking",
+      soft: "relief", smile: "relief", happy: "relief", relieved: "relief",
     },
   };
   return aliases[characterId]?.[pose] || defaultPose[characterId] || "neutral";

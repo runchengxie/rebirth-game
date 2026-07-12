@@ -14,7 +14,7 @@ def _uv_run(*args: str) -> list[str]:
     return ["uv", "run", *args]
 
 
-def run(cmd: list[str], *, label: str, allow_failure: bool = False) -> bool:
+def run(cmd: list[str], *, label: str) -> bool:
     """运行一条检查命令并打印精简结果。"""
     header = f"[{label}]"
     try:
@@ -27,30 +27,27 @@ def run(cmd: list[str], *, label: str, allow_failure: bool = False) -> bool:
             check=False,
         )
     except FileNotFoundError:
-        marker = "跳过" if allow_failure else "失败"
-        print(f"  {marker} {header}，未找到命令")
-        return allow_failure
+        print(f"  失败 {header}，未找到命令")
+        return False
     except subprocess.TimeoutExpired:
-        marker = "警告" if allow_failure else "失败"
-        print(f"  {marker} {header}，运行超过 300 秒")
-        return allow_failure
+        print(f"  失败 {header}，运行超过 300 秒")
+        return False
 
     if result.returncode == 0:
         print(f"  通过 {header}")
         return True
 
-    marker = "警告" if allow_failure else "失败"
-    print(f"  {marker} {header}")
+    print(f"  失败 {header}")
     if result.stdout.strip():
         for line in result.stdout.strip().splitlines()[:20]:
             print(f"    {line}")
     if result.stderr.strip():
         for line in result.stderr.strip().splitlines()[:10]:
             print(f"    {line}")
-    return allow_failure
+    return False
 
 
-def check_python(*, include_experimental: bool = False) -> bool:
+def check_python() -> bool:
     print("── Python ──")
     ok = True
     ok &= run(_uv_run("ruff", "check", "."), label="ruff check")
@@ -64,6 +61,10 @@ def check_python(*, include_experimental: bool = False) -> bool:
         label="basedpyright",
     )
     ok &= run(
+        _uv_run("ty", "check", "scripts"),
+        label="ty",
+    )
+    ok &= run(
         _uv_run("pytest", "scripts/", "-v"),
         label="pytest",
     )
@@ -71,13 +72,6 @@ def check_python(*, include_experimental: bool = False) -> bool:
         _uv_run("python", "scripts/validate_data.py"),
         label="validate_data",
     )
-
-    if include_experimental:
-        ok &= run(
-            _uv_run("ty", "check", "scripts"),
-            label="ty",
-            allow_failure=True,
-        )
 
     return ok
 
@@ -95,7 +89,7 @@ def check_frontend() -> bool:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="运行项目检查")
-    parser.add_argument("--all", action="store_true", help="额外运行非阻塞的 ty 检查")
+    parser.add_argument("--all", action="store_true", help="兼容参数，完整检查现已默认执行")
     parser.add_argument("--python", action="store_true", help="只运行 Python 检查")
     parser.add_argument("--frontend", action="store_true", help="只运行前端检查")
     return parser.parse_args()
@@ -111,7 +105,7 @@ def main() -> None:
 
     ok = True
     if run_python:
-        ok &= check_python(include_experimental=args.all)
+        ok &= check_python()
     if run_frontend:
         ok &= check_frontend()
 

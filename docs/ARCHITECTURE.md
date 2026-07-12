@@ -33,15 +33,11 @@
 
 `src/main.tsx` 创建 React 根节点并加载 `src/App.tsx`。
 
-`src/App.tsx` 负责：
+前端入口分为三层：
 
-- 读取年份深链和主题设置
-- 初始化当前周目状态
-- 取得当前场景和当前节点
-- 调用运行时推进剧情
-- 调用结算引擎处理研究选择
-- 控制 PixiJS 舞台、背景音乐、音效和系统语音
-- 组合状态栏、研究方案、复盘、札记和结局组件
+- `src/App.tsx`：顶层组合，负责默认游戏和 Pixi'VN 原型入口切换
+- `src/app/useGameController.ts`：年份深链、周目状态、场景推进、决策结算、设置、主题和音频控制
+- `src/app/GameScreen.tsx`：PixiJS 舞台、状态栏、研究方案、复盘、札记和结局页面装配
 
 应用没有路由库。年份和原型入口通过 URL 查询参数控制。
 
@@ -170,7 +166,7 @@
 - `assets/vn/backgrounds/` 下的场景背景
 - `assets/vn/characters/` 下的角色立绘
 
-`App.tsx` 会先检测 WebGL。设备不支持 WebGL、驱动不稳定或初始化失败时，页面会使用静态舞台。
+`src/app/useGameController.ts` 会先检测 WebGL。设备不支持 WebGL、驱动不稳定或初始化失败时，页面会使用静态舞台。
 
 可用查询参数：
 
@@ -211,9 +207,9 @@
 
 `vite.config.ts` 将 `base` 设置为 `./`，构建产物可以从相对路径加载资源。
 
-`.github/workflows/pages.yml` 在 `main` 分支有新提交时运行 `npm ci` 和 `npm run build`，然后发布 `dist/`。
+`.github/workflows/ci.yml` 在拉取请求和 `main` 分支推送时运行 Python 与前端完整质量检查。Ruff、BasedPyright、ty、Pytest、零警告 ESLint、TypeScript、Vitest、数据校验和生产构建均为阻塞项。
 
-`.github/workflows/ci.yml.disabled` 保存了停用的质量检查流程。由于文件扩展名不是 `.yml`，GitHub Actions 不会执行它。
+`.github/workflows/pages.yml` 在 `main` 分支有新提交时运行 `npm ci` 和 `npm run check`，通过后发布 `dist/`。
 
 ## 常见改动位置
 
@@ -227,7 +223,9 @@
 | 修改 2025 年业务事实 | `src/game/content2025.ts` |
 | 修改评分和状态结算 | `src/game/engine.ts` |
 | 修改剧情推进 | `src/game/runtime.ts` |
-| 修改页面和设置 | `src/App.tsx` |
+| 修改顶层入口和原型切换 | `src/App.tsx` |
+| 修改页面展示 | `src/app/GameScreen.tsx` |
+| 修改游戏状态、设置、主题和音频控制 | `src/app/useGameController.ts` |
 | 修改舞台和图片映射 | `src/components/PixiStage.tsx` |
 | 修改音频 | `src/audio/` |
 | 更新静态股票数据校验 | `scripts/validate_data.py` |

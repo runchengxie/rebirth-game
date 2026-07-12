@@ -28,16 +28,8 @@ import { buildDemoChapter, makeDecisionsDemo } from "./contentDemo";
 
 // ═══════════════════════════════════════════════════════════
 // Knowledge cards — the "platform" payoff
-//
-// Every meaningful choice leaves the player a little sharper, not just a little
-// higher-scored. The teaching is delivered *in the colleague's own voice*, not
-// as a pop-up textbook — so what the player learns is "how 林若宁 thinks",
-// not "the factor-crowding entry". Archived into the research notebook.
 // ═══════════════════════════════════════════════════════════
 
-// In-voice teaching lines, keyed by mentor (the framework this choice engaged)
-// and by the decision category. Concise on purpose — these read as a colleague
-// leaning over your desk, not a lecture.
 type Teaching = { concept: string; line: string; cfaRef: string };
 
 export const MENTOR_TEACHINGS: Record<MentorId, Record<DecisionCategory, Teaching>> = {
@@ -78,14 +70,11 @@ function frameworkOfLocal(decision: ResearchDecision, story: StoryArc): Characte
   return decision.effects.characterRelations[0]?.characterId ?? story.characterId;
 }
 
-// Resolve the knowledge card a decision teaches. Prefers an explicit
-// `teaches` on the decision; otherwise derives one from the engaged framework
-// and the decision category, so every choice — even legacy JSON — teaches.
 export function pickKnowledgeCard(decision: ResearchDecision, story: StoryArc): KnowledgeCard {
   if (decision.teaches) return decision.teaches;
   const mentor = frameworkOfLocal(decision, story);
-  const t = MENTOR_TEACHINGS[mentor as MentorId]?.[decision.category];
-  if (!t) {
+  const teaching = MENTOR_TEACHINGS[mentor as MentorId]?.[decision.category];
+  if (!teaching) {
     return {
       id: `generic_${decision.category}`,
       concept: "研究方法",
@@ -96,48 +85,28 @@ export function pickKnowledgeCard(decision: ResearchDecision, story: StoryArc): 
   }
   return {
     id: `kc_${mentor}_${decision.category}`,
-    concept: t.concept,
+    concept: teaching.concept,
     mentorId: mentor,
-    mentorLine: t.line,
-    cfaRef: t.cfaRef,
+    mentorLine: teaching.line,
+    cfaRef: teaching.cfaRef,
     tier: 1,
   };
 }
 
-// ═══════════════════════════════════════════════════════════
-// Monthly Decision Pool — 每月5-6个工作/生活选择
-// ═══════════════════════════════════════════════════════════
-
-// 决策工厂已抽离到 ./decisionFactory（各年份决策池从此处取用）。
-
 function makeResearchDecisions(year: string, monthIndex: number): ResearchDecision[] {
-  // Route to year-specific decision pools
-  if (year === "demo") {
-    return makeDecisionsDemo(monthIndex);
-  }
-  if (year === "2025") {
-    return makeDecisions2025(monthIndex);
-  }
-  if (year === "2023") {
-    return makeDecisions2023(monthIndex);
-  }
-  // 2024 决策池已从 TS 抽到 content/2024.json，经 schema 校验加载（与 2023/2025 一致）
-  if (year === "2024") {
-    return makeDecisions2024(monthIndex);
-  }
-  // 已知年份都已路由，未知年份返回空池。
+  if (year === "demo") return makeDecisionsDemo(monthIndex);
+  if (year === "2025") return makeDecisions2025(monthIndex);
+  if (year === "2023") return makeDecisions2023(monthIndex);
+  if (year === "2024") return makeDecisions2024(monthIndex);
   return [];
 }
 
-// The three colleagues each form a defensible hypothesis from the same future
-// memory. Showing them side by side is the core "plural truths" beat — there is
-// no single correct answer, only frameworks you choose to stand behind.
 function buildCompetingNode(story: StoryArc, theme: MarketTheme, monthIndex: number): SceneNode {
-  const ch = theme.competingHypotheses;
+  const hypotheses = theme.competingHypotheses;
   const parts: string[] = [];
-  if (ch?.lin) parts.push(`林若宁的基本面说：${ch.lin}`);
-  if (ch?.chen) parts.push(`陈星禾的量价说：${ch.chen}`);
-  if (ch?.zhou) parts.push(`周明昭的风控说：${ch.zhou}`);
+  if (hypotheses?.lin) parts.push(`林若宁的基本面说：${hypotheses.lin}`);
+  if (hypotheses?.chen) parts.push(`陈星禾的量价说：${hypotheses.chen}`);
+  if (hypotheses?.zhou) parts.push(`周明昭的风控说：${hypotheses.zhou}`);
   const body = parts.length > 0
     ? `${parts.join("，")}。没有哪个是标准答案，你站哪边，哪边就认你，哪边也会在后面盯着你。`
     : "三种框架摆在你面前，没有哪个是标准答案，你站哪边，哪边就认你，哪边也会在后面盯着你。";
@@ -157,54 +126,56 @@ function buildCompetingNode(story: StoryArc, theme: MarketTheme, monthIndex: num
   };
 }
 
-export function buildMonthScene(
-  monthIndex: number,
-  year?: string,
-  state?: GameState,
-): MonthScene {
-  const actualYear = year || "2025";
-  if (actualYear === "demo") return buildDemoChapter(monthIndex, state);
-  const story = STORY_ARCS[monthIndex % STORY_ARCS.length];
-  // 同事寒暄按年份轮换：2023/2025 取各自专属 line，其余年份（含 2024）回退到 STORY_ARCS 原 line。
-  const arcLine = YEAR_ARC_LINES[actualYear]?.[monthIndex] ?? story.line;
-  // 决策提示同样按年份轮换：2023/2025 取各自专属 mission，其余年份回退到 STORY_ARCS 原 mission。
-  const arcMission = YEAR_ARC_MISSIONS[actualYear]?.[monthIndex] ?? story.mission;
-  const monthNum = monthIndex + 1;
-  const month = `${actualYear}-${String(monthNum).padStart(2, "0")}`;
-  const label = `${actualYear}年${monthNum}月`;
-  const theme = getTheme(actualYear, monthIndex);
+type BranchContributions = {
+  afterMemory: SceneNode[];
+  beforeDecision: SceneNode[];
+  decisions: ResearchDecision[];
+  overrideDecision: Branch["contribute"]["overrideDecision"];
+};
 
-  if (actualYear === "2025" && monthIndex === 0) {
-    return build2025Prologue(month, label, theme);
-  }
-
-  // Affinity gate: if the month's arc character has crossed the relationship
-  // threshold, inject a "relationship moment" node. Now reads the live state.
-  const affinityNode: SceneNode | null =
-    state && (state.relations[story.characterId] ?? 0) >= AFFINITY_GATE
-      ? buildAffinityMoment(story, monthIndex)
-      : null;
-
-  // Evaluate route branches against the live state.
+function collectBranchContributions(state?: GameState): BranchContributions {
+  const contributions: BranchContributions = {
+    afterMemory: [],
+    beforeDecision: [],
+    decisions: [],
+    overrideDecision: undefined,
+  };
   const branches = state ? activeBranches(state, BRANCHES) : [];
-  const branchNodesAfterMemory: SceneNode[] = [];
-  const branchNodesBeforeDecision: SceneNode[] = [];
-  const extraDecisions: ResearchDecision[] = [];
-  let decisionOverride: Branch["contribute"]["overrideDecision"] | undefined;
-  for (const b of branches) {
-    const at = b.injectAt ?? "before-decision";
-    if (at === "after-memory") branchNodesAfterMemory.push(...(b.contribute.nodes ?? []));
-    else branchNodesBeforeDecision.push(...(b.contribute.nodes ?? []));
-    extraDecisions.push(...(b.contribute.decisions ?? []));
-    if (b.contribute.overrideDecision) {
-      decisionOverride = { ...decisionOverride, ...b.contribute.overrideDecision };
-    }
+  for (const branch of branches) {
+    const target = branch.injectAt === "after-memory"
+      ? contributions.afterMemory
+      : contributions.beforeDecision;
+    target.push(...(branch.contribute.nodes ?? []));
+    contributions.decisions.push(...(branch.contribute.decisions ?? []));
+    contributions.overrideDecision = {
+      ...contributions.overrideDecision,
+      ...branch.contribute.overrideDecision,
+    };
   }
+  return contributions;
+}
 
-  // Default scene for non-prologue months
-  const decisions = makeResearchDecisions(actualYear, monthIndex);
+function affinityNodeFor(
+  state: GameState | undefined,
+  story: StoryArc,
+  monthIndex: number,
+): SceneNode | null {
+  const relation = state?.relations[story.characterId] ?? 0;
+  return relation >= AFFINITY_GATE ? buildAffinityMoment(story, monthIndex) : null;
+}
 
-  const memoryNode: SceneNode = {
+function competingNodeFor(
+  state: GameState | undefined,
+  story: StoryArc,
+  theme: MarketTheme,
+  monthIndex: number,
+): SceneNode | null {
+  const enabled = Boolean(state && monthIndex >= 1 && theme.competingHypotheses);
+  return enabled ? buildCompetingNode(story, theme, monthIndex) : null;
+}
+
+function buildMemoryNode(story: StoryArc, theme: MarketTheme, monthIndex: number): SceneNode {
+  return {
     id: `m${monthIndex}-memory`,
     type: "dialogue",
     characterId: story.characterId,
@@ -218,8 +189,15 @@ export function buildMonthScene(
     bgm: "morning-loop",
     voiceCue: "silent",
   };
+}
 
-  const colleagueNode: SceneNode = {
+function buildColleagueNode(
+  story: StoryArc,
+  theme: MarketTheme,
+  arcLine: string,
+  monthIndex: number,
+): SceneNode {
+  return {
     id: `m${monthIndex}-colleague`,
     type: "dialogue",
     characterId: story.characterId,
@@ -233,50 +211,93 @@ export function buildMonthScene(
     bgm: "morning-loop",
     voiceCue: "key",
   };
+}
 
-  const decisionNode: SceneNode = {
+function buildDecisionNode(
+  story: StoryArc,
+  theme: MarketTheme,
+  monthIndex: number,
+  arcMission: string,
+  decisions: ResearchDecision[],
+  overrideDecision: Branch["contribute"]["overrideDecision"],
+): SceneNode {
+  return {
     id: `m${monthIndex}-decision`,
     type: "decision",
     characterId: story.characterId,
     speaker: story.speaker,
     role: story.role,
     mood: story.mood,
-    text: `先安排本话日程，然后选择一个你愿意负责到底的研究方向。`,
+    text: "先安排本话日程，然后选择一个你愿意负责到底的研究方向。",
     prompt: arcMission,
     pose: "smile",
     bg: "briefing-room",
     bgm: "morning-loop",
     voiceCue: "key",
-    decisions: [...decisions, ...extraDecisions],
+    decisions,
     decisionPrompt: arcMission,
     briefTitle: `${theme.period}：${theme.title}`,
     briefs: [
-      { characterId: "lin_ruoning", label: "基本面视角", text: theme.publicContext.split("。")[0] + "。" },
+      { characterId: "lin_ruoning", label: "基本面视角", text: `${theme.publicContext.split("。")[0]}。` },
       { characterId: "chen_xinghe", label: "量化信号", text: MENTOR_LENS[monthIndex % MENTOR_LENS.length].chen },
       { characterId: "zhou_mingzhao", label: "宏观风控", text: MENTOR_LENS[monthIndex % MENTOR_LENS.length].zhou },
     ],
+    ...overrideDecision,
   };
+}
 
-  if (decisionOverride) {
-    Object.assign(decisionNode, decisionOverride);
+function optionalNode(node: SceneNode | null): SceneNode[] {
+  return node ? [node] : [];
+}
+
+export function buildMonthScene(
+  monthIndex: number,
+  year?: string,
+  state?: GameState,
+): MonthScene {
+  const actualYear = year || "2025";
+  if (actualYear === "demo") return buildDemoChapter(monthIndex, state);
+
+  const story = STORY_ARCS[monthIndex % STORY_ARCS.length];
+  const arcLine = YEAR_ARC_LINES[actualYear]?.[monthIndex] ?? story.line;
+  const arcMission = YEAR_ARC_MISSIONS[actualYear]?.[monthIndex] ?? story.mission;
+  const monthNumber = monthIndex + 1;
+  const month = `${actualYear}-${String(monthNumber).padStart(2, "0")}`;
+  const label = `${actualYear}年${monthNumber}月`;
+  const theme = getTheme(actualYear, monthIndex);
+
+  if (actualYear === "2025" && monthIndex === 0) {
+    return build2025Prologue(month, label, theme);
   }
 
-  const competingNode: SceneNode | null =
-    state && monthIndex >= 1 && theme.competingHypotheses
-      ? buildCompetingNode(story, theme, monthIndex)
-      : null;
-
+  const branch = collectBranchContributions(state);
+  const decisionNode = buildDecisionNode(
+    story,
+    theme,
+    monthIndex,
+    arcMission,
+    [...makeResearchDecisions(actualYear, monthIndex), ...branch.decisions],
+    branch.overrideDecision,
+  );
   const nodes: SceneNode[] = [
-    memoryNode,
-    ...(competingNode ? [competingNode] : []),
-    ...branchNodesAfterMemory,
-    ...(affinityNode ? [affinityNode] : []),
-    colleagueNode,
-    ...branchNodesBeforeDecision,
+    buildMemoryNode(story, theme, monthIndex),
+    ...optionalNode(competingNodeFor(state, story, theme, monthIndex)),
+    ...branch.afterMemory,
+    ...optionalNode(affinityNodeFor(state, story, monthIndex)),
+    buildColleagueNode(story, theme, arcLine, monthIndex),
+    ...branch.beforeDecision,
     decisionNode,
   ];
 
-  return { id: `${year || "default"}-m${monthIndex}`, year, monthIndex, month, label, theme, nodes };
+  return {
+    id: `${year || "default"}-m${monthIndex}`,
+    year,
+    monthIndex,
+    month,
+    label,
+    theme,
+    nodes,
+  };
 }
 
 function buildAffinityMoment(story: StoryArc, monthIndex: number): SceneNode {
@@ -452,10 +473,6 @@ function build2025Prologue(month: string, label: string, theme: MarketTheme): Mo
 
   return { id: "2025-scene-prologue", year: "2025", monthIndex: 0, month, label, theme, nodes };
 }
-
-// ═══════════════════════════════════════════════════════════
-// Year-specific scene overrides
-// ═══════════════════════════════════════════════════════════
 
 export const YEAR_SCENE_BUILDERS: Record<string, (monthIndex: number) => MonthScene> = {
   "2023": (monthIndex: number) => buildMonthScene(monthIndex, "2023"),

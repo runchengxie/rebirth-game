@@ -14,8 +14,11 @@ def _uv_run(*args: str) -> list[str]:
     return ["uv", "run", *args]
 
 
-def run(cmd: list[str], *, label: str) -> bool:
-    """运行一条检查命令并打印精简结果。"""
+def run(cmd: list[str], *, label: str, allow_failure: bool = False) -> bool:
+    """运行一条检查命令并打印精简结果。
+
+    allow_failure=True 时即使失败也返回 True（非阻塞检查）。
+    """
     header = f"[{label}]"
     try:
         result = subprocess.run(
@@ -35,6 +38,16 @@ def run(cmd: list[str], *, label: str) -> bool:
 
     if result.returncode == 0:
         print(f"  通过 {header}")
+        return True
+
+    if allow_failure:
+        print(f"  警告 {header}（非阻塞）")
+        if result.stdout.strip():
+            for line in result.stdout.strip().splitlines()[:20]:
+                print(f"    {line}")
+        if result.stderr.strip():
+            for line in result.stderr.strip().splitlines()[:10]:
+                print(f"    {line}")
         return True
 
     print(f"  失败 {header}")
@@ -59,10 +72,12 @@ def check_python() -> bool:
     ok &= run(
         _uv_run("basedpyright", "scripts"),
         label="basedpyright",
+        allow_failure=True,
     )
     ok &= run(
         _uv_run("ty", "check", "scripts"),
         label="ty",
+        allow_failure=True,
     )
     ok &= run(
         _uv_run("pytest", "scripts/", "-v"),

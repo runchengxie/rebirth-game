@@ -31,14 +31,17 @@ export default tseslint.config(
     rules: {
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
-      // 复杂度看门狗：长函数拆不动时先报警，倒逼 content.ts / engine.ts 拆分。
+      // 保留一个可量化的迁移基线。CI 最多允许 10 个 warning，新增债务会直接失败。
       complexity: ["warn", { max: 15 }],
-      // strict 里 no-explicit-any 默认 error。本项目历史用了若干 any（多来自 JSON
-      // 反序列化与第三方库边界），先降为 warn 逐步清，避免一次性大改阻断 check。
       "@typescript-eslint/no-explicit-any": "warn",
-      // strict 默认把 non-null 断言当 error。本项目（尤其测试）多处用 `x!.y`
-      // 表达「已前置守卫」的语义，强行全改风险高、收益低，降为 warn 作信号。
       "@typescript-eslint/no-non-null-assertion": "warn",
+    },
+  },
+  {
+    files: ["src/**/*.test.{ts,tsx}"],
+    rules: {
+      // 测试中的断言式取值由前置 expect 保护，避免把迁移噪声计入生产代码基线。
+      "@typescript-eslint/no-non-null-assertion": "off",
     },
   },
   {

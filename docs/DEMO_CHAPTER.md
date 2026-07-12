@@ -51,7 +51,7 @@
 - 呈现：复盘面板的「本月学到」块 + 右侧栏「研究札记」。教学台词是角色口吻，不是弹窗教科书。
 
 ### 系统③ 办公室道具
-- 数据：`engine.ts` 的 `makeDecision` 按决策类别累加 `OfficeState`（deep_research/help_colleague → 便签；deep_research/data_deep_dive/committee_defense → 白板；熬夜类 → 咖啡）。
+- 数据：`engine.ts` 的 `makeDecision` 按决策类别累加 `OfficeState`（deep_research/help_colleague → 便签，deep_research/data_deep_dive/committee_defense → 白板，熬夜类 → 咖啡）。
 - 呈现：右侧栏「研究室」组件，便签/白板/咖啡三个计数 + 第 X/12 月进度。
 - 意义：时间有了可见的痕迹，办公室成了第四位角色。
 

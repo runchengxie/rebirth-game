@@ -52,19 +52,22 @@ export class ProceduralBgm {
   }
 
   private playStep() {
-    if (!this.context || !this.master) return;
-    const now = this.context.currentTime;
+    const context = this.context;
+    const master = this.master;
+    if (!context || !master) return;
+
+    const now = context.currentTime;
     const chord = chordProgression[this.step % chordProgression.length];
     this.releaseActive(now);
     this.active = chord.map((frequency, index) => {
-      const osc = this.context!.createOscillator();
-      const gain = this.context!.createGain();
+      const osc = context.createOscillator();
+      const gain = context.createGain();
       osc.type = index === 0 ? "sine" : "triangle";
       osc.frequency.value = frequency / (index === 0 ? 2 : 1);
       gain.gain.setValueAtTime(0, now);
       gain.gain.linearRampToValueAtTime(index === 0 ? 0.12 : 0.055, now + 0.24);
       gain.gain.setTargetAtTime(0.035, now + 1.2, 0.9);
-      osc.connect(gain).connect(this.master!);
+      osc.connect(gain).connect(master);
       osc.start(now);
       return { osc, gain };
     });

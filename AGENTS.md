@@ -9,7 +9,9 @@
 主要入口：
 
 - `src/main.tsx`：前端入口
-- `src/App.tsx`：页面装配、设置和交互流程
+- `src/App.tsx`：顶层入口和 Pixi'VN 原型切换
+- `src/app/useGameController.ts`：游戏状态、设置、主题和音频控制
+- `src/app/GameScreen.tsx`：主游戏页面装配和展示组件
 - `src/components/PixiStage.tsx`：PixiJS 舞台
 - `src/game/runtime.ts`：状态初始化、剧情游标和跨月推进
 - `src/game/engine.ts`：评分、数值、关系、旗标和结局相关计算
@@ -48,7 +50,9 @@
 - 2025 年补充业务事实和分歧假设：`src/game/content2025.ts`
 - 数值结算和旗标：`src/game/engine.ts`
 - 剧情推进和初始状态：`src/game/runtime.ts`
-- 页面与设置：`src/App.tsx`
+- 顶层入口和原型切换：`src/App.tsx`
+- 页面展示：`src/app/GameScreen.tsx`
+- 游戏状态、设置、主题和音频控制：`src/app/useGameController.ts`
 - 舞台资源映射：`src/components/PixiStage.tsx`
 - 音频：`src/audio/bgm.ts` 和 `src/audio/sfx.ts`
 
@@ -77,11 +81,7 @@ Python 与前端联合检查：
 uv run python scripts/check.py
 ```
 
-加入非阻塞类型检查：
-
-```bash
-uv run python scripts/check.py --all
-```
+完整检查默认包含 BasedPyright 和 ty。`--all` 仅作为旧命令的兼容参数保留。
 
 需要逐项排查时运行：
 
@@ -94,13 +94,13 @@ uv run basedpyright scripts
 uv run ty check scripts
 uv run python scripts/validate_data.py
 node scripts/validate_frontend.js
-npm run lint
+npm run lint:ci
 npm run typecheck
 npm run test:run
 npm run build
 ```
 
-`basedpyright` 和 `ty` 在 `scripts/check.py --all` 中按非阻塞检查处理。质量工作流当前停用，文件位于 `.github/workflows/ci.yml.disabled`，因此不能依赖 GitHub Actions 自动执行这些命令。
+`basedpyright` 和 `ty` 都是默认阻塞检查。`.github/workflows/ci.yml` 会在拉取请求和 `main` 分支推送时运行完整质量检查，失败日志会作为短期工件上传。
 
 ## 测试要求
 

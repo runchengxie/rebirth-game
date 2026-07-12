@@ -4,7 +4,7 @@
     "build": "tsc -b && vite build",
     "check": "npm run lint:ci && npm run typecheck && npm run test:run && npm run validate:frontend && npm run build",
     "lint": "eslint .",
-    "lint:ci": "eslint . --max-warnings=10",
+    "lint:ci": "eslint . --max-warnings=0",
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest",
     "test:run": "vitest run",

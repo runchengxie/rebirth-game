@@ -57,6 +57,7 @@ for (const script of [
   "dev",
   "dump:content",
   "lint",
+  "lint:ci",
   "test:run",
   "typecheck",
   "validate:frontend",
@@ -118,7 +119,7 @@ for (const file of [
   "assets/vn/characters/zhao-thinking.png",
   "assets/vn/characters/zhao-relief.png",
   ".github/workflows/pages.yml",
-  ".github/workflows/ci.yml.disabled",
+  ".github/workflows/ci.yml",
 ]) {
   requireFile(file);
 }

@@ -28,9 +28,9 @@ jobs:
         run: uv run python -m compileall scripts
       - name: Pytest
         run: uv run pytest scripts/ -v
-      - name: BasedPyright (non-blocking)
-        run: uv run basedpyright scripts
-        continue-on-error: true
+      # - name: BasedPyright (non-blocking)
+      #   run: uv run basedpyright scripts
+      #   continue-on-error: true
       - name: Ty (non-blocking)
         run: uv run ty check scripts
         continue-on-error: true

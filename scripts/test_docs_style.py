@@ -46,6 +46,4 @@ def test_document_uses_the_agreed_chinese_style(path: Path) -> None:
 def test_document_prefers_chinese_parentheses_in_chinese_prose(path: Path) -> None:
     text = prose_only(path.read_text(encoding="utf-8"))
     match = re.search(r"[\u4e00-\u9fff]\([^\n)]{0,80}\)|\([^\n)]{0,80}\)[\u4e00-\u9fff]", text)
-    assert match is None, (
-        f"{path.relative_to(ROOT)} 的中文段落使用了英文括号：{match.group(0)}"
-    )
+    assert match is None, f"{path.relative_to(ROOT)} 的中文段落使用了英文括号：{match.group(0)}"

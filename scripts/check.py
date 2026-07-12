@@ -28,7 +28,8 @@ def run(cmd: list[str], *, label: str, allow_failure: bool = False) -> bool:
             check=False,
         )
     except FileNotFoundError:
-        print(f"  跳过 {header}，未找到命令")
+        marker = "跳过" if allow_failure else "失败"
+        print(f"  {marker} {header}，未找到命令")
         return allow_failure
     except subprocess.TimeoutExpired:
         marker = "警告" if allow_failure else "失败"
@@ -50,7 +51,7 @@ def run(cmd: list[str], *, label: str, allow_failure: bool = False) -> bool:
     return allow_failure
 
 
-def check_python(*, all_checks: bool = False) -> bool:
+def check_python(*, include_experimental: bool = False) -> bool:
     print("── Python ──")
     ok = True
     ok &= run(_uv_run("ruff", "check", "."), label="ruff check")
@@ -58,6 +59,10 @@ def check_python(*, all_checks: bool = False) -> bool:
     ok &= run(
         _uv_run("python", "-m", "compileall", "scripts"),
         label="compileall",
+    )
+    ok &= run(
+        _uv_run("basedpyright", "scripts"),
+        label="basedpyright",
     )
     ok &= run(
         _uv_run("pytest", "scripts/", "-v"),
@@ -68,12 +73,7 @@ def check_python(*, all_checks: bool = False) -> bool:
         label="validate_data",
     )
 
-    if all_checks:
-        ok &= run(
-            _uv_run("basedpyright", "scripts"),
-            label="basedpyright",
-            allow_failure=True,
-        )
+    if include_experimental:
         ok &= run(
             _uv_run("ty", "check", "scripts"),
             label="ty",
@@ -87,7 +87,7 @@ def check_frontend() -> bool:
     print("── 前端 ──")
     ok = True
     ok &= run(["node", "scripts/validate_frontend.js"], label="validate_frontend")
-    ok &= run(["npm", "run", "lint"], label="ESLint")
+    ok &= run(["npm", "run", "lint:ci"], label="ESLint")
     ok &= run(["npm", "run", "typecheck"], label="TypeScript")
     ok &= run(["npm", "run", "test:run"], label="Vitest")
     ok &= run(["npm", "run", "build"], label="build")
@@ -96,7 +96,7 @@ def check_frontend() -> bool:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="运行项目检查")
-    parser.add_argument("--all", action="store_true", help="加入非阻塞类型检查")
+    parser.add_argument("--all", action="store_true", help="额外运行非阻塞的 ty 检查")
     parser.add_argument("--python", action="store_true", help="只运行 Python 检查")
     parser.add_argument("--frontend", action="store_true", help="只运行前端检查")
     return parser.parse_args()
@@ -112,7 +112,7 @@ def main() -> None:
 
     ok = True
     if run_python:
-        ok &= check_python(all_checks=args.all)
+        ok &= check_python(include_experimental=args.all)
     if run_frontend:
         ok &= check_frontend()
 

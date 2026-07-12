@@ -1,4 +1,15 @@
-import { AFFINITY_GATE, BRANCHES, CHARACTERS, FOCUS_ACTIONS, GRADE_REVIEWS, PEER_PARTNER_RELATION, PEER_PARTNER_TRUST, STORY_ARCS, getTheme, pickKnowledgeCard } from "./content";
+import {
+  AFFINITY_GATE,
+  BRANCHES,
+  CHARACTERS,
+  FOCUS_ACTIONS,
+  GRADE_REVIEWS,
+  PEER_PARTNER_RELATION,
+  PEER_PARTNER_TRUST,
+  STORY_ARCS,
+  getTheme,
+  pickKnowledgeCard,
+} from "./content";
 import { branchFlagsForMonth } from "./branching";
 import type {
   CharacterId,
@@ -16,20 +27,12 @@ import type {
   StoryArc,
 } from "../types";
 
-// ═══════════════════════════════════════════════════════════
-// Clamp & format helpers
-// ═══════════════════════════════════════════════════════════
-
 export function clamp(value: number, min = 0, max = 100): number {
   return Math.max(min, Math.min(max, Math.round(value)));
 }
 
-// When true, affection changes are logged to the console (dev aid).
 const AFFECTION_TRACE = false;
 
-// Single choke-point for every affection mutation. Clamps to [0,100] and
-// (optionally) traces the change so behaviour is debuggable — this is the
-// "adjustAffection" helper that replaces scattered `+=` writes.
 export function adjustAffection(
   relations: Record<CharacterId, number>,
   characterId: CharacterId,
@@ -40,7 +43,15 @@ export function adjustAffection(
   const next = clamp(current + delta);
   relations[characterId] = next;
   if (AFFECTION_TRACE) {
-    console.debug("[affection]", characterId, current, "->", next, `(delta ${delta >= 0 ? "+" : ""}${delta})`, reason ?? "");
+    console.debug(
+      "[affection]",
+      characterId,
+      current,
+      "->",
+      next,
+      `(delta ${delta >= 0 ? "+" : ""}${delta})`,
+      reason ?? "",
+    );
   }
   return relations;
 }
@@ -66,10 +77,6 @@ export function formatDelta(value: number): string {
   return `${sign}${value}`;
 }
 
-// ═══════════════════════════════════════════════════════════
-// Story / scene lookup
-// ═══════════════════════════════════════════════════════════
-
 export function storyForMonth(index: number, year?: string): StoryArc {
   const arc = STORY_ARCS[index % STORY_ARCS.length];
   if (year) {
@@ -79,17 +86,9 @@ export function storyForMonth(index: number, year?: string): StoryArc {
   return arc;
 }
 
-// ═══════════════════════════════════════════════════════════
-// Focus actions
-// ═══════════════════════════════════════════════════════════
-
 export function focusById(id: string): FocusAction {
   return FOCUS_ACTIONS.find((item) => item.id === id) || FOCUS_ACTIONS[0];
 }
-
-// ═══════════════════════════════════════════════════════════
-// Decision outcome builder
-// ═══════════════════════════════════════════════════════════
 
 const CATEGORY_TEXT: Record<DecisionCategory, string> = {
   deep_research: "选择了深度研究，把判断建立在数据和逻辑上",
@@ -120,253 +119,347 @@ export function buildOutcome(
   };
 }
 
-// ═══════════════════════════════════════════════════════════
-// Multi-dimensional scoring (replacing the old lookup table)
-// ═══════════════════════════════════════════════════════════
+type CoreResearchScores = Pick<
+  DecisionScore,
+  "evidenceScore" | "clarityScore" | "riskAwarenessScore"
+>;
+
+function categoryIs(
+  category: DecisionCategory,
+  ...candidates: DecisionCategory[]
+): boolean {
+  return candidates.includes(category);
+}
+
+function coreResearchScores(
+  decision: ResearchDecision,
+  story: StoryArc,
+  focus: FocusAction,
+): CoreResearchScores {
+  let evidenceScore = decision.evidenceLevel;
+  let clarityScore = decision.clarityLevel;
+  let riskAwarenessScore = decision.riskAwareness;
+
+  if (focus.id === "deep_research") {
+    evidenceScore = Math.min(20, evidenceScore + 2);
+    clarityScore = Math.min(20, clarityScore + 1);
+  }
+  if (focus.id === "team_collab") {
+    clarityScore = Math.min(20, clarityScore + 2);
+  }
+  if (story.characterId === "zhou_mingzhao") {
+    riskAwarenessScore = Math.min(20, riskAwarenessScore + 2);
+  }
+
+  const reflectionBonus = Math.floor(decision.reflectionValue / 5);
+  return {
+    evidenceScore: Math.min(20, evidenceScore + reflectionBonus),
+    clarityScore: Math.min(20, clarityScore + reflectionBonus),
+    riskAwarenessScore: Math.min(20, riskAwarenessScore + reflectionBonus),
+  };
+}
+
+function applyCharacterSynergy(
+  scores: CoreResearchScores,
+  decision: ResearchDecision,
+  story: StoryArc,
+): CoreResearchScores {
+  const next = { ...scores };
+  if (
+    story.characterId === "lin_ruoning" &&
+    categoryIs(decision.category, "deep_research", "data_deep_dive")
+  ) {
+    next.evidenceScore = Math.min(20, next.evidenceScore + 1);
+    next.clarityScore = Math.min(20, next.clarityScore + 1);
+  }
+  if (
+    story.characterId === "chen_xinghe" &&
+    categoryIs(decision.category, "data_deep_dive", "expert_interview")
+  ) {
+    next.evidenceScore = Math.min(20, next.evidenceScore + 1);
+    next.riskAwarenessScore = Math.min(20, next.riskAwarenessScore + 1);
+  }
+  if (
+    story.characterId === "zhou_mingzhao" &&
+    categoryIs(decision.category, "risk_alert", "committee_defense")
+  ) {
+    next.riskAwarenessScore = Math.min(20, next.riskAwarenessScore + 2);
+  }
+  return next;
+}
+
+function communicationScore(
+  decision: ResearchDecision,
+  story: StoryArc,
+  focus: FocusAction,
+): number {
+  const categoryScores: Partial<Record<DecisionCategory, number>> = {
+    roadshow: 18,
+    committee_defense: 17,
+    expert_interview: 14,
+  };
+  let score = categoryScores[decision.category] ?? 10;
+  if (score === 10 && focus.id === "team_collab") score = 15;
+  if (
+    story.characterId === "chen_xinghe" &&
+    categoryIs(decision.category, "data_deep_dive", "roadshow")
+  ) {
+    score = Math.min(20, score + 2);
+  }
+  return score;
+}
+
+function lifeBalanceScore(decision: ResearchDecision, focus: FocusAction): number {
+  let score = 8;
+  if (decision.category === "self_care") score = 14;
+  else if (focus.id === "self_care") score = 12;
+  else if (decision.category === "deep_research" && focus.id === "deep_research") score = 3;
+  else if (decision.category === "help_colleague") score = 10;
+  if (decision.reflectionValue >= 10) score = Math.min(15, score + 2);
+  return score;
+}
+
+function portfolioScore(decision: ResearchDecision): number {
+  if (decision.category === "deep_research") {
+    return decision.effects.portfolioNav > 0.01 ? 5 : 4;
+  }
+  const categoryScores: Partial<Record<DecisionCategory, number>> = {
+    data_deep_dive: 4,
+    risk_alert: 2,
+    self_care: 2,
+  };
+  return categoryScores[decision.category] ?? 3;
+}
+
+function gradeFor(total: number): string {
+  if (total >= 90) return "S";
+  if (total >= 75) return "A";
+  if (total >= 60) return "B";
+  if (total >= 40) return "C";
+  return "D";
+}
 
 export function scoreDecision(
   decision: ResearchDecision,
   story: StoryArc,
   focus: FocusAction,
 ): DecisionScore {
-  // ── Evidence score (0-20): from decision's evidence work ──
-  let evidenceScore = decision.evidenceLevel;
-  if (focus.id === "deep_research") evidenceScore = Math.min(20, evidenceScore + 2);
-
-  // ── Clarity score (0-20): how testable are the hypotheses ──
-  let clarityScore = decision.clarityLevel;
-  if (focus.id === "team_collab") clarityScore = Math.min(20, clarityScore + 2);
-  if (focus.id === "deep_research") clarityScore = Math.min(20, clarityScore + 1);
-
-  // ── Risk awareness score (0-20): recognising crowding and reflexivity ──
-  let riskAwarenessScore = decision.riskAwareness;
-  // Character synergy: Zhou Mingzhao's macro/risk episodes boost risk awareness
-  if (story.characterId === "zhou_mingzhao") {
-    riskAwarenessScore = Math.min(20, riskAwarenessScore + 2);
-  }
-
-  // ── Communication score (0-20): presentation and influence ──
-  let communicationScore = 10; // baseline
-  if (decision.category === "roadshow") communicationScore = 18;
-  else if (decision.category === "committee_defense") communicationScore = 17;
-  else if (decision.category === "expert_interview") communicationScore = 14;
-  else if (focus.id === "team_collab") communicationScore = Math.max(communicationScore, 15);
-  // Chen Xinghe synergy for data-driven communication
-  if (story.characterId === "chen_xinghe" && (decision.category === "data_deep_dive" || decision.category === "roadshow")) {
-    communicationScore = Math.min(20, communicationScore + 2);
-  }
-
-  // ── Life balance score (0-15): maintaining sustainable pace ──
-  let lifeBalanceScore = 8; // baseline
-  if (decision.category === "self_care") lifeBalanceScore = 14;
-  else if (focus.id === "self_care") lifeBalanceScore = Math.max(lifeBalanceScore, 12);
-  else if (decision.category === "deep_research" && focus.id === "deep_research") lifeBalanceScore = 3;
-  else if (decision.category === "help_colleague") lifeBalanceScore = 10;
-  // Reflection bonus from self-care decisions
-  if (decision.reflectionValue >= 10) lifeBalanceScore = Math.min(15, lifeBalanceScore + 2);
-
-  // ── Portfolio score (0-5): research recommendation tracking ──
-  // Minimal weight — this is about the research process, not stock-picking luck
-  let portfolioScore = 3; // baseline
-  if (decision.category === "deep_research" && decision.effects.portfolioNav > 0.01) portfolioScore = 5;
-  else if (decision.category === "deep_research") portfolioScore = 4;
-  else if (decision.category === "data_deep_dive") portfolioScore = 4;
-  else if (decision.category === "risk_alert") portfolioScore = 2;
-  else if (decision.category === "self_care") portfolioScore = 2;
-
-  // ── Reflection bonus (built into the scores from decision.reflectionValue) ──
-  // Reflection quality enhances all dimensions slightly
-  const reflectionBonus = Math.floor(decision.reflectionValue / 5);
-  evidenceScore = Math.min(20, evidenceScore + reflectionBonus);
-  clarityScore = Math.min(20, clarityScore + reflectionBonus);
-  riskAwarenessScore = Math.min(20, riskAwarenessScore + reflectionBonus);
-
-  // ── Character synergy bonus ──
-  const characterId = story.characterId;
-  if (characterId === "lin_ruoning" && (decision.category === "deep_research" || decision.category === "data_deep_dive")) {
-    evidenceScore = Math.min(20, evidenceScore + 1);
-    clarityScore = Math.min(20, clarityScore + 1);
-  } else if (characterId === "chen_xinghe" && (decision.category === "data_deep_dive" || decision.category === "expert_interview")) {
-    evidenceScore = Math.min(20, evidenceScore + 1);
-    riskAwarenessScore = Math.min(20, riskAwarenessScore + 1);
-  } else if (characterId === "zhou_mingzhao" && (decision.category === "risk_alert" || decision.category === "committee_defense")) {
-    riskAwarenessScore = Math.min(20, riskAwarenessScore + 2);
-  }
-
-  // ── Total ──
-  const total = Math.min(100,
-    evidenceScore + clarityScore + riskAwarenessScore +
-    communicationScore + lifeBalanceScore + portfolioScore
+  const researchScores = applyCharacterSynergy(
+    coreResearchScores(decision, story, focus),
+    decision,
+    story,
   );
-
-  let grade = "D";
-  if (total >= 90) grade = "S";
-  else if (total >= 75) grade = "A";
-  else if (total >= 60) grade = "B";
-  else if (total >= 40) grade = "C";
-
-  // Reasoning quality, surfaced separately from the conclusion's correctness.
-  // A strong research pick (high evidence/clarity/risk) earns a high score
-  // here; a thin-but-well-graded pick (e.g. high life/communication, low
-  // evidence) earns a low one. Used for "parachuted conclusion" detection and
-  // for telling the player *why* a grade was earned.
+  const communication = communicationScore(decision, story, focus);
+  const lifeBalance = lifeBalanceScore(decision, focus);
+  const portfolio = portfolioScore(decision);
+  const total = Math.min(
+    100,
+    researchScores.evidenceScore +
+      researchScores.clarityScore +
+      researchScores.riskAwarenessScore +
+      communication +
+      lifeBalance +
+      portfolio,
+  );
   const reasoningScore = Math.min(
     25,
-    Math.round(((evidenceScore + clarityScore + riskAwarenessScore) / 3) * 1.25),
+    Math.round(
+      ((researchScores.evidenceScore +
+        researchScores.clarityScore +
+        researchScores.riskAwarenessScore) /
+        3) *
+        1.25,
+    ),
   );
 
   return {
-    evidenceScore,
-    clarityScore,
-    riskAwarenessScore,
-    communicationScore,
-    lifeBalanceScore,
-    portfolioScore,
+    ...researchScores,
+    communicationScore: communication,
+    lifeBalanceScore: lifeBalance,
+    portfolioScore: portfolio,
     reasoningScore,
     total,
-    grade,
+    grade: gradeFor(total),
   };
 }
-
-// ═══════════════════════════════════════════════════════════
-// Grade review text
-// ═══════════════════════════════════════════════════════════
 
 export function gradeReviewText(characterId: CharacterId, grade: string): string {
   const reviews = GRADE_REVIEWS[characterId as MentorId]?.[grade];
   if (!reviews || reviews.length === 0) return "";
-  const seed = Array.from(grade).reduce((sum, c) => sum + c.charCodeAt(0), 0);
+  const seed = Array.from(grade).reduce((sum, character) => sum + character.charCodeAt(0), 0);
   return reviews[seed % reviews.length];
 }
-
-// ═══════════════════════════════════════════════════════════
-// State transitions
-// ═══════════════════════════════════════════════════════════
 
 export function selectFocus(state: GameState, focusId: string): GameState {
   if (state.locked || state.finished) return state;
   return { ...state, focusId };
 }
 
-export function makeDecision(state: GameState, _data: GameDataYear, decision: ResearchDecision): GameState {
-  if (state.locked || state.finished) return state;
-  const story = storyForMonth(state.monthIndex, state.year);
-  const focus = focusById(state.focusId);
-  const outcome = buildOutcome(decision, story, focus);
-  const characterId = story.characterId;
-  const eff = decision.effects;
+type NextMetrics = Pick<
+  GameState,
+  | "researchCredibility"
+  | "committeeAdoption"
+  | "portfolioNav"
+  | "viewAccuracy"
+  | "clientFeedback"
+  | "teamTrust"
+  | "fatigue"
+  | "lifeBalance"
+> & { rawPortfolioNav: number };
 
-  // Apply focus bonuses
-  const researchBonus = focus.researchCredibilityBonus;
-  const fatigueFromFocus = focus.fatigueDelta;
-  const lifeBalanceFromFocus = focus.lifeBalanceDelta;
-  const teamTrustFromFocus = focus.teamTrustBonus;
+function nextMetrics(
+  state: GameState,
+  decision: ResearchDecision,
+  focus: FocusAction,
+): NextMetrics {
+  const effects = decision.effects;
+  const rawPortfolioNav = Math.max(0.001, state.portfolioNav * (1 + effects.portfolioNav));
+  return {
+    researchCredibility: clamp(
+      state.researchCredibility +
+        effects.researchCredibility +
+        focus.researchCredibilityBonus,
+    ),
+    committeeAdoption: clamp(state.committeeAdoption + effects.committeeAdoption),
+    portfolioNav: Math.round(rawPortfolioNav * 10000) / 10000,
+    rawPortfolioNav,
+    viewAccuracy: clamp(state.viewAccuracy + effects.viewAccuracy),
+    clientFeedback: clamp(state.clientFeedback + effects.clientFeedback),
+    teamTrust: clamp(state.teamTrust + effects.teamTrust + focus.teamTrustBonus),
+    fatigue: clamp(state.fatigue + effects.fatigue + focus.fatigueDelta),
+    lifeBalance: clamp(state.lifeBalance + effects.lifeBalance + focus.lifeBalanceDelta),
+  };
+}
 
-  const nextResearchCredibility = clamp(state.researchCredibility + eff.researchCredibility + researchBonus);
-  const nextCommitteeAdoption = clamp(state.committeeAdoption + eff.committeeAdoption);
-  // portfolioNav tracks research recommendation performance (not personal trading)
-  const nextPortfolioNav = Math.max(0.001, state.portfolioNav * (1 + eff.portfolioNav));
-  const nextViewAccuracy = clamp(state.viewAccuracy + eff.viewAccuracy);
-  const nextClientFeedback = clamp(state.clientFeedback + eff.clientFeedback);
-  const nextTeamTrust = clamp(state.teamTrust + eff.teamTrust + teamTrustFromFocus);
-  const nextFatigue = clamp(state.fatigue + eff.fatigue + fatigueFromFocus);
-  const nextLifeBalance = clamp(state.lifeBalance + eff.lifeBalance + lifeBalanceFromFocus);
-
-  // All per-decision affection deltas are applied exactly once through the
-  // central adjustAffection helper (no hidden double-counting).
-  const nextRelations: Record<CharacterId, number> = { ...state.relations };
-  eff.characterRelations.forEach((rel) => {
-    adjustAffection(nextRelations, rel.characterId, rel.value, `decision:${decision.id}`);
-  });
-  // The month's arc character also absorbs a small fraction of the team trust
-  // built through the chosen daily focus. This is an explicit, documented
-  // coupling (not a hidden double-count) and is intentionally small so the
-  // player's own choices dominate who they grow close to.
-  const focusTrustToArc = Math.floor(teamTrustFromFocus / 3);
-  if (focusTrustToArc !== 0) {
-    adjustAffection(nextRelations, characterId, focusTrustToArc, `focus:${focus.id}`);
+function nextRelations(
+  state: GameState,
+  decision: ResearchDecision,
+  story: StoryArc,
+  focus: FocusAction,
+): Record<CharacterId, number> {
+  const relations = { ...state.relations };
+  for (const relation of decision.effects.characterRelations) {
+    adjustAffection(relations, relation.characterId, relation.value, `decision:${decision.id}`);
   }
+  const focusTrustToArc = Math.floor(focus.teamTrustBonus / 3);
+  if (focusTrustToArc !== 0) {
+    adjustAffection(relations, story.characterId, focusTrustToArc, `focus:${focus.id}`);
+  }
+  return relations;
+}
 
-  // Accumulate the chosen decision category so route branches can read a
-  // "category streak" — the primary signal distinguishing research-obsessed,
-  // relationship-focused, self-care-balanced, ... playstyles.
-  const nextCategoryCounts: Partial<Record<DecisionCategory, number>> = {
+function markAffinityFlags(
+  state: GameState,
+  relations: Record<CharacterId, number>,
+  flags: Record<string, boolean | number>,
+): CharacterId | null {
+  let milestone: CharacterId | null = null;
+  for (const characterId of Object.keys(relations) as CharacterId[]) {
+    const before = state.relations[characterId] ?? 0;
+    const after = relations[characterId];
+    const gate =
+      CHARACTERS[characterId]?.kind === "peer" ? PEER_PARTNER_RELATION : AFFINITY_GATE;
+    if (after >= gate) flags[`affinity_${characterId}`] = after;
+    if (before < gate && after >= gate && milestone === null) milestone = characterId;
+  }
+  return milestone;
+}
+
+function applyNarrativeFlags(
+  flags: Record<string, boolean | number>,
+  decision: ResearchDecision,
+  score: DecisionScore,
+  framework: CharacterId,
+): void {
+  if (score.grade === "S") flags[`respect_${framework}`] = true;
+  if (score.grade === "D") flags[`watch_${framework}`] = true;
+  const isParachuted = score.evidenceScore + score.clarityScore < 24 && score.total >= 70;
+  if (isParachuted) flags[`parachuted_${framework}`] = true;
+
+  if (decision.category === "help_colleague") {
+    const primaryRelation = decision.effects.characterRelations[0]?.characterId;
+    if (primaryRelation === "chen_xinghe") flags.helped_xinghe = true;
+    if (primaryRelation === "zhao_chengyu") flags.helped_zhao = true;
+  }
+  if (decision.setsFlags) Object.assign(flags, decision.setsFlags);
+}
+
+function nextOffice(state: GameState, decision: ResearchDecision, focus: FocusAction): OfficeState {
+  const addsPostIt = categoryIs(decision.category, "deep_research", "help_colleague");
+  const addsWhiteboard = categoryIs(
+    decision.category,
+    "deep_research",
+    "data_deep_dive",
+    "committee_defense",
+  );
+  const addsCoffee = focus.id === "deep_research" || decision.category === "deep_research";
+  return {
+    postIts: state.office.postIts + Number(addsPostIt),
+    whiteboardMarkers: state.office.whiteboardMarkers + Number(addsWhiteboard),
+    coffeeCups: state.office.coffeeCups + Number(addsCoffee),
+    monthsElapsed: state.monthIndex + 1,
+  };
+}
+
+function nextKnowledgeCards(
+  state: GameState,
+  card: KnowledgeCard | null,
+): KnowledgeCard[] {
+  if (!card) return state.knowledgeCards;
+  const alreadyHas = state.knowledgeCards.some((existing) => existing.id === card.id);
+  return alreadyHas ? state.knowledgeCards : [...state.knowledgeCards, card];
+}
+
+function nextCategoryCounts(
+  state: GameState,
+  decision: ResearchDecision,
+): Partial<Record<DecisionCategory, number>> {
+  return {
     ...state.categoryCounts,
     [decision.category]: (state.categoryCounts[decision.category] ?? 0) + 1,
   };
+}
 
-  // Affinity gates: record which characters crossed the relationship threshold,
-  // and surface a one-time milestone for the UI.
-  const nextFlags: Record<string, boolean | number> = { ...state.flags };
-  let milestone: CharacterId | null = null;
-  (Object.keys(nextRelations) as CharacterId[]).forEach((cid) => {
-    const before = state.relations[cid] ?? 0;
-    const after = nextRelations[cid];
-    // 同级同事（peer）走友谊/搭档线，用更低的专属门槛，不与浪漫心动线的 60 同标。
-    const gate = CHARACTERS[cid]?.kind === "peer" ? PEER_PARTNER_RELATION : AFFINITY_GATE;
-    if (after >= gate) nextFlags[`affinity_${cid}`] = after;
-    if (before < gate && after >= gate && !milestone) milestone = cid;
-  });
+export function makeDecision(
+  state: GameState,
+  _data: GameDataYear,
+  decision: ResearchDecision,
+): GameState {
+  if (state.locked || state.finished) return state;
 
-  // Record the route branches that were active while playing this month (they
-  // were already evaluated to build the scene, so this just persists them).
-  Object.assign(nextFlags, branchFlagsForMonth(state, BRANCHES));
+  const story = storyForMonth(state.monthIndex, state.year);
+  const focus = focusById(state.focusId);
+  const outcome = buildOutcome(decision, story, focus);
+  const metrics = nextMetrics(state, decision, focus);
+  const relations = nextRelations(state, decision, story, focus);
+  const flags: Record<string, boolean | number> = { ...state.flags };
+  const milestone = markAffinityFlags(state, relations, flags);
+  Object.assign(flags, branchFlagsForMonth(state, BRANCHES));
 
   const score = scoreDecision(decision, story, focus);
-
-  // ── New narrative-system computation ──
   const framework = frameworkOf(decision, story);
   const card: KnowledgeCard | null = pickKnowledgeCard(decision, story);
   const isParachuted = score.evidenceScore + score.clarityScore < 24 && score.total >= 70;
-
-  // Grade-driven and liability flags — read by content branches in later months.
-  if (score.grade === "S") nextFlags[`respect_${framework}`] = true;
-  if (score.grade === "D") nextFlags[`watch_${framework}`] = true;
-  if (isParachuted) nextFlags[`parachuted_${framework}`] = true;
-  // Delayed-consequence seeds: helping a colleague early earns a later favour.
-  // 陈星禾 → 闭门席位，赵承宇 → 第九话人情返还。两者都靠「帮同事」这一选择埋种，
-  // 用主要好感对象区分，而非 framework（赵承宇的教学归属借给陈星禾，本就不进图鉴）。
-  if (decision.category === "help_colleague") {
-    const primaryRel = decision.effects.characterRelations[0]?.characterId;
-    if (primaryRel === "chen_xinghe") nextFlags.helped_xinghe = true;
-    if (primaryRel === "zhao_chengyu") nextFlags.helped_zhao = true;
-  }
-  // 决策自带的旗标（如 peer 分歧里把「立场」写进 peer_stand/yield/fence）。
-  // 放在帮忙埋种之后，统一在此合并，避免引擎为每个决策 id 写特例。
-  if (decision.setsFlags) Object.assign(nextFlags, decision.setsFlags);
+  applyNarrativeFlags(flags, decision, score, framework);
   const businessVerdict = buildBusinessVerdict(story.theme, score);
-
-  // Office accumulates meaning through props, not exposition.
-  const nextOffice: OfficeState = {
-    postIts: state.office.postIts + (decision.category === "deep_research" || decision.category === "help_colleague" ? 1 : 0),
-    whiteboardMarkers:
-      state.office.whiteboardMarkers +
-      (decision.category === "deep_research" || decision.category === "data_deep_dive" || decision.category === "committee_defense" ? 1 : 0),
-    coffeeCups: state.office.coffeeCups + (focus.id === "deep_research" || decision.category === "deep_research" ? 1 : 0),
-    monthsElapsed: state.monthIndex + 1,
-  };
-
-  // Collect the knowledge card into the glossary (dedupe by id).
-  const alreadyHas = state.knowledgeCards.some((k) => k.id === card?.id);
-  const nextKnowledgeCards = card && !alreadyHas ? [...state.knowledgeCards, card] : state.knowledgeCards;
 
   return {
     ...state,
-    office: nextOffice,
-    knowledgeCards: nextKnowledgeCards,
+    office: nextOffice(state, decision, focus),
+    knowledgeCards: nextKnowledgeCards(state, card),
     locked: true,
     selectedId: decision.id,
-    researchCredibility: nextResearchCredibility,
-    committeeAdoption: nextCommitteeAdoption,
-    portfolioNav: Math.round(nextPortfolioNav * 10000) / 10000,
-    viewAccuracy: nextViewAccuracy,
-    clientFeedback: nextClientFeedback,
-    teamTrust: nextTeamTrust,
-    fatigue: nextFatigue,
-    lifeBalance: nextLifeBalance,
-    relations: nextRelations,
-    flags: nextFlags,
-    categoryCounts: nextCategoryCounts,
+    researchCredibility: metrics.researchCredibility,
+    committeeAdoption: metrics.committeeAdoption,
+    portfolioNav: metrics.portfolioNav,
+    viewAccuracy: metrics.viewAccuracy,
+    clientFeedback: metrics.clientFeedback,
+    teamTrust: metrics.teamTrust,
+    fatigue: metrics.fatigue,
+    lifeBalance: metrics.lifeBalance,
+    relations,
+    flags,
+    categoryCounts: nextCategoryCounts(state, decision),
     milestone,
     finished: state.monthIndex >= 11,
     history: [
@@ -374,22 +467,22 @@ export function makeDecision(state: GameState, _data: GameDataYear, decision: Re
       {
         month: `${state.year}-${String(state.monthIndex + 1).padStart(2, "0")}`,
         label: `${state.year}年${state.monthIndex + 1}月`,
-        characterId,
+        characterId: story.characterId,
         sceneTitle: story.title,
         selected: decision,
         focus,
         outcome,
-        researchCredibilityAfter: nextResearchCredibility,
-        committeeAdoptionAfter: nextCommitteeAdoption,
-        portfolioNavAfter: nextPortfolioNav,
-        viewAccuracyAfter: nextViewAccuracy,
-        clientFeedbackAfter: nextClientFeedback,
-        teamTrustAfter: nextTeamTrust,
-        fatigueAfter: nextFatigue,
-        lifeBalanceAfter: nextLifeBalance,
-        relationsAfter: { ...nextRelations },
+        researchCredibilityAfter: metrics.researchCredibility,
+        committeeAdoptionAfter: metrics.committeeAdoption,
+        portfolioNavAfter: metrics.rawPortfolioNav,
+        viewAccuracyAfter: metrics.viewAccuracy,
+        clientFeedbackAfter: metrics.clientFeedback,
+        teamTrustAfter: metrics.teamTrust,
+        fatigueAfter: metrics.fatigue,
+        lifeBalanceAfter: metrics.lifeBalance,
+        relationsAfter: { ...relations },
         marketTheme: story.theme.title,
-        marketReturn: 0, // Will be filled from data if available
+        marketReturn: 0,
         score,
         businessVerdict,
         framework,
@@ -400,47 +493,20 @@ export function makeDecision(state: GameState, _data: GameDataYear, decision: Re
   };
 }
 
-// ═══════════════════════════════════════════════════════════
-// Post-mortem text
-// ═══════════════════════════════════════════════════════════
-
-export function postMortem(
-  decision: ResearchDecision,
-  monthLabel: string,
-): string {
+export function postMortem(decision: ResearchDecision, monthLabel: string): string {
   return `${monthLabel} ${CATEGORY_TEXT[decision.category] || "做了选择"}。${decision.backgroundNote || ""}`;
 }
 
-// ═══════════════════════════════════════════════════════════
-// Business-fact settlement (replaces market-return scoring)
-// ═══════════════════════════════════════════════════════════
-//
-// Short-term prices are noise — they don't reflect business reality, so they
-// are NOT the arbiter of right/wrong here. Instead each month carries an
-// authored `businessOutcome`: what the underlying business reality actually
-// turned out to be. The verdict rewards *reasoning*, not luck: a well-built
-// hypothesis that the messy business reality only half-confirms still earns
-// the colleague's respect, because the player learned to think, not to guess.
-
-// Which colleague's methodology this choice engaged. Falls back to the
-// decision's primary relation, then to the month's arc character.
 export function frameworkOf(decision: ResearchDecision, story: StoryArc): CharacterId {
   if (decision.framework) return decision.framework;
   const primary = decision.effects.characterRelations[0]?.characterId;
   return primary ?? story.characterId;
 }
 
-// Builds the month's settlement verdict from the authored business outcome
-// plus how well the player reasoned (so a correct-but-thin answer is called
-// out, and a wrong-but-rigorous one is still respected).
-export function buildBusinessVerdict(
-  theme: MarketTheme,
-  score: DecisionScore,
-): string {
-  const outcome = theme.businessOutcome;
+export function buildBusinessVerdict(theme: MarketTheme, score: DecisionScore): string {
   const fallback =
     "业务事实在月末才慢慢显形。价格会吵吵闹闹，但生意自己会说话，你这次的框架，经得起回头看吗？";
-  const base = outcome && outcome.length > 0 ? outcome : fallback;
+  const base = theme.businessOutcome?.length ? theme.businessOutcome : fallback;
 
   if (score.reasoningScore >= 18) {
     return `${base} 更难得的是，你这次的推导链经得起业务事实的检验，不是蒙对的，是想通的。`;
@@ -451,34 +517,29 @@ export function buildBusinessVerdict(
   return base;
 }
 
-// ═══════════════════════════════════════════════════════════
-// Best route (highest relation)
-// ═══════════════════════════════════════════════════════════
-
 export function bestRoute(state: GameState): CharacterId {
-  // 同级友人（peer，如赵承宇）只走友谊线，不进浪漫主线路线筛选。
   const sorted = (Object.entries(state.relations) as Array<[CharacterId, number]>)
-    .filter(([cid]) => CHARACTERS[cid]?.kind !== "peer")
-    .sort((a, b) => b[1] - a[1]);
+    .filter(([characterId]) => CHARACTERS[characterId]?.kind !== "peer")
+    .sort((left, right) => right[1] - left[1]);
   return sorted[0]?.[0] || "lin_ruoning";
 }
 
-// 「最佳搭档」结局判定：赵承宇关系够高（肯跟他搭档）+ 你是个够体面的队友
-// （teamTrust 够高）。与浪漫心动线彻底分流——这是并肩搭档结局，不是恋爱结局。
-// 命中时 EndingPanel 会改走搭档分支，bestRoute 的导师筛选照常不参与。
 export function isBestPartner(state: GameState): boolean {
-  return (state.relations.zhao_chengyu ?? 0) >= PEER_PARTNER_RELATION && state.teamTrust >= PEER_PARTNER_TRUST;
+  return (
+    (state.relations.zhao_chengyu ?? 0) >= PEER_PARTNER_RELATION &&
+    state.teamTrust >= PEER_PARTNER_TRUST
+  );
 }
 
 export function totalRelations(state: GameState): number {
-  return Object.values(state.relations).reduce((sum, v) => sum + v, 0);
+  return Object.values(state.relations).reduce((sum, value) => sum + value, 0);
 }
 
-// ═══════════════════════════════════════════════
-// Branching / progression flags
-// ═══════════════════════════════════════════════
-
-export function setFlag(state: GameState, key: string, value: boolean | number = true): GameState {
+export function setFlag(
+  state: GameState,
+  key: string,
+  value: boolean | number = true,
+): GameState {
   return { ...state, flags: { ...state.flags, [key]: value } };
 }
 

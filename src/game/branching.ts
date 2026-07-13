@@ -1,4 +1,9 @@
-import type { Branch, BranchCondition, GameState } from "../types";
+import type {
+  Branch,
+  BranchCondition,
+  BranchMetaContext,
+  GameState,
+} from "../types";
 
 function flagIsSet(state: GameState, key: string): boolean {
   const value = state.flags[key];
@@ -9,7 +14,10 @@ function numberOrZero(value: number | undefined): number {
   return value ?? 0;
 }
 
-function metricValue(state: GameState, key: Extract<BranchCondition, { kind: "metric" }>['key']): number {
+function metricValue(
+  state: GameState,
+  key: Extract<BranchCondition, { kind: "metric" }>["key"],
+): number {
   return state[key];
 }
 
@@ -37,7 +45,10 @@ function suppressRepeatedNodes(state: GameState, branch: Branch): Branch {
   };
 }
 
-export function evaluateBranchCondition(cond: BranchCondition, state: GameState): boolean {
+function evaluateStateLeaf(
+  cond: BranchCondition,
+  state: GameState,
+): boolean | null {
   switch (cond.kind) {
     case "always":
       return true;
@@ -53,26 +64,62 @@ export function evaluateBranchCondition(cond: BranchCondition, state: GameState)
       return cond.equals === undefined
         ? flagIsSet(state, cond.key)
         : state.flags[cond.key] === cond.equals;
+    default:
+      return null;
+  }
+}
+
+function evaluateProgressLeaf(
+  cond: BranchCondition,
+  state: GameState,
+  meta?: BranchMetaContext,
+): boolean | null {
+  switch (cond.kind) {
     case "categoryStreak":
       return numberOrZero(state.categoryCounts[cond.category]) >= cond.gte;
     case "methodStreak":
       return numberOrZero(state.methodCounts[cond.method]) >= cond.gte;
     case "month":
       return state.monthIndex >= cond.gte;
-    case "and":
-      return cond.of.every((child) => evaluateBranchCondition(child, state));
-    case "or":
-      return cond.of.some((child) => evaluateBranchCondition(child, state));
-    case "not":
-      return !evaluateBranchCondition(cond.of, state);
+    case "cycle":
+      return (meta?.cycle ?? 1) >= cond.gte;
+    case "memoryKey":
+      return meta?.memoryKeys.includes(cond.key) ?? false;
+    default:
+      return null;
   }
 }
 
-export function activeBranches(state: GameState, branches: Branch[]): Branch[] {
+export function evaluateBranchCondition(
+  cond: BranchCondition,
+  state: GameState,
+  meta?: BranchMetaContext,
+): boolean {
+  const stateLeaf = evaluateStateLeaf(cond, state);
+  if (stateLeaf !== null) return stateLeaf;
+  const progressLeaf = evaluateProgressLeaf(cond, state, meta);
+  if (progressLeaf !== null) return progressLeaf;
+  if (cond.kind === "and") {
+    return cond.of.every((child) => evaluateBranchCondition(child, state, meta));
+  }
+  if (cond.kind === "or") {
+    return cond.of.some((child) => evaluateBranchCondition(child, state, meta));
+  }
+  if (cond.kind === "not") {
+    return !evaluateBranchCondition(cond.of, state, meta);
+  }
+  return false;
+}
+
+export function activeBranches(
+  state: GameState,
+  branches: Branch[],
+  meta?: BranchMetaContext,
+): Branch[] {
   return branches
     .filter((branch) => {
       if (branch.once && flagIsSet(state, `seen_${branch.id}`)) return false;
-      return evaluateBranchCondition(branch.when, state);
+      return evaluateBranchCondition(branch.when, state, meta);
     })
     .map((branch) => suppressRepeatedNodes(state, branch));
 }
@@ -80,9 +127,10 @@ export function activeBranches(state: GameState, branches: Branch[]): Branch[] {
 export function branchFlagsForMonth(
   state: GameState,
   branches: Branch[],
+  meta?: BranchMetaContext,
 ): Record<string, boolean | number> {
   const flags: Record<string, boolean | number> = {};
-  for (const branch of activeBranches(state, branches)) {
+  for (const branch of activeBranches(state, branches, meta)) {
     if (branch.contribute.setFlags) {
       Object.assign(flags, branch.contribute.setFlags);
     }

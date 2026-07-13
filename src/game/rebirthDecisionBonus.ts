@@ -1,5 +1,4 @@
 import type { DecisionMethod } from "../types";
-import type { InvestigationClueId, RebirthMetaState } from "./rebirth";
 
 export interface DecisionBonus {
   evidence: number;
@@ -10,7 +9,7 @@ export interface DecisionBonus {
 }
 
 interface DecisionBonusRule extends Partial<DecisionBonus> {
-  clueId: InvestigationClueId;
+  clueId: string;
   methods?: DecisionMethod[];
 }
 
@@ -47,18 +46,69 @@ const DECISION_BONUS_RULES: DecisionBonusRule[] = [
     clarity: 2,
     risk: 2,
   },
+
+  { clueId: "apr_income_claim", evidence: 1 },
+  {
+    clueId: "apr_quality_verified",
+    methods: ["fundamental_research", "field_research", "committee_process"],
+    evidence: 3,
+    clarity: 2,
+  },
+  { clueId: "apr_tariff_exposure", risk: 2 },
+  {
+    clueId: "apr_price_reaction",
+    methods: ["quantitative_research", "communication"],
+    evidence: 2,
+  },
+  { clueId: "apr_hindsight_gap", clarity: 2, reflection: 3 },
+
+  { clueId: "jul_upstream_profit", evidence: 2 },
+  {
+    clueId: "jul_fund_flow_divergence",
+    methods: ["quantitative_research", "fundamental_research"],
+    evidence: 2,
+    risk: 1,
+  },
+  { clueId: "jul_chain_heatmap", evidence: 2, clarity: 3 },
+  { clueId: "jul_failed_app_sample", evidence: 2, risk: 2, reflection: 1 },
+  {
+    clueId: "jul_rebalance_plan",
+    methods: ["risk_management", "committee_process"],
+    clarity: 2,
+    risk: 3,
+  },
+
+  { clueId: "sep_rule_change", clarity: 1, risk: 1 },
+  {
+    clueId: "sep_factor_decay",
+    methods: ["quantitative_research", "risk_management"],
+    evidence: 3,
+    risk: 2,
+  },
+  { clueId: "sep_access_channel", evidence: 1, clarity: 1 },
+  {
+    clueId: "sep_recalibration_protocol",
+    methods: ["collaboration", "quantitative_research", "committee_process"],
+    evidence: 2,
+    clarity: 3,
+    reflection: 1,
+  },
+  { clueId: "sep_microstructure_risk", risk: 3 },
+
+  { clueId: "dec_full_year_errors", evidence: 2, reflection: 2 },
+  { clueId: "dec_memory_provenance", clarity: 2, reflection: 3 },
+  { clueId: "dec_counterfactual", evidence: 2, risk: 2, reflection: 2 },
+  { clueId: "dec_sustainable_framework", risk: 1, reflection: 2, fatigue: -1 },
+  { clueId: "dec_truth_hypothesis", evidence: 3, clarity: 3, risk: 3, reflection: 3 },
 ];
 
-function hasClue(meta: RebirthMetaState, clueId: InvestigationClueId): boolean {
-  return meta.investigation?.clueIds.includes(clueId) ?? false;
-}
-
 export function investigationDecisionBonus(
-  meta: RebirthMetaState,
+  clueIds: string[],
   method: DecisionMethod,
 ): DecisionBonus {
+  const clues = new Set(clueIds);
   return DECISION_BONUS_RULES.reduce<DecisionBonus>((bonus, rule) => {
-    if (!hasClue(meta, rule.clueId)) return bonus;
+    if (!clues.has(rule.clueId)) return bonus;
     if (rule.methods && !rule.methods.includes(method)) return bonus;
     return {
       evidence: bonus.evidence + (rule.evidence ?? 0),

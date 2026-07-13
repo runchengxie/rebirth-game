@@ -1,0 +1,279 @@
+.archive-tabs {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.archive-tabs button {
+  padding: 0 6px;
+  font-size: 12px;
+}
+
+.interaction-actions {
+  grid-template-columns: auto auto auto minmax(132px, 1fr);
+}
+
+.rebirth-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rebirth-section-head h3,
+.rebirth-section-head p {
+  margin: 0;
+}
+
+.rebirth-section-head p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.rebirth-section-head > b {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: var(--pink-soft);
+  color: var(--pink);
+  font-size: 11px;
+}
+
+.rebirth-clues li {
+  border-left: 3px solid var(--line);
+}
+
+.rebirth-clues li.reliability-verified {
+  border-left-color: var(--green);
+}
+
+.rebirth-clues li.reliability-counterexample {
+  border-left-color: var(--red);
+}
+
+.rebirth-clues li.reliability-state {
+  border-left-color: var(--lavender);
+}
+
+.rebirth-clues li > small {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.rebirth-flow {
+  display: grid;
+  gap: 13px;
+}
+
+.rebirth-flow > ol {
+  position: relative;
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rebirth-flow > ol::before {
+  position: absolute;
+  top: 17px;
+  bottom: 17px;
+  left: 29px;
+  width: 2px;
+  background: var(--line);
+  content: "";
+}
+
+.rebirth-flow li {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.flow-month {
+  display: grid;
+  place-content: center;
+  min-height: 54px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-strong);
+  text-align: center;
+}
+
+.flow-month span {
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.flow-month b {
+  margin-top: 2px;
+  color: var(--pink);
+  font-size: 9px;
+  line-height: 1.25;
+}
+
+.flow-copy {
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.flow-copy strong,
+.flow-copy p,
+.flow-copy small,
+.flow-copy i {
+  display: block;
+}
+
+.flow-copy strong {
+  font-size: 13px;
+}
+
+.flow-copy p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.flow-copy small,
+.flow-copy i {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+  font-style: normal;
+}
+
+.flow-copy > div {
+  display: flex;
+  gap: 4px;
+  margin-top: 5px;
+  flex-wrap: wrap;
+}
+
+.flow-copy > div span {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--surface-strong);
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.rebirth-flow li.current .flow-month,
+.rebirth-flow li.current .flow-copy {
+  border-color: var(--pink);
+}
+
+.rebirth-flow li.completed .flow-month {
+  border-color: var(--green);
+}
+
+.rebirth-flow li.locked {
+  opacity: 0.58;
+}
+
+.rebirth-flow li.key-month .flow-copy {
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--pink) 55%, transparent);
+}
+
+.office-hub {
+  display: grid;
+  gap: 13px;
+}
+
+.office-prop-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.office-prop-grid button {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--ink);
+  text-align: left;
+}
+
+.office-prop-grid button:not(:disabled):hover,
+.office-prop-grid button:not(:disabled):focus-visible {
+  border-color: var(--pink);
+  background: var(--pink-soft);
+}
+
+.office-prop-grid button.completed {
+  border-color: color-mix(in srgb, var(--green) 58%, var(--line));
+  opacity: 0.88;
+}
+
+.office-prop-grid button > span,
+.office-prop-grid button > small {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.office-prop-grid button > strong {
+  font-size: 14px;
+}
+
+.office-prop-grid button > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.office-discoveries {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.office-discoveries li {
+  display: grid;
+  gap: 3px;
+  padding: 9px 10px;
+  border-left: 3px solid var(--lavender);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.office-discoveries strong {
+  font-size: 12px;
+}
+
+.office-discoveries span {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+@media (max-width: 760px) {
+  .archive-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .interaction-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .primary-action {
+    justify-self: stretch;
+    min-width: 0;
+  }
+
+  .office-prop-grid {
+    grid-template-columns: 1fr;
+  }
+}

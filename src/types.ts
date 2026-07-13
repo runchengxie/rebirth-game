@@ -227,6 +227,11 @@ export type BranchMetricKey =
   | "fatigue"
   | "lifeBalance";
 
+export interface BranchMetaContext {
+  cycle: number;
+  memoryKeys: string[];
+}
+
 export type BranchCondition =
   | { kind: "always" }
   | { kind: "affinity"; characterId: CharacterId; gte: number }
@@ -237,6 +242,8 @@ export type BranchCondition =
   | { kind: "categoryStreak"; category: DecisionCategory; gte: number }
   | { kind: "methodStreak"; method: DecisionMethod; gte: number }
   | { kind: "month"; gte: number }
+  | { kind: "cycle"; gte: number }
+  | { kind: "memoryKey"; key: string }
   | { kind: "and"; of: BranchCondition[] }
   | { kind: "or"; of: BranchCondition[] }
   | { kind: "not"; of: BranchCondition };

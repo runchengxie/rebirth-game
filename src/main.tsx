@@ -3,6 +3,7 @@ import App from "./App";
 import "./styles.css";
 import "./immersive.css";
 import "./rebirth.css";
+import "./rebirth-v2.css";
 
 const root = document.getElementById("root");
 

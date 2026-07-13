@@ -9,7 +9,12 @@ function emptyYear(): GameDataYear {
     year: 2025,
     currency: "CNY",
     generatedAt: new Date().toISOString(),
-    source: {},
+    source: {
+      dailyDataset: "test",
+      dailyDatasetVersion: "1",
+      instrumentDataset: "test",
+      priceColumn: "adj_close",
+    },
     rules: {},
     benchmarks: [],
     scenes: [],

@@ -124,6 +124,8 @@ for (const file of [
   "src/game/saveState.ts",
   "src/game/saveState.test.ts",
   "src/game/sceneBuilders.ts",
+  "src/game/supportingRoutes2025.ts",
+  "src/game/supportingRoutes2025.test.ts",
   "src/game/storyArcs.ts",
   "src/game/verified2025.ts",
   "src/game/content/schema.ts",
@@ -183,6 +185,11 @@ requireText("src/game/linRoute2025.ts", [
   "lin_route_committed",
   "lin_route_regret",
   "lin_used_hindsight_as_proof",
+]);
+requireText("src/game/supportingRoutes2025.ts", [
+  "SUPPORTING_2025_BRANCHES",
+  "chen_route_committed",
+  "zhou_route_committed",
 ]);
 requireText("src/game/verified2025.ts", [
   "VERIFIED_2025_TIMELINE",

@@ -25,6 +25,12 @@ describe("存档迁移", () => {
     expect(sceneForMonth(restored!).nodes[restored!.sceneNodeIndex].id).toBe("m3-colleague");
   });
 
+  it("旧 2025 存档补回年份路线开关", () => {
+    const legacy = { ...createInitialState("2025"), flags: {} };
+    const restored = restoreStoredState("2025", legacy);
+    expect(restored?.flags.year_2025).toBe(true);
+  });
+
   it("旧知识卡引用会迁移到中性学习主题字段", () => {
     const legacyKey = ["c", "f", "a", "Ref"].join("");
     const restored = restoreStoredState("2024", {

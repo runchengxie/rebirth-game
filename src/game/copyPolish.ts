@@ -1,5 +1,62 @@
+import type { MarketTheme } from "../types";
 import { BRANCHES } from "./branches";
+import { THEMES_2025 } from "./content2025";
 import { STORY_ARCS, YEAR_ARC_LINES, YEAR_ARC_MISSIONS } from "./storyArcs";
+
+const MIXED_TERMS = [
+  "DeepSeek-R1",
+  "AI Agent",
+  "AI+",
+  "SaaS",
+  "ARR",
+  "ToC",
+  "ToB",
+  "Barra",
+  "Alpha",
+  "IPO",
+  "AI",
+] as const;
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function polishMixedText(text: string): string {
+  let polished = text;
+  for (const term of MIXED_TERMS) {
+    const escaped = escapeRegExp(term);
+    polished = polished
+      .replace(new RegExp(`([\\u3400-\\u9fff])(${escaped})`, "g"), "$1 $2")
+      .replace(new RegExp(`(${escaped})([\\u3400-\\u9fff])`, "g"), "$1 $2");
+  }
+  return polished.replace(/[ \t]{2,}/g, " ");
+}
+
+function polishThemeInPlace(theme: MarketTheme): void {
+  theme.title = polishMixedText(theme.title);
+  theme.publicContext = polishMixedText(theme.publicContext);
+  theme.protagonistMemory = polishMixedText(theme.protagonistMemory);
+  theme.gameHook = polishMixedText(theme.gameHook);
+
+  if (theme.historicalPrototype !== undefined) {
+    theme.historicalPrototype = polishMixedText(theme.historicalPrototype);
+  }
+  if (theme.knownEvent !== undefined) {
+    theme.knownEvent = polishMixedText(theme.knownEvent);
+  }
+  if (theme.businessOutcome !== undefined) {
+    theme.businessOutcome = polishMixedText(theme.businessOutcome);
+  }
+  if (theme.competingHypotheses?.lin !== undefined) {
+    theme.competingHypotheses.lin = polishMixedText(theme.competingHypotheses.lin);
+  }
+  if (theme.competingHypotheses?.chen !== undefined) {
+    theme.competingHypotheses.chen = polishMixedText(theme.competingHypotheses.chen);
+  }
+  if (theme.competingHypotheses?.zhou !== undefined) {
+    theme.competingHypotheses.zhou = polishMixedText(theme.competingHypotheses.zhou);
+  }
+}
 
 function replaceBranchDialogue(branchId: string, text: string): void {
   const branch = BRANCHES.find((candidate) => candidate.id === branchId);
@@ -54,4 +111,21 @@ export function installCopyPolish(): void {
     "route-burnout",
     "周明昭看了你两秒，把电脑屏幕按灭：你脸色很差。研究要做很多年，今晚先停。再熬一夜也不会让错误的判断变对。",
   );
+
+  for (const arc of STORY_ARCS) {
+    arc.title = polishMixedText(arc.title);
+    arc.line = polishMixedText(arc.line);
+    arc.mission = polishMixedText(arc.mission);
+  }
+  for (const lines of Object.values(YEAR_ARC_LINES)) {
+    lines.forEach((line, index) => {
+      lines[index] = polishMixedText(line);
+    });
+  }
+  for (const missions of Object.values(YEAR_ARC_MISSIONS)) {
+    missions.forEach((mission, index) => {
+      missions[index] = polishMixedText(mission);
+    });
+  }
+  THEMES_2025.forEach(polishThemeInPlace);
 }

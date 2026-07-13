@@ -98,6 +98,13 @@ function highestRelationEnding(state: GameState, endings: SpecialEnding[]): Spec
 
 function special2025Ending(state: GameState): SpecialEnding | null {
   if (state.year !== "2025") return null;
+  if (state.flags.rebirth_truth_route) {
+    return {
+      leadId: "zhou_mingzhao",
+      title: "真相结局·未来也要接受审计",
+      copy: "你承认未来记忆受到事后叙事污染，也展示了全年档案、失败样本和可持续边界。你没有证明自己永远正确。你证明了知道结果的人仍愿意让记忆接受证据、反例和复算。投研部把这套审计方法写进下一年的研究流程。",
+    };
+  }
   const candidates = [lin2025Ending(state), chen2025Ending(state), zhou2025Ending(state)]
     .filter((ending): ending is SpecialEnding => Boolean(ending));
   const committed = candidates.filter((ending) => ending.title.startsWith("真结局"));

@@ -13,6 +13,7 @@ import {
 import { branchFlagsForMonth } from "./branching";
 import { decisionMethod, decisionOutcomeAlignment, decisionQuality } from "./narrativeSemantics";
 import type {
+  BranchMetaContext,
   CharacterId,
   DecisionCategory,
   DecisionMethod,
@@ -460,6 +461,7 @@ export function makeDecision(
   state: GameState,
   _data: GameDataYear,
   decision: ResearchDecision,
+  branchMeta?: BranchMetaContext,
 ): GameState {
   if (state.locked || state.finished) return state;
 
@@ -470,7 +472,7 @@ export function makeDecision(
   const relations = nextRelations(state, decision, story, focus);
   const flags: Record<string, boolean | number> = { ...state.flags };
   const milestone = markAffinityFlags(state, relations, flags);
-  Object.assign(flags, branchFlagsForMonth(state, BRANCHES));
+  Object.assign(flags, branchFlagsForMonth(state, BRANCHES, branchMeta));
 
   const score = scoreDecision(decision, story, focus);
   const framework = frameworkOf(decision, story);

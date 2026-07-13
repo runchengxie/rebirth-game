@@ -1,5 +1,6 @@
 import type {
   Branch,
+  BranchMetaContext,
   CharacterId,
   DecisionMethod,
   GameState,
@@ -146,14 +147,17 @@ type BranchContributions = {
   overrideDecision: Branch["contribute"]["overrideDecision"];
 };
 
-function collectBranchContributions(state?: GameState): BranchContributions {
+function collectBranchContributions(
+  state?: GameState,
+  branchMeta?: BranchMetaContext,
+): BranchContributions {
   const contributions: BranchContributions = {
     afterMemory: [],
     beforeDecision: [],
     decisions: [],
     overrideDecision: undefined,
   };
-  const branches = state ? activeBranches(state, BRANCHES) : [];
+  const branches = state ? activeBranches(state, BRANCHES, branchMeta) : [];
   for (const branch of branches) {
     const target = branch.injectAt === "after-memory"
       ? contributions.afterMemory
@@ -258,6 +262,7 @@ export function buildMonthScene(
   monthIndex: number,
   year?: string,
   state?: GameState,
+  branchMeta?: BranchMetaContext,
 ): MonthScene {
   const actualYear = year || "2025";
   if (actualYear === "demo") return buildDemoChapter(monthIndex, state);
@@ -274,7 +279,7 @@ export function buildMonthScene(
     return build2025Prologue(month, label, theme);
   }
 
-  const branch = collectBranchContributions(state);
+  const branch = collectBranchContributions(state, branchMeta);
   const decisionNode = buildDecisionNode(
     story,
     theme,

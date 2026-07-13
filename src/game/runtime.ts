@@ -2,10 +2,15 @@
 
 import { buildMonthScene } from "./content";
 import { CONTENT_REVISION } from "./narrativeSemantics";
-import type { GameDataYear, GameState, MonthScene } from "../types";
+import type { BranchMetaContext, GameDataYear, GameState, MonthScene } from "../types";
 
-function firstNodeId(year: string, monthIndex: number, state?: GameState): string {
-  return buildMonthScene(monthIndex, year, state).nodes[0]?.id ?? "";
+function firstNodeId(
+  year: string,
+  monthIndex: number,
+  state?: GameState,
+  branchMeta?: BranchMetaContext,
+): string {
+  return buildMonthScene(monthIndex, year, state, branchMeta).nodes[0]?.id ?? "";
 }
 
 export function createInitialState(year: string): GameState {
@@ -43,8 +48,11 @@ export function createInitialState(year: string): GameState {
   };
 }
 
-export function sceneForMonth(state: GameState): MonthScene {
-  return buildMonthScene(state.monthIndex, state.year, state);
+export function sceneForMonth(
+  state: GameState,
+  branchMeta?: BranchMetaContext,
+): MonthScene {
+  return buildMonthScene(state.monthIndex, state.year, state, branchMeta);
 }
 
 export function scenePosition(
@@ -58,23 +66,35 @@ export function scenePosition(
   return Math.max(0, Math.min(state.sceneNodeIndex, scene.nodes.length - 1));
 }
 
-export function currentSceneNode(state: GameState): MonthScene["nodes"][number] {
-  const scene = sceneForMonth(state);
+export function currentSceneNode(
+  state: GameState,
+  branchMeta?: BranchMetaContext,
+): MonthScene["nodes"][number] {
+  const scene = sceneForMonth(state, branchMeta);
   return scene.nodes[scenePosition(state, scene)] ?? scene.nodes[scene.nodes.length - 1];
 }
 
-export function canAdvanceScene(state: GameState): boolean {
-  const node = currentSceneNode(state);
+export function canAdvanceScene(
+  state: GameState,
+  branchMeta?: BranchMetaContext,
+): boolean {
+  const node = currentSceneNode(state, branchMeta);
   return node.type === "dialogue" || state.locked;
 }
 
-export function canRewindScene(state: GameState): boolean {
-  return !state.locked && scenePosition(state) > 0;
+export function canRewindScene(
+  state: GameState,
+  branchMeta?: BranchMetaContext,
+): boolean {
+  return !state.locked && scenePosition(state, sceneForMonth(state, branchMeta)) > 0;
 }
 
-export function rewindScene(state: GameState): GameState {
-  if (!canRewindScene(state)) return state;
-  const scene = sceneForMonth(state);
+export function rewindScene(
+  state: GameState,
+  branchMeta?: BranchMetaContext,
+): GameState {
+  if (!canRewindScene(state, branchMeta)) return state;
+  const scene = sceneForMonth(state, branchMeta);
   const nextIndex = scenePosition(state, scene) - 1;
   return {
     ...state,
@@ -83,9 +103,13 @@ export function rewindScene(state: GameState): GameState {
   };
 }
 
-export function advanceScene(state: GameState, _data: GameDataYear): GameState {
+export function advanceScene(
+  state: GameState,
+  _data: GameDataYear,
+  branchMeta?: BranchMetaContext,
+): GameState {
   void _data;
-  const scene = sceneForMonth(state);
+  const scene = sceneForMonth(state, branchMeta);
   const currentIndex = scenePosition(state, scene);
   const node = scene.nodes[currentIndex];
   if (node.type === "decision" && !state.locked) return state;
@@ -97,10 +121,13 @@ export function advanceScene(state: GameState, _data: GameDataYear): GameState {
       sceneNodeId: scene.nodes[nextIndex]?.id ?? state.sceneNodeId,
     };
   }
-  return nextMonth(state);
+  return nextMonth(state, branchMeta);
 }
 
-export function nextMonth(state: GameState): GameState {
+export function nextMonth(
+  state: GameState,
+  branchMeta?: BranchMetaContext,
+): GameState {
   if (state.finished) return createInitialState(state.year);
   if (!state.locked) return state;
   const monthIndex = Math.min(state.monthIndex + 1, 11);
@@ -115,5 +142,8 @@ export function nextMonth(state: GameState): GameState {
     focusId: "deep_research",
     milestone: null,
   };
-  return { ...next, sceneNodeId: firstNodeId(state.year, monthIndex, next) };
+  return {
+    ...next,
+    sceneNodeId: firstNodeId(state.year, monthIndex, next, branchMeta),
+  };
 }

@@ -1,4 +1,4 @@
-import type { Branch, BranchCondition, GameState } from "../types";
+import type { Branch, BranchCondition, BranchMetaContext, GameState } from "../types";
 
 function flagIsSet(state: GameState, key: string): boolean {
   const value = state.flags[key];
@@ -37,7 +37,11 @@ function suppressRepeatedNodes(state: GameState, branch: Branch): Branch {
   };
 }
 
-export function evaluateBranchCondition(cond: BranchCondition, state: GameState): boolean {
+export function evaluateBranchCondition(
+  cond: BranchCondition,
+  state: GameState,
+  meta?: BranchMetaContext,
+): boolean {
   switch (cond.kind) {
     case "always":
       return true;
@@ -59,20 +63,28 @@ export function evaluateBranchCondition(cond: BranchCondition, state: GameState)
       return numberOrZero(state.methodCounts[cond.method]) >= cond.gte;
     case "month":
       return state.monthIndex >= cond.gte;
+    case "cycle":
+      return (meta?.cycle ?? 1) >= cond.gte;
+    case "memoryKey":
+      return meta?.memoryKeys.includes(cond.key) ?? false;
     case "and":
-      return cond.of.every((child) => evaluateBranchCondition(child, state));
+      return cond.of.every((child) => evaluateBranchCondition(child, state, meta));
     case "or":
-      return cond.of.some((child) => evaluateBranchCondition(child, state));
+      return cond.of.some((child) => evaluateBranchCondition(child, state, meta));
     case "not":
-      return !evaluateBranchCondition(cond.of, state);
+      return !evaluateBranchCondition(cond.of, state, meta);
   }
 }
 
-export function activeBranches(state: GameState, branches: Branch[]): Branch[] {
+export function activeBranches(
+  state: GameState,
+  branches: Branch[],
+  meta?: BranchMetaContext,
+): Branch[] {
   return branches
     .filter((branch) => {
       if (branch.once && flagIsSet(state, `seen_${branch.id}`)) return false;
-      return evaluateBranchCondition(branch.when, state);
+      return evaluateBranchCondition(branch.when, state, meta);
     })
     .map((branch) => suppressRepeatedNodes(state, branch));
 }
@@ -80,9 +92,10 @@ export function activeBranches(state: GameState, branches: Branch[]): Branch[] {
 export function branchFlagsForMonth(
   state: GameState,
   branches: Branch[],
+  meta?: BranchMetaContext,
 ): Record<string, boolean | number> {
   const flags: Record<string, boolean | number> = {};
-  for (const branch of activeBranches(state, branches)) {
+  for (const branch of activeBranches(state, branches, meta)) {
     if (branch.contribute.setFlags) {
       Object.assign(flags, branch.contribute.setFlags);
     }

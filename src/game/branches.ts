@@ -1,6 +1,7 @@
 import type { Branch, CharacterId, MentorId, SceneNode } from "../types";
 import { CHARACTERS, AFFINITY_GATE } from "./characters";
 import { d } from "./decisionFactory";
+import { REBIRTH_BRANCHES } from "./rebirthBranches";
 
 // ── In-voice monologues for the grade-driven / liability branches ──
 const GRADE_MONO: Record<"respect" | "watch" | "liability", Record<MentorId, string>> = {
@@ -584,4 +585,5 @@ export const BRANCHES: Branch[] = [
   PEER_RESOLVE_STAND,
   PEER_RESOLVE_YIELD,
   PEER_RESOLVE_FENCE,
+  ...REBIRTH_BRANCHES,
 ];

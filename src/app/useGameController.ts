@@ -14,6 +14,7 @@ import {
   sceneForMonth,
 } from "../game/runtime";
 import {
+  branchMetaContext,
   completeRebirthCycle,
   createRebirthMeta,
   decisionOptionsForRebirth,
@@ -23,6 +24,8 @@ import {
   readRebirthMeta,
   resetRebirthRun,
 } from "../game/rebirth";
+import { isSceneNodeRead, markSceneNodeRead } from "../game/rebirthFlow";
+import { inspectOfficeProp, type OfficePropId } from "../game/rebirthOffice";
 import { persistStoredState, readStoredState as readStoredStateFromStorage } from "../game/saveState";
 import type { CharacterId, GameState, ResearchDecision, RoundResult } from "../types";
 
@@ -267,11 +270,16 @@ export function useGameSession(audio: GameAudio) {
   const [state, setState] = useState<GameState>(initialSession.state);
   const [rebirth, setRebirth] = useState(initialSession.rebirth);
   const data = GAME_DATA[state.year];
-  const scene = sceneForMonth(state);
-  const sceneNode = currentSceneNode(state);
+  const branchMeta = branchMetaContext(rebirth);
+  const scene = sceneForMonth(state, branchMeta);
+  const sceneNode = currentSceneNode(state, branchMeta);
   const story = storyForMonth(state.monthIndex, state.year);
-  const sceneCanAdvance = canAdvanceScene(state);
-  const canGoBack = canRewindScene(state);
+  const sceneCanAdvance = canAdvanceScene(state, branchMeta);
+  const canGoBack = canRewindScene(state, branchMeta);
+  const canSkipRead = rebirth.cycle >= 2
+    && sceneNode.type === "dialogue"
+    && !state.locked
+    && isSceneNodeRead(rebirth, state, sceneNode.id);
 
   useLineVoice(state, sceneNode, audio);
 
@@ -282,6 +290,11 @@ export function useGameSession(audio: GameAudio) {
   useEffect(() => {
     persistRebirth(rebirth);
   }, [rebirth]);
+
+  useEffect(() => {
+    if (sceneNode.type !== "dialogue") return;
+    setRebirth((current) => markSceneNodeRead(current, state, sceneNode.id));
+  }, [sceneNode.id, sceneNode.type, state.monthIndex, state.year]);
 
   const changeYear = useCallback((year: string) => {
     resetLineVoice();
@@ -306,14 +319,39 @@ export function useGameSession(audio: GameAudio) {
       resetLineVoice();
       return;
     }
-    setState((current) => advanceScene(current, data));
+    setState((current) => advanceScene(current, data, branchMetaContext(rebirth)));
   }, [data, playAdvance, rebirth, resetLineVoice, scene.nodes.length, sceneCanAdvance, state]);
 
   const goBack = useCallback(() => {
     if (!canGoBack) return;
     resetLineVoice();
-    setState((current) => rewindScene(current));
-  }, [canGoBack, resetLineVoice]);
+    setState((current) => rewindScene(current, branchMetaContext(rebirth)));
+  }, [canGoBack, rebirth, resetLineVoice]);
+
+  const skipReadScene = useCallback(() => {
+    if (!canSkipRead) return;
+    resetLineVoice();
+    setState((current) => {
+      let next = current;
+      const meta = branchMetaContext(rebirth);
+      for (let guard = 0; guard < 40; guard += 1) {
+        const node = currentSceneNode(next, meta);
+        if (node.type !== "dialogue" || !isSceneNodeRead(rebirth, next, node.id)) break;
+        const advanced = advanceScene(next, data, meta);
+        if (advanced === next || advanced.monthIndex !== current.monthIndex) break;
+        next = advanced;
+      }
+      return next;
+    });
+  }, [canSkipRead, data, rebirth, resetLineVoice]);
+
+  const inspectOfficeWithSound = useCallback((propId: OfficePropId) => {
+    const result = inspectOfficeProp(rebirth, state, propId);
+    if (!result.changed) return;
+    playChoice();
+    setRebirth(result.meta);
+    setState(result.state);
+  }, [playChoice, rebirth, state]);
 
   const selectFocusWithSound = useCallback((focusId: string) => {
     playChoice();
@@ -332,16 +370,18 @@ export function useGameSession(audio: GameAudio) {
     playChoice();
     setState((current) => {
       const prepared = prepareDecisionForRebirth(rebirth, current, decision);
-      return makeDecision(current, data, prepared);
+      return makeDecision(current, data, prepared, branchMetaContext(rebirth));
     });
   }, [data, playChoice, rebirth]);
 
   return {
     advanceCurrentScene,
     canGoBack,
+    canSkipRead,
     changeYear,
     data,
     goBack,
+    inspectOfficeWithSound,
     investigateWithSound,
     makeDecisionWithSound,
     rebirth,
@@ -350,6 +390,7 @@ export function useGameSession(audio: GameAudio) {
     sceneCanAdvance,
     sceneNode,
     selectFocusWithSound,
+    skipReadScene,
     state,
     story,
   };

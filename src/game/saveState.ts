@@ -30,9 +30,10 @@ function restoreKnowledgeCards(value: unknown): KnowledgeCard[] {
   if (!Array.isArray(value)) return [];
   const legacyReferenceKey = ["c", "f", "a", "Ref"].join("");
   return value.filter(isObject).map((raw) => {
-    const card = { ...raw };
-    const legacyReference = card[legacyReferenceKey];
-    delete card[legacyReferenceKey];
+    const legacyReference = raw[legacyReferenceKey];
+    const card = Object.fromEntries(
+      Object.entries(raw).filter(([key]) => key !== legacyReferenceKey),
+    ) as Record<string, unknown>;
     if (typeof card.learningRef !== "string" && typeof legacyReference === "string") {
       card.learningRef = legacyReference.replace(/^[^·]+·\s*/, "金融基础 · ");
     }

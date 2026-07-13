@@ -124,6 +124,23 @@ function requireTheme(v: unknown, where: string): MarketTheme {
   return v as MarketTheme;
 }
 
+function requireDecisionSemantics(d: Record<string, unknown>, where: string): void {
+  if (!(DECISION_METHODS as readonly string[]).includes(String(d.method))) {
+    throw new ContentValidationError(`${where}: decision.method is invalid`);
+  }
+  if (!(DECISION_QUALITIES as readonly string[]).includes(String(d.quality))) {
+    throw new ContentValidationError(`${where}: decision.quality is invalid`);
+  }
+  if (!(OUTCOME_ALIGNMENTS as readonly string[]).includes(String(d.outcomeAlignment))) {
+    throw new ContentValidationError(`${where}: decision.outcomeAlignment is invalid`);
+  }
+  const validTags = Array.isArray(d.behaviorTags)
+    && (d.behaviorTags as unknown[]).every((tag) => (BEHAVIOR_TAGS as readonly unknown[]).includes(tag));
+  if (!validTags) {
+    throw new ContentValidationError(`${where}: decision.behaviorTags is invalid`);
+  }
+}
+
 function requireDecision(v: unknown, where: string): ResearchDecision {
   if (typeof v !== "object" || v === null) {
     throw new ContentValidationError(`${where}: decision must be an object`);
@@ -142,19 +159,7 @@ function requireDecision(v: unknown, where: string): ResearchDecision {
   if (!validateDecisionEffects(d.effects)) {
     throw new ContentValidationError(`${where}: decision.effects is invalid`);
   }
-  if (!(DECISION_METHODS as readonly string[]).includes(String(d.method))) {
-    throw new ContentValidationError(`${where}: decision.method is invalid`);
-  }
-  if (!(DECISION_QUALITIES as readonly string[]).includes(String(d.quality))) {
-    throw new ContentValidationError(`${where}: decision.quality is invalid`);
-  }
-  if (!(OUTCOME_ALIGNMENTS as readonly string[]).includes(String(d.outcomeAlignment))) {
-    throw new ContentValidationError(`${where}: decision.outcomeAlignment is invalid`);
-  }
-  if (!Array.isArray(d.behaviorTags)
-    || !(d.behaviorTags as unknown[]).every((tag) => (BEHAVIOR_TAGS as readonly unknown[]).includes(tag))) {
-    throw new ContentValidationError(`${where}: decision.behaviorTags is invalid`);
-  }
+  requireDecisionSemantics(d, where);
   if (d.backgroundNote !== undefined && !isString(d.backgroundNote)) {
     throw new ContentValidationError(`${where}: decision.backgroundNote must be a string when present`);
   }

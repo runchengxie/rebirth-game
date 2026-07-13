@@ -94,7 +94,7 @@ export function restoreStoredState(year: string, parsed: unknown): GameState | n
     sceneNodeId: typeof saved.sceneNodeId === "string" ? saved.sceneNodeId : "",
     contentRevision: CONTENT_REVISION,
     relations: restoreObject(saved.relations, fresh.relations),
-    flags: restoreRecord(saved.flags, fresh.flags),
+    flags: { ...fresh.flags, ...restoreRecord(saved.flags, {}) },
     categoryCounts: restoreRecord(saved.categoryCounts, fresh.categoryCounts),
     methodCounts: restoreRecord(saved.methodCounts, fresh.methodCounts),
     history: restoreArray(saved.history, fresh.history),

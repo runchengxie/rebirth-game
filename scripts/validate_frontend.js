@@ -171,7 +171,8 @@ requireText("src/game/narrativeSemantics.ts", [
   "decisionMethod",
   "decisionQuality",
   "decisionOutcomeAlignment",
-  "yearNarrativeProfile",
+  "YEAR_NARRATIVE_PROFILES",
+  "sceneProfileFor",
 ]);
 requireText("src/components/PixiStage.tsx", [
   "pixi.js",

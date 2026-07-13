@@ -1,0 +1,35 @@
+name: Rebirth v2 check
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    if: github.head_ref == 'feat/rebirth-office-key-months'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - id: full-check
+        shell: bash
+        run: |
+          set +e
+          npm run check > check.log 2>&1
+          code=$?
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rebirth-v2-check-log
+          path: check.log
+      - name: Fail when check failed
+        if: steps.full-check.outputs.exit_code != '0'
+        run: exit 1

@@ -1,11 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
+import process from "node:process";
 
 const roots = ["src", "docs"];
 const files = ["README.md", "AGENTS.md"];
 const protectedMark = ["C", "F", "A"].join("");
 const legacyField = ["c", "f", "a", "Ref"].join("");
-const forbidden = [new RegExp(`\b${protectedMark}\b`, "i"), new RegExp(legacyField, "i")];
+const forbidden = [new RegExp(`\\b${protectedMark}\\b`, "i"), new RegExp(legacyField, "i")];
 
 function walk(target) {
   if (!fs.existsSync(target)) return [];
@@ -22,6 +23,6 @@ const violations = [...roots.flatMap(walk), ...files.filter((file) => fs.existsS
   });
 
 if (violations.length > 0) {
-  console.error(`Found unapproved certification-brand references in: ${violations.join(", ")}`);
-  process.exit(1);
+  process.stderr.write(`Found unapproved certification-brand references in: ${violations.join(", ")}\n`);
+  process.exitCode = 1;
 }

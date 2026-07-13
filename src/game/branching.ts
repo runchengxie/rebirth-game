@@ -1,4 +1,9 @@
-import type { Branch, BranchCondition, BranchMetaContext, GameState } from "../types";
+import type {
+  Branch,
+  BranchCondition,
+  BranchMetaContext,
+  GameState,
+} from "../types";
 
 function flagIsSet(state: GameState, key: string): boolean {
   const value = state.flags[key];
@@ -9,7 +14,10 @@ function numberOrZero(value: number | undefined): number {
   return value ?? 0;
 }
 
-function metricValue(state: GameState, key: Extract<BranchCondition, { kind: "metric" }>['key']): number {
+function metricValue(
+  state: GameState,
+  key: Extract<BranchCondition, { kind: "metric" }>["key"],
+): number {
   return state[key];
 }
 
@@ -37,11 +45,11 @@ function suppressRepeatedNodes(state: GameState, branch: Branch): Branch {
   };
 }
 
-export function evaluateBranchCondition(
+function evaluateLeafCondition(
   cond: BranchCondition,
   state: GameState,
   meta?: BranchMetaContext,
-): boolean {
+): boolean | null {
   switch (cond.kind) {
     case "always":
       return true;
@@ -68,12 +76,26 @@ export function evaluateBranchCondition(
     case "memoryKey":
       return meta?.memoryKeys.includes(cond.key) ?? false;
     case "and":
-      return cond.of.every((child) => evaluateBranchCondition(child, state, meta));
     case "or":
-      return cond.of.some((child) => evaluateBranchCondition(child, state, meta));
     case "not":
-      return !evaluateBranchCondition(cond.of, state, meta);
+      return null;
   }
+}
+
+export function evaluateBranchCondition(
+  cond: BranchCondition,
+  state: GameState,
+  meta?: BranchMetaContext,
+): boolean {
+  const leaf = evaluateLeafCondition(cond, state, meta);
+  if (leaf !== null) return leaf;
+  if (cond.kind === "and") {
+    return cond.of.every((child) => evaluateBranchCondition(child, state, meta));
+  }
+  if (cond.kind === "or") {
+    return cond.of.some((child) => evaluateBranchCondition(child, state, meta));
+  }
+  return !evaluateBranchCondition(cond.of, state, meta);
 }
 
 export function activeBranches(

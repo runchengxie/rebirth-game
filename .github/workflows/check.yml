@@ -11,10 +11,15 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run check
+      - name: Clone pull request branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: git clone --quiet --depth 1 --branch "${GITHUB_HEAD_REF}" "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" .
+      - name: Install dependencies
+        run: npm ci --silent
+      - name: Run checks
+        run: |
+          if ! npm run check > check-output.log 2>&1; then
+            cat check-output.log
+            exit 1
+          fi

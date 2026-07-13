@@ -339,7 +339,7 @@ function SettingsPopover({
 }
 
 export function ImmersiveGameScreen(props: ImmersiveGameScreenProps) {
-  const { audio, session, usePixiStage } = props;
+  const { session, usePixiStage } = props;
   const view = buildSceneView(session);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const isDebate = session.sceneNode.id.endsWith("-competing")

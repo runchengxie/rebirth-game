@@ -6,16 +6,18 @@
 
 建议按以下顺序阅读：
 
-1. [`gameplay.md`](gameplay.md)：了解游戏怎么玩、当前有哪些功能，以及尚未接入的能力。
-2. [`ux.md`](ux.md)：了解单视口操作、回看、自动保存和观点交锋的界面规则。
-3. [`architecture.md`](architecture.md)：了解 React、PixiJS、剧情运行时、结算引擎和数据文件之间的关系。
-4. [`maintenance.md`](maintenance.md)：了解本地环境、测试命令、数据维护和发布流程。
+1. [`gameplay.md`](gameplay.md)：了解 2025 主线、往年档案、角色路线和当前边界。
+2. [`2025-source-ledger.md`](2025-source-ledger.md)：了解每个月现实事件的来源、时间和叙事改编边界。
+3. [`ux.md`](ux.md)：了解单视口操作、回看、自动保存和观点交锋的界面规则。
+4. [`architecture.md`](architecture.md)：了解 React、PixiJS、剧情运行时、结算引擎和数据文件之间的关系。
+5. [`maintenance.md`](maintenance.md)：了解本地环境、测试命令、数据维护和发布流程。
 
 ## 按需求查找
 
 | 需求 | 文档 |
 |---|---|
 | 了解玩法、年份线、角色路线和当前限制 | [`gameplay.md`](gameplay.md) |
+| 核对 2025 现实事件与月份映射 | [`2025-source-ledger.md`](2025-source-ledger.md) |
 | 了解一屏操作、剧情回看、自动保存和档案抽屉 | [`ux.md`](ux.md) |
 | 查找模块边界、状态流转、数据关系和常见修改位置 | [`architecture.md`](architecture.md) |
 | 安装依赖、运行测试、更新数据、构建和发布 | [`maintenance.md`](maintenance.md) |
@@ -26,6 +28,7 @@
 
 - 根目录 `README.md` 面向第一次接触项目的玩家和开发者。
 - `gameplay.md` 记录当前可以看到和操作的功能。
+- `2025-source-ledger.md` 记录现实事件来源和叙事改编边界。
 - `ux.md` 记录主界面的操作规则和呈现约束。
 - `architecture.md` 记录代码结构和技术边界。
 - `maintenance.md` 记录具体命令和维护流程。

@@ -52,5 +52,5 @@ export const GAME_DATA: GameDataMap = {
   "demo": buildYearData("demo"),
 };
 
-// 年份选择器只列正式年份；demo 是示范章节，藏起来只留 ?year=demo 深链。
-export const GAME_YEARS = ["2023", "2024", "2025"];
+// 当前正式入口只展示 2025。2023/2024 与 demo 仍保留深链，作为往年档案和开发样本。
+export const GAME_YEARS = ["2025"];

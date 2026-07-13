@@ -51,7 +51,6 @@ export function DecisionCard({
   const className = [
     "option",
     locked && selected ? "correct" : "",
-    locked && selected && decision.category === "risk_alert" ? "wrong" : "",
   ]
     .filter(Boolean)
     .join(" ");

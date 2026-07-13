@@ -74,6 +74,32 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
+function restoreObject<T extends object>(value: unknown, fallback: T): T {
+  if (!isObject(value)) return fallback;
+  return { ...fallback, ...value } as T;
+}
+
+function restoreRecord<T extends object>(value: unknown, fallback: T): T {
+  if (!isObject(value)) return fallback;
+  return value as T;
+}
+
+function restoreArray<T>(value: unknown, fallback: T[]): T[] {
+  if (!Array.isArray(value)) return fallback;
+  return value as T[];
+}
+
+function hasValidStoredPosition(saved: Partial<GameState>): boolean {
+  const { monthIndex, sceneNodeIndex } = saved;
+  return typeof monthIndex === "number"
+    && Number.isInteger(monthIndex)
+    && monthIndex >= 0
+    && monthIndex <= 11
+    && typeof sceneNodeIndex === "number"
+    && Number.isInteger(sceneNodeIndex)
+    && sceneNodeIndex >= 0;
+}
+
 function readStoredState(year: string): GameState | null {
   try {
     const raw = localStorage.getItem(saveKey(year));
@@ -83,26 +109,18 @@ function readStoredState(year: string): GameState | null {
 
     const fresh = createInitialState(year);
     const saved = parsed as Partial<GameState>;
-    if (!Number.isInteger(saved.monthIndex) || !Number.isInteger(saved.sceneNodeIndex)) return null;
-    if ((saved.monthIndex ?? 0) < 0 || (saved.monthIndex ?? 0) > 11) return null;
-    if ((saved.sceneNodeIndex ?? 0) < 0) return null;
+    if (!hasValidStoredPosition(saved)) return null;
 
     const restored: GameState = {
       ...fresh,
       ...saved,
       year,
-      relations: isObject(saved.relations)
-        ? { ...fresh.relations, ...saved.relations }
-        : fresh.relations,
-      flags: isObject(saved.flags) ? saved.flags as GameState["flags"] : {},
-      categoryCounts: isObject(saved.categoryCounts)
-        ? saved.categoryCounts as GameState["categoryCounts"]
-        : {},
-      history: Array.isArray(saved.history) ? saved.history : [],
-      knowledgeCards: Array.isArray(saved.knowledgeCards) ? saved.knowledgeCards : [],
-      office: isObject(saved.office)
-        ? { ...fresh.office, ...saved.office }
-        : fresh.office,
+      relations: restoreObject(saved.relations, fresh.relations),
+      flags: restoreRecord(saved.flags, fresh.flags),
+      categoryCounts: restoreRecord(saved.categoryCounts, fresh.categoryCounts),
+      history: restoreArray(saved.history, fresh.history),
+      knowledgeCards: restoreArray(saved.knowledgeCards, fresh.knowledgeCards),
+      office: restoreObject(saved.office, fresh.office),
     };
     const lastSceneIndex = Math.max(0, sceneForMonth(restored).nodes.length - 1);
     return {
@@ -273,15 +291,8 @@ function useLineVoice(state: GameState, sceneNode: SceneNode, audio: GameAudio):
   }, [lineVoiceKey, playLineVoice, sceneNode]);
 }
 
-function decisionResultTone(decision: ResearchDecision): "success" | "miss" {
-  const successful = ["deep_research", "roadshow", "committee_defense"].includes(
-    decision.category,
-  );
-  return successful ? "success" : "miss";
-}
-
 export function useGameSession(audio: GameAudio) {
-  const { playAdvance, playChoice, playResult, resetLineVoice, soundOn } = audio;
+  const { playAdvance, playChoice, resetLineVoice } = audio;
   const [state, setState] = useState<GameState>(() => createState());
   const data = GAME_DATA[state.year];
   const scene = sceneForMonth(state);
@@ -325,11 +336,8 @@ export function useGameSession(audio: GameAudio) {
 
   const makeDecisionWithSound = useCallback((decision: ResearchDecision) => {
     playChoice();
-    if (soundOn) {
-      window.setTimeout(() => playResult(decisionResultTone(decision)), 130);
-    }
     setState((current) => makeDecision(current, data, decision));
-  }, [data, playChoice, playResult, soundOn]);
+  }, [data, playChoice]);
 
   return {
     advanceCurrentScene,

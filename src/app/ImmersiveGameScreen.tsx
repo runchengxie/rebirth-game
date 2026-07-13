@@ -7,7 +7,6 @@ import { EndingPanel } from "../components/EndingPanel";
 import { FocusSelector } from "../components/FocusSelector";
 import { StatusBar } from "../components/StatusBar";
 import { StoryRecapPanel } from "../components/StoryRecapPanel";
-import { ZhaoStage } from "../components/ZhaoStage";
 import { buildSceneView } from "./useGameController";
 import type {
   GameAudio,
@@ -44,9 +43,6 @@ function StageArt({ session, usePixiStage }: { session: GameSession; usePixiStag
   const view = buildSceneView(session);
   if (session.sceneNode.id.endsWith("-competing")) {
     return <div className={`debate-stage debate-stage-${view.sceneBackground}`} aria-hidden="true" />;
-  }
-  if (view.activeCharacter.id === "zhao_chengyu") {
-    return <ZhaoStage activePose={view.scenePose} backgroundId={view.sceneBackground} />;
   }
   if (!usePixiStage) return <StaticStage color={view.activeCharacter.color} />;
   return (
@@ -263,6 +259,8 @@ function ArchiveDrawer({
       <aside
         className="archive-drawer"
         aria-label="剧情记录与研究档案"
+        aria-modal="true"
+        role="dialog"
         onMouseDown={(event: { stopPropagation(): void }) => event.stopPropagation()}
       >
         <header className="archive-drawer-head">
@@ -273,10 +271,10 @@ function ArchiveDrawer({
           <button type="button" onClick={onClose} aria-label="关闭档案">×</button>
         </header>
         <div className="archive-tabs" role="tablist">
-          <button className={tab === "log" ? "active" : ""} type="button" onClick={() => setTab("log")}>本话记录</button>
-          <button className={tab === "archive" ? "active" : ""} type="button" onClick={() => setTab("archive")}>研究档案</button>
+          <button aria-controls="archive-tabpanel" aria-selected={tab === "log"} className={tab === "log" ? "active" : ""} role="tab" type="button" onClick={() => setTab("log")}>本话记录</button>
+          <button aria-controls="archive-tabpanel" aria-selected={tab === "archive"} className={tab === "archive" ? "active" : ""} role="tab" type="button" onClick={() => setTab("archive")}>研究档案</button>
         </div>
-        <div className="archive-scroll">
+        <div className="archive-scroll" id="archive-tabpanel" role="tabpanel">
           {tab === "log" ? <DialogueHistory session={session} /> : <ResearchArchive session={session} />}
         </div>
       </aside>
@@ -311,6 +309,7 @@ function SettingsPopover({
               {GAME_YEARS.map((year) => (
                 <button
                   className={year === session.state.year ? "active" : ""}
+                  aria-pressed={year === session.state.year}
                   key={year}
                   type="button"
                   onClick={() => session.changeYear(year)}
@@ -324,13 +323,20 @@ function SettingsPopover({
             <button type="button" onClick={themeControl.toggleTheme}>
               {themeControl.theme === "dark" ? "浅色" : "深色"}
             </button>
-            <button type="button" onClick={() => void audio.toggleMusic()}>
+            <button aria-pressed={audio.musicOn} type="button" onClick={() => void audio.toggleMusic()}>
               音乐 {audio.musicOn ? "开" : "关"}
             </button>
-            <button type="button" onClick={() => void audio.toggleSound()}>
+            <button aria-pressed={audio.soundOn} type="button" onClick={() => void audio.toggleSound()}>
               音效 {audio.soundOn ? "开" : "关"}
             </button>
-            <button type="button" onClick={session.restart}>重新开始</button>
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm("重新开始会覆盖当前年份的存档，确定继续吗？")) session.restart();
+              }}
+            >
+              重新开始
+            </button>
           </div>
         </div>
       ) : null}
@@ -345,9 +351,10 @@ export function ImmersiveGameScreen(props: ImmersiveGameScreenProps) {
   const isDebate = session.sceneNode.id.endsWith("-competing")
     && Boolean(session.scene.theme.competingHypotheses);
   const headerCopy = useMemo(() => {
+    if (session.state.finished) return { name: "年度复盘", role: `${session.state.year} 年研究结局` };
     if (isDebate) return { name: "观点交锋", role: "同一事实，三种框架" };
     return { name: view.speakerName, role: `${view.speakerRole} · ${view.activeCharacter.tag}` };
-  }, [isDebate, view.activeCharacter.tag, view.speakerName, view.speakerRole]);
+  }, [isDebate, session.state.finished, session.state.year, view.activeCharacter.tag, view.speakerName, view.speakerRole]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -398,13 +405,15 @@ export function ImmersiveGameScreen(props: ImmersiveGameScreenProps) {
           )}
           <span>{view.sceneMood}</span>
         </div>
-        <section className={`interaction-panel ${view.isDecision ? "decision-mode" : "dialogue-mode"}`}>
+        <section className={`interaction-panel ${session.state.finished ? "ending-mode" : view.isDecision ? "decision-mode" : "dialogue-mode"}`}>
           <div className="interaction-scroll">
             <div className="speaker-row">
               <span className="speaker-name">{headerCopy.name}</span>
               <span className="speaker-role">{headerCopy.role}</span>
             </div>
-            {isDebate ? (
+            {session.state.finished ? (
+              <EndingPanel state={session.state} />
+            ) : isDebate ? (
               <DebatePanel hypotheses={session.scene.theme.competingHypotheses} />
             ) : view.isDecision ? (
               <DecisionPanel session={session} />

@@ -382,7 +382,7 @@ button:disabled {
 .pixi-stage-fallback {
   background:
     linear-gradient(90deg, rgba(255, 247, 252, 0.92), rgba(255, 247, 252, 0.28)),
-    url("../assets/vn/backgrounds/research-room.png") center / cover;
+    url("../assets/vn/backgrounds/research-room.webp") center / cover;
 }
 
 .pixi-stage-fallback::after {
@@ -398,20 +398,19 @@ button:disabled {
 }
 
 .vn-stage.character-pink .pixi-stage-fallback::after {
-  background-image: url("../assets/vn/characters/rina-smile.png");
+  background-image: url("../assets/vn/characters/rina-smile.webp");
 }
 
 .vn-stage.character-blue .pixi-stage-fallback::after {
-  background-image: url("../assets/vn/characters/misaki-neutral.png");
+  background-image: url("../assets/vn/characters/misaki-neutral.webp");
 }
 
 .vn-stage.character-lavender .pixi-stage-fallback::after {
-  background-image: url("../assets/vn/characters/mei-neutral.png");
+  background-image: url("../assets/vn/characters/mei-neutral.webp");
 }
 
-/* 赵承宇（同级同事）暂无立绘资源：文字层出现，fallback 不放人物图。 */
 .vn-stage.character-slate .pixi-stage-fallback::after {
-  background-image: none;
+  background-image: url("../assets/vn/characters/zhao-neutral.webp");
 }
 
 .vn-stage-content {

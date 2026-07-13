@@ -67,6 +67,25 @@ for (const script of [
   }
 }
 
+const rasterAssets = [
+  "assets/key-art.webp",
+  "assets/vn/backgrounds/research-room.webp",
+  "assets/vn/backgrounds/briefing-room.webp",
+  "assets/vn/backgrounds/night-cafe.webp",
+  "assets/vn/characters/rina-smile.webp",
+  "assets/vn/characters/rina-thinking.webp",
+  "assets/vn/characters/rina-soft.webp",
+  "assets/vn/characters/misaki-neutral.webp",
+  "assets/vn/characters/misaki-excited.webp",
+  "assets/vn/characters/misaki-focused.webp",
+  "assets/vn/characters/mei-neutral.webp",
+  "assets/vn/characters/mei-serious.webp",
+  "assets/vn/characters/mei-soft.webp",
+  "assets/vn/characters/zhao-neutral.webp",
+  "assets/vn/characters/zhao-thinking.webp",
+  "assets/vn/characters/zhao-relief.webp",
+];
+
 for (const file of [
   "src/main.tsx",
   "src/App.tsx",
@@ -77,7 +96,6 @@ for (const file of [
   "src/styles.css",
   "src/immersive.css",
   "src/components/PixiStage.tsx",
-  "src/components/ZhaoStage.tsx",
   "src/components/EndingPanel.tsx",
   "src/components/StoryRecapPanel.tsx",
   "src/audio/bgm.ts",
@@ -107,31 +125,24 @@ for (const file of [
   "vite.config.ts",
   "tsconfig.json",
   "tsconfig.app.json",
-  "assets/galgame-key-art.png",
-  "assets/vn/backgrounds/research-room.png",
-  "assets/vn/backgrounds/briefing-room.png",
-  "assets/vn/backgrounds/night-cafe.png",
-  "assets/vn/characters/rina-smile.png",
-  "assets/vn/characters/rina-thinking.png",
-  "assets/vn/characters/rina-soft.png",
-  "assets/vn/characters/misaki-neutral.png",
-  "assets/vn/characters/misaki-excited.png",
-  "assets/vn/characters/misaki-focused.png",
-  "assets/vn/characters/mei-neutral.png",
-  "assets/vn/characters/mei-serious.png",
-  "assets/vn/characters/mei-soft.png",
-  "assets/vn/characters/zhao-neutral.png",
-  "assets/vn/characters/zhao-thinking.png",
-  "assets/vn/characters/zhao-relief.png",
+  ...rasterAssets,
   ".github/workflows/pages.yml",
 ]) {
   requireFile(file);
 }
 
+const rasterBudgetBytes = 500 * 1024;
+for (const asset of rasterAssets) {
+  const size = fs.statSync(asset).size;
+  if (size > rasterBudgetBytes) {
+    fail(`${asset} 超过 500 KiB 资源预算：${Math.ceil(size / 1024)} KiB`);
+  }
+}
+
 requireText("src/App.tsx", ["ImmersiveGameScreen", "Chapter1Spike", "pixivn"]);
 requireText("src/app/ImmersiveGameScreen.tsx", [
   "DebatePanel",
-  "ZhaoStage",
+  "PixiStage",
   "canGoBack",
   "记录与档案",
 ]);
@@ -143,12 +154,6 @@ requireText("src/app/useGameController.ts", [
   "rewindScene",
 ]);
 requireText("src/game/runtime.ts", ["canRewindScene", "rewindScene"]);
-requireText("src/components/ZhaoStage.tsx", [
-  "loadKeyedPortrait",
-  "near-white",
-  "zhao-neutral.png",
-]);
-
 requireText("src/components/PixiStage.tsx", [
   "pixi.js",
   "backgroundAssets",

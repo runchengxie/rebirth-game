@@ -4,7 +4,7 @@
 
 在线试玩：<https://runchengxie.github.io/rebirth-research/>
 
-![项目主视觉](assets/galgame-key-art.png)
+![项目主视觉](assets/key-art.webp)
 
 ## 游戏体验
 
@@ -15,9 +15,9 @@
 - 收集研究知识卡，解锁导师关系结局和同级搭档结局
 - 使用浅色或暗色主题，并在 PixiJS 舞台与静态回退之间自动适配
 
-真实市场事件用于构成剧情背景。当前月度结算关注研究过程和业务事实，尚未接入真实月度涨跌幅。游戏状态保存在当前页面中，刷新后会重新开始，主题设置会保存在浏览器本地。
+真实市场事件用于构成剧情背景。当前月度结算关注研究过程和业务事实，尚未接入真实月度涨跌幅。游戏状态按年份保存在浏览器本地，刷新或切换年份后会恢复最近进度。
 
-更完整的玩法和当前功能说明见 [`docs/GAMEPLAY.md`](docs/GAMEPLAY.md)。
+更完整的玩法和当前功能说明见 [`docs/gameplay.md`](docs/gameplay.md)。
 
 ## 本地运行
 
@@ -39,10 +39,10 @@ Python 工具、测试、数据更新和发布流程见 [`docs/maintenance.md`](
 ## 文档
 
 - [`docs/README.md`](docs/README.md)：文档索引和阅读顺序
-- [`docs/GAMEPLAY.md`](docs/GAMEPLAY.md)：玩法、功能和当前边界
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)：模块结构、状态流转和数据关系
+- [`docs/gameplay.md`](docs/gameplay.md)：玩法、功能和当前边界
+- [`docs/architecture.md`](docs/architecture.md)：模块结构、状态流转和数据关系
 - [`docs/maintenance.md`](docs/maintenance.md)：开发、测试、数据和发布流程
-- [`docs/CHARACTERS.md`](docs/CHARACTERS.md)：角色定位、语言特点和写作边界
+- [`docs/characters.md`](docs/characters.md)：角色定位、语言特点和写作边界
 - [`AGENTS.md`](AGENTS.md)：维护者和自动化助手需要遵守的项目约定
 
 ## 技术栈

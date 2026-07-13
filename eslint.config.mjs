@@ -31,7 +31,7 @@ export default tseslint.config(
     rules: {
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
-      // 保留一个可量化的迁移基线。CI 最多允许 10 个 warning，新增债务会直接失败。
+      // 复杂度超过基线会产生 warning，lint:ci 以零 warning 运行并阻止新增债务。
       complexity: ["warn", { max: 15 }],
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-non-null-assertion": "warn",

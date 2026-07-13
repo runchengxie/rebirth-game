@@ -4,7 +4,7 @@ type ResultTone = "success" | "miss" | "neutral";
 
 // ── Client-side TTS placeholder voices ──
 // Fills the blank VO slot with zero assets / zero network, mirroring ProceduralBgm.
-// Voices are OS-provided (Web Speech API). Profile is anchored to docs/CHARACTERS.md
+// Voices are OS-provided (Web Speech API). Profile is anchored to docs/characters.md
 // Voice Pillars: 林若宁 warm+moderate, 陈星禾 precise+fast, 周明昭 calm+slow,
 // 赵承宇 grounded+steady (同级同事，语速中性、音高略低).
 type VoiceProfile = {

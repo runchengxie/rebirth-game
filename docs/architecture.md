@@ -4,7 +4,7 @@
 
 ## 总体结构
 
-项目是纯前端静态应用。React 负责页面和交互，PixiJS 与 Canvas 负责剧情舞台，`src/game/` 负责剧情装配、状态推进和数值结算。
+项目是纯前端静态应用。React 负责页面和交互，PixiJS 负责剧情舞台，`src/game/` 负责剧情装配、状态推进和数值结算。
 
 ```text
 浏览器
@@ -15,8 +15,7 @@
   │     └── 记录抽屉、知识卡和结局
   │
   ├── 舞台层
-  │     ├── PixiJS 常规角色舞台
-  │     ├── 赵承宇 Canvas 舞台
+  │     ├── PixiJS 统一角色舞台
   │     └── WebGL 失败时的静态回退
   │
   ├── 游戏层
@@ -148,16 +147,9 @@
 
 ## 舞台与资源
 
-`src/components/PixiStage.tsx` 加载常规背景和角色立绘。`src/app/useGameController.ts` 会先检测 WebGL，失败时页面使用静态舞台。
+`src/components/PixiStage.tsx` 统一加载背景和四位角色的透明立绘。角色资源使用 WebP，舞台负责姿势映射、缩放、底部锚点、色调和阴影。系统要求减少动态效果时，舞台不创建漂浮星点。`src/app/useGameController.ts` 会先检测 WebGL，失败时页面使用同一批 WebP 资源组成静态舞台。
 
-`src/components/ZhaoStage.tsx` 通过 Canvas 加载赵承宇三张立绘。处理步骤包括：
-
-1. 把中性近白色像素的透明度降为 0。
-2. 对阈值边缘做透明度羽化。
-3. 轻度降低饱和度和对比度。
-4. 使用和其他立绘接近的舞台缩放、底部锚点与阴影。
-
-该处理是源资源重绘前的运行时修复。替换为透明背景和统一画风的新资源后，应删掉色键处理。
+`scripts/validate_frontend.js` 对发布位图执行 500 KiB 单文件预算检查。`vite.config.ts` 把 Pixi'VN 原型间接使用的 Tone.js 拆成独立异步块，避免单个 JavaScript 产物超过 Vite 的默认提醒阈值。
 
 可用查询参数：
 
@@ -198,7 +190,7 @@
 
 仓库当前没有拉取请求代码检查工作流。维护者需要在提交前本地运行 `npm run check` 和 `uv run python scripts/check.py`。`scripts/check.py` 中的 BasedPyright 和 ty 当前作为非阻塞诊断。
 
-`.github/workflows/pages.yml` 在 `main` 分支有新提交时运行 `npm ci` 和 `npm run build`，通过后发布 `dist/`。
+`.github/workflows/pages.yml` 在 `main` 分支有新提交时运行 `npm ci` 和 `npm run check`，通过 lint、类型检查、测试、资源预算校验和生产构建后发布 `dist/`。
 
 ## 常见改动位置
 
@@ -215,5 +207,5 @@
 | 修改状态持久化和控制器 | `src/app/useGameController.ts` |
 | 修改主页面展示 | `src/app/ImmersiveGameScreen.tsx` |
 | 修改单视口布局 | `src/immersive.css` |
-| 修改赵承宇透明底处理 | `src/components/ZhaoStage.tsx` |
+| 修改角色立绘和姿势映射 | `src/components/PixiStage.tsx` |
 | 修改顶层入口和原型切换 | `src/App.tsx` |

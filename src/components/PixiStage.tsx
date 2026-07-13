@@ -1,20 +1,20 @@
 import { useEffect, useRef } from "react";
 import { Application, Assets, Container, Graphics, Sprite, type Texture, type Ticker } from "pixi.js";
-import bgBriefingRoom from "../../assets/vn/backgrounds/briefing-room.png";
-import bgNightCafe from "../../assets/vn/backgrounds/night-cafe.png";
-import bgResearchRoom from "../../assets/vn/backgrounds/research-room.png";
-import meiNeutralSprite from "../../assets/vn/characters/mei-neutral.png";
-import meiSeriousSprite from "../../assets/vn/characters/mei-serious.png";
-import meiSoftSprite from "../../assets/vn/characters/mei-soft.png";
-import misakiExcitedSprite from "../../assets/vn/characters/misaki-excited.png";
-import misakiFocusedSprite from "../../assets/vn/characters/misaki-focused.png";
-import misakiNeutralSprite from "../../assets/vn/characters/misaki-neutral.png";
-import rinaSmileSprite from "../../assets/vn/characters/rina-smile.png";
-import rinaSoftSprite from "../../assets/vn/characters/rina-soft.png";
-import rinaThinkingSprite from "../../assets/vn/characters/rina-thinking.png";
-import zhaoNeutralSprite from "../../assets/vn/characters/zhao-neutral.png";
-import zhaoReliefSprite from "../../assets/vn/characters/zhao-relief.png";
-import zhaoThinkingSprite from "../../assets/vn/characters/zhao-thinking.png";
+import bgBriefingRoom from "../../assets/vn/backgrounds/briefing-room.webp";
+import bgNightCafe from "../../assets/vn/backgrounds/night-cafe.webp";
+import bgResearchRoom from "../../assets/vn/backgrounds/research-room.webp";
+import meiNeutralSprite from "../../assets/vn/characters/mei-neutral.webp";
+import meiSeriousSprite from "../../assets/vn/characters/mei-serious.webp";
+import meiSoftSprite from "../../assets/vn/characters/mei-soft.webp";
+import misakiExcitedSprite from "../../assets/vn/characters/misaki-excited.webp";
+import misakiFocusedSprite from "../../assets/vn/characters/misaki-focused.webp";
+import misakiNeutralSprite from "../../assets/vn/characters/misaki-neutral.webp";
+import rinaSmileSprite from "../../assets/vn/characters/rina-smile.webp";
+import rinaSoftSprite from "../../assets/vn/characters/rina-soft.webp";
+import rinaThinkingSprite from "../../assets/vn/characters/rina-thinking.webp";
+import zhaoNeutralSprite from "../../assets/vn/characters/zhao-neutral.webp";
+import zhaoReliefSprite from "../../assets/vn/characters/zhao-relief.webp";
+import zhaoThinkingSprite from "../../assets/vn/characters/zhao-thinking.webp";
 import type { CharacterId, CharacterProfile } from "../types";
 
 interface PixiStageProps {
@@ -290,7 +290,10 @@ export function PixiStage({ activeCharacter, backgroundId = "research-room", act
         });
       };
 
-      for (let index = 0; index < 26; index += 1) makeSparkle(index);
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!reduceMotion) {
+        for (let index = 0; index < 26; index += 1) makeSparkle(index);
+      }
 
       const scene: StageScene = {
         app, host: hostElement, background, backgroundTextures,
@@ -319,11 +322,11 @@ export function PixiStage({ activeCharacter, backgroundId = "research-room", act
         });
       };
 
-      app.ticker.add(tick);
+      if (!reduceMotion) app.ticker.add(tick);
 
       return () => {
         resizeObserver.disconnect();
-        app.ticker.remove(tick);
+        if (!reduceMotion) app.ticker.remove(tick);
       };
     }
 

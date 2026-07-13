@@ -14,7 +14,6 @@
 - `src/app/ImmersiveGameScreen.tsx`：主游戏的单视口页面和档案抽屉
 - `src/app/GameScreen.tsx`：旧版长页面展示，暂时保留用于对照
 - `src/components/PixiStage.tsx`：常规角色的 PixiJS 舞台
-- `src/components/ZhaoStage.tsx`：赵承宇立绘的透明底清理和轻度调色舞台
 - `src/game/runtime.ts`：状态初始化、剧情游标、回看和跨月推进
 - `src/game/engine.ts`：评分、数值、关系、旗标和结局相关计算
 - `src/game/sceneBuilders.ts`：场景和研究方案装配
@@ -58,7 +57,7 @@
 - 主页面覆盖样式：`src/immersive.css`
 - 游戏状态、存档、设置、主题和音频控制：`src/app/useGameController.ts`
 - 常规舞台资源映射：`src/components/PixiStage.tsx`
-- 赵承宇立绘透明底处理：`src/components/ZhaoStage.tsx`
+- 角色立绘、姿势映射和舞台调色：`src/components/PixiStage.tsx`
 - 音频：`src/audio/bgm.ts` 和 `src/audio/sfx.ts`
 
 新增玩法逻辑时优先放在 `src/game/`，React 组件只负责展示和交互。修改角色编号或类型时，以 `src/types.ts` 为唯一类型来源，并同步检查 JSON 校验器、关系初始值、资源映射和测试。
@@ -105,7 +104,7 @@ npm run test:run
 npm run build
 ```
 
-`scripts/check.py` 默认把 BasedPyright 和 ty 作为非阻塞诊断，其余检查失败会返回非零状态。仓库当前没有拉取请求代码检查工作流，提交前需要本地运行完整检查。GitHub Pages 在 `main` 更新后执行 `npm run build`。
+`scripts/check.py` 默认把 BasedPyright 和 ty 作为非阻塞诊断，其余检查失败会返回非零状态。仓库当前没有拉取请求代码检查工作流，提交前需要本地运行完整检查。GitHub Pages 在 `main` 更新后执行 `npm run check`。
 
 ## 测试要求
 
@@ -124,7 +123,7 @@ npm run build
 ## 文档要求
 
 - 根目录 `README.md` 面向第一次接触项目的玩家和开发者，只保留项目介绍、在线试玩、核心体验、快速开始、文档入口和必要边界。
-- 玩法和当前功能写入 `docs/GAMEPLAY.md`，操作体验写入 `docs/UX.md`，工程细节写入 `docs/ARCHITECTURE.md`，操作命令写入 `docs/maintenance.md`。
+- 玩法和当前功能写入 `docs/gameplay.md`，操作体验写入 `docs/ux.md`，工程细节写入 `docs/architecture.md`，操作命令写入 `docs/maintenance.md`。
 - `docs/README.md` 负责提供文档索引和阅读顺序。
 - 文档以中文为主，使用中文标点。
 - 命令、路径、参数、代码符号和字段名保留行内代码格式。
@@ -140,4 +139,5 @@ npm run build
 - 离线包由 `scripts/package.ps1` 生成。
 - 第三方音频只有在授权明确时才能加入仓库，并在相关说明文档中记录来源和授权。
 - 角色图片和背景图片放在 `assets/vn/`，新增资源后同步更新舞台组件和 `scripts/validate_frontend.js`。
+- 舞台位图使用 WebP，单个发布资源不得超过 500 KiB。角色立绘需要保留透明通道。
 - 页面运行时不能依赖作者本机路径、本地 Python 环境或外部数据服务。

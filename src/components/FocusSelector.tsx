@@ -14,6 +14,7 @@ export function FocusSelector({
         <button
           key={focus.id}
           className={`focus-card ${state.focusId === focus.id ? "active" : ""}`}
+          aria-pressed={state.focusId === focus.id}
           disabled={state.locked}
           type="button"
           onClick={() => onSelect(focus.id)}

@@ -69,7 +69,7 @@
 - 每月主题必须填 `competingHypotheses`（三视角）+ `businessOutcome`（业务事实，不写股价）+ `knownEvent`（未来记忆锚点）。
 - 至少一条决策带 `teaches`，让复盘有东西教。
 - 决策类别要分散，保证办公室三种道具都能被触发。
-- 决策文案用角色的词汇（见 `docs/CHARACTERS.md`），别写成作者旁白。
+- 决策文案用角色的词汇（见 `docs/characters.md`），别写成作者旁白。
 - 想演示「记忆负债」：放一条 evidence/clarity 双低但总分高的选项，引擎会点亮 `parachuted_` 标记，后续相关导师语气转警惕。
 
 ## 代码落点速查

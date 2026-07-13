@@ -166,16 +166,11 @@ body,
 }
 
 .immersive-stage,
-.immersive-stage > .pixi-stage,
-.immersive-stage > .zhao-stage-canvas {
+.immersive-stage > .pixi-stage {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-}
-
-.zhao-stage-canvas {
-  display: block;
 }
 
 .debate-stage {
@@ -185,22 +180,22 @@ body,
 }
 
 .debate-stage-research-room {
-  background-image: linear-gradient(110deg, rgba(25, 13, 34, 0.2), rgba(75, 105, 140, 0.12)), url("../assets/vn/backgrounds/research-room.png");
+  background-image: linear-gradient(110deg, rgba(25, 13, 34, 0.2), rgba(75, 105, 140, 0.12)), url("../assets/vn/backgrounds/research-room.webp");
 }
 
 .debate-stage-briefing-room {
-  background-image: linear-gradient(110deg, rgba(25, 13, 34, 0.2), rgba(75, 105, 140, 0.12)), url("../assets/vn/backgrounds/briefing-room.png");
+  background-image: linear-gradient(110deg, rgba(25, 13, 34, 0.2), rgba(75, 105, 140, 0.12)), url("../assets/vn/backgrounds/briefing-room.webp");
 }
 
 .debate-stage-night-cafe {
-  background-image: linear-gradient(110deg, rgba(25, 13, 34, 0.2), rgba(75, 105, 140, 0.12)), url("../assets/vn/backgrounds/night-cafe.png");
+  background-image: linear-gradient(110deg, rgba(25, 13, 34, 0.2), rgba(75, 105, 140, 0.12)), url("../assets/vn/backgrounds/night-cafe.webp");
 }
 
 .immersive-static {
   overflow: hidden;
   background:
     linear-gradient(90deg, rgba(255, 247, 252, 0.8), rgba(255, 247, 252, 0.14)),
-    url("../assets/vn/backgrounds/research-room.png") center / cover;
+    url("../assets/vn/backgrounds/research-room.webp") center / cover;
 }
 
 .immersive-static::after {
@@ -216,15 +211,19 @@ body,
 }
 
 .immersive-static.character-pink::after {
-  background-image: url("../assets/vn/characters/rina-smile.png");
+  background-image: url("../assets/vn/characters/rina-smile.webp");
 }
 
 .immersive-static.character-blue::after {
-  background-image: url("../assets/vn/characters/misaki-neutral.png");
+  background-image: url("../assets/vn/characters/misaki-neutral.webp");
 }
 
 .immersive-static.character-lavender::after {
-  background-image: url("../assets/vn/characters/mei-neutral.png");
+  background-image: url("../assets/vn/characters/mei-neutral.webp");
+}
+
+.immersive-static.character-slate::after {
+  background-image: url("../assets/vn/characters/zhao-neutral.webp");
 }
 
 .immersive-stage-meta {
@@ -277,6 +276,14 @@ body,
 
 .interaction-panel.decision-mode {
   max-height: min(72%, 650px);
+}
+
+.interaction-panel.ending-mode {
+  max-height: min(78%, 700px);
+}
+
+.interaction-panel.ending-mode .ending-panel {
+  margin-top: 0;
 }
 
 .interaction-scroll {

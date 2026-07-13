@@ -55,7 +55,7 @@ npm run build
 
 ## 角色与分支维护
 
-角色资料位于 `src/game/characters.ts`，角色语言规范见 `docs/CHARACTERS.md`。
+角色资料位于 `src/game/characters.ts`，角色语言规范见 `docs/characters.md`。
 
 条件分支位于 `src/game/branches.ts`，条件判断位于 `src/game/branching.ts`。新增分支时需要检查：
 
@@ -164,20 +164,14 @@ uv run python scripts/check.py --frontend
 
 ## 自动化与发布
 
-`.github/workflows/ci.yml` 会在拉取请求和 `main` 分支推送时执行全部阻塞检查：
-
-1. 使用锁文件安装 Node.js 和 Python 依赖。
-2. 运行 Ruff、格式化和 Python 编译检查。
-3. 运行 BasedPyright、ty、Pytest 和静态数据校验。
-4. 运行前端结构校验、零警告 ESLint、TypeScript、Vitest 和生产构建。
-5. 检查失败时上传诊断日志。
-
 `.github/workflows/pages.yml` 在 `main` 分支有新提交时执行：
 
 1. 安装 Node.js 22。
 2. 运行 `npm ci`。
 3. 运行 `npm run check`。
 4. 上传并发布 `dist/`。
+
+仓库当前没有单独的拉取请求工作流。推送前仍应在本地运行 `uv run python scripts/check.py`，覆盖 Python 工具检查。
 
 发布后检查：
 

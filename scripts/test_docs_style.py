@@ -15,6 +15,17 @@ DOC_FILES = [
 ]
 
 
+def test_docs_markdown_filenames_use_kebab_case() -> None:
+    exceptions = {"README.md"}
+    invalid = [
+        path.name
+        for path in (ROOT / "docs").glob("*.md")
+        if path.name not in exceptions
+        and re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*\.md", path.name) is None
+    ]
+    assert not invalid, f"docs Markdown 文件名应使用 kebab-case：{', '.join(invalid)}"
+
+
 def prose_only(text: str) -> str:
     """移除代码块、行内代码和裸链接，减少对技术符号的误报。"""
     text = re.sub(r"```.*?```", "", text, flags=re.S)

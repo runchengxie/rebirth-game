@@ -13,7 +13,7 @@ import type {
 import type { SceneBeatKey } from "./narrativeSemantics";
 import { decisionMethod, decisionQuality, sceneProfileFor } from "./narrativeSemantics";
 import { activeBranches } from "./branching";
-import { CHARACTERS, AFFINITY_GATE } from "./characters";
+import { affinityNodeFor } from "./affinityBeats";
 import {
   STORY_ARCS,
   YEAR_ARC_LINES,
@@ -168,15 +168,6 @@ function collectBranchContributions(state?: GameState): BranchContributions {
   return contributions;
 }
 
-function affinityNodeFor(
-  state: GameState | undefined,
-  story: StoryArc,
-  monthIndex: number,
-): SceneNode | null {
-  const relation = state?.relations[story.characterId] ?? 0;
-  return relation >= AFFINITY_GATE ? buildAffinityMoment(story, monthIndex) : null;
-}
-
 function competingNodeFor(
   state: GameState | undefined,
   story: StoryArc,
@@ -296,7 +287,7 @@ export function buildMonthScene(
     memory: [buildMemoryNode(story, theme, monthIndex)],
     competing: optionalNode(competingNodeFor(state, story, theme, monthIndex)),
     afterMemory: branch.afterMemory,
-    affinity: optionalNode(affinityNodeFor(state, story, monthIndex)),
+    affinity: optionalNode(affinityNodeFor(state, story.characterId, monthIndex)),
     colleague: [buildColleagueNode(story, theme, arcLine, monthIndex)],
     beforeDecision: branch.beforeDecision,
     decision: [decisionNode],
@@ -311,24 +302,6 @@ export function buildMonthScene(
     label,
     theme,
     nodes,
-  };
-}
-
-function buildAffinityMoment(story: StoryArc, monthIndex: number): SceneNode {
-  const name = CHARACTERS[story.characterId].name;
-  return {
-    id: `m${monthIndex}-affinity`,
-    type: "dialogue",
-    characterId: story.characterId,
-    speaker: story.speaker,
-    role: story.role,
-    mood: "心动",
-    text: `${name}的声音放轻了些：你最近总在我卡住的时候，递来那条对的线索。这种默契，比任何一份研报都难得。`,
-    prompt: "点击继续。",
-    pose: "soft",
-    bg: "research-room",
-    bgm: "morning-loop",
-    voiceCue: "key",
   };
 }
 

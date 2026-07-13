@@ -19,16 +19,4 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Run checks
-        shell: bash
-        run: |
-          set +e
-          npm run check 2>&1 | tee check.log
-          status=${PIPESTATUS[0]}
-          tail -n 200 check.log > check-tail.log
-          exit "$status"
-      - name: Upload check log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: check-log
-          path: check-tail.log
+        run: npm run check

@@ -13,7 +13,13 @@ function metricValue(state: GameState, key: Extract<BranchCondition, { kind: "me
   return state[key];
 }
 
+function isPersistentRouteBranch(branch: Branch): boolean {
+  return branch.id.startsWith("route-")
+    && Object.keys(branch.contribute.setFlags ?? {}).some((key) => key.startsWith("route_"));
+}
+
 function contributionFlagsAlreadyApplied(state: GameState, branch: Branch): boolean {
+  if (!isPersistentRouteBranch(branch)) return false;
   const entries = Object.entries(branch.contribute.setFlags ?? {});
   return entries.length > 0 && entries.every(([key, value]) => state.flags[key] === value);
 }

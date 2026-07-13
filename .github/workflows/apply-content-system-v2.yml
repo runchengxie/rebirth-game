@@ -16,9 +16,10 @@ jobs:
     if: github.head_ref == 'feat/content-system-v2' || github.ref_name == 'feat/content-system-v2'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: feat/content-system-v2
+      - name: Clone feature branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: git clone --quiet --depth 1 --branch feat/content-system-v2 "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" .
       - name: Rebuild migration script
         run: |
           cat scripts/.content-system-v2-part* | base64 --decode | gzip --decompress > scripts/apply_content_system_v2.py
@@ -26,7 +27,7 @@ jobs:
       - name: Apply migration
         run: |
           if ! python scripts/apply_content_system_v2.py > migration-output.log 2>&1; then
-            tail -n 30 migration-output.log
+            cat migration-output.log
             exit 1
           fi
       - name: Commit generated changes

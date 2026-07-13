@@ -45,10 +45,9 @@ function suppressRepeatedNodes(state: GameState, branch: Branch): Branch {
   };
 }
 
-function evaluateLeafCondition(
+function evaluateStateLeaf(
   cond: BranchCondition,
   state: GameState,
-  meta?: BranchMetaContext,
 ): boolean | null {
   switch (cond.kind) {
     case "always":
@@ -65,6 +64,17 @@ function evaluateLeafCondition(
       return cond.equals === undefined
         ? flagIsSet(state, cond.key)
         : state.flags[cond.key] === cond.equals;
+    default:
+      return null;
+  }
+}
+
+function evaluateProgressLeaf(
+  cond: BranchCondition,
+  state: GameState,
+  meta?: BranchMetaContext,
+): boolean | null {
+  switch (cond.kind) {
     case "categoryStreak":
       return numberOrZero(state.categoryCounts[cond.category]) >= cond.gte;
     case "methodStreak":
@@ -75,9 +85,7 @@ function evaluateLeafCondition(
       return (meta?.cycle ?? 1) >= cond.gte;
     case "memoryKey":
       return meta?.memoryKeys.includes(cond.key) ?? false;
-    case "and":
-    case "or":
-    case "not":
+    default:
       return null;
   }
 }
@@ -87,8 +95,10 @@ export function evaluateBranchCondition(
   state: GameState,
   meta?: BranchMetaContext,
 ): boolean {
-  const leaf = evaluateLeafCondition(cond, state, meta);
-  if (leaf !== null) return leaf;
+  const stateLeaf = evaluateStateLeaf(cond, state);
+  if (stateLeaf !== null) return stateLeaf;
+  const progressLeaf = evaluateProgressLeaf(cond, state, meta);
+  if (progressLeaf !== null) return progressLeaf;
   if (cond.kind === "and") {
     return cond.of.every((child) => evaluateBranchCondition(child, state, meta));
   }

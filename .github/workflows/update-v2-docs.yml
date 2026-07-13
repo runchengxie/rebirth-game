@@ -1,0 +1,43 @@
+name: Update v2 architecture docs
+
+on:
+  push:
+    branches:
+      - feat/content-system-v2
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone feature branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: git clone --quiet --depth 1 --branch feat/content-system-v2 "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" .
+      - name: Update architecture notes
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = 'docs/architecture.md';
+          let text = fs.readFileSync(path, 'utf8');
+          const oldSchema = '`src/game/content/schema.ts` 校验年份字段、12 个月度主题、12 组研究方案、研究方案类别、效果字段、角色编号和重复编号。\n\n2025 年加载器还会补充已知事件、业务事实和三位导师的分歧假设。分歧假设保持角色方法论边界，页面直接从 `MarketTheme.competingHypotheses` 生成三张观点卡。';
+          const newSchema = '`src/game/content/schema.ts` 强制校验 `contentVersion: 2`、12 个月度主题、12 组研究方案、完整业务事实、三方假设、研究方法、执行质量、结果方向、效果字段、角色编号和重复编号。\n\n2023、2024、2025 的正式 JSON 都直接保存 `knownEvent`、`businessOutcome` 和 `competingHypotheses`。三个年份加载器只负责校验、循环索引和兼容性语义补全，页面直接从 `MarketTheme.competingHypotheses` 生成三张观点卡。';
+          const oldProfile = '三个正式年份共享渲染器，但使用不同的叙事节拍：2023 从市场现场切入，2024 从证据整理切入，2025 从未来记忆与观点交锋切入。缺失的业务事实和三方假设由年份内容补全层提供，2025 的手写内容优先级更高。';
+          const newProfile = '三个正式年份共享渲染器，但使用不同的叙事节拍：2023 从市场现场切入，2024 从证据整理切入，2025 从未来记忆与观点交锋切入。正式内容的事实与假设全部来自版本化 JSON；补全函数只保留给旧内容和运行时兼容。';
+          if (text.includes(oldSchema)) text = text.replace(oldSchema, newSchema);
+          if (text.includes(oldProfile)) text = text.replace(oldProfile, newProfile);
+          if (!text.includes(newSchema) || !text.includes(newProfile)) throw new Error('Architecture replacement failed');
+          fs.writeFileSync(path, text);
+          NODE
+      - name: Commit documentation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/architecture.md
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "docs: describe versioned year content"
+          git push origin HEAD:feat/content-system-v2

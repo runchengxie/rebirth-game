@@ -6,7 +6,6 @@ import { STORY_ARCS, YEAR_ARC_LINES, YEAR_ARC_MISSIONS } from "./storyArcs";
 const MIXED_TERMS = [
   "DeepSeek-R1",
   "AI Agent",
-  "AI+",
   "SaaS",
   "ARR",
   "ToC",
@@ -92,7 +91,7 @@ export function installCopyPolish(): void {
   const lines2025 = YEAR_ARC_LINES["2025"];
   if (lines2025) {
     lines2025[2] =
-      "午休还没开始，陈星禾就把平板推过来：两会头一回把 AI+ 行动写进报告，数据要素和算力基建今天盘口已经动了。但从政策到订单要时间，你觉得这波是主线的起点还是提前透支？";
+      "午休还没开始，陈星禾就把平板推过来：两会头一回把 AI+行动写进报告，数据要素和算力基建今天盘口已经动了。但从政策到订单要时间，你觉得这波是主线的起点还是提前透支？";
     lines2025[3] =
       "雨点敲着玻璃，林若宁把一叠一季报推到桌子中间：前期受到追捧的 AI 公司开始交业绩了，可关税压力已经传到出口链。主题炒作和基本面验证之间，你觉得这个缺口该怎么填？";
   }
@@ -100,7 +99,7 @@ export function installCopyPolish(): void {
   const missions2025 = YEAR_ARC_MISSIONS["2025"];
   if (missions2025) {
     missions2025[2] =
-      "陈星禾把因子拆解和订单流摆在你面前：AI+ 行动写进报告，算力基建今天盘口动了。帮她在四个方向里选一个她愿意下注的。";
+      "陈星禾把因子拆解和订单流摆在你面前：AI+行动写进报告，算力基建今天盘口动了。帮她在四个方向里选一个她愿意下注的。";
   }
 
   replaceBranchDialogue(

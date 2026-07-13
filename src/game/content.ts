@@ -11,16 +11,21 @@
 //   - sceneBuilders.ts  知识卡逻辑 + 四个场景构建函数 + 决策池路由
 //   - linRoute2025.ts  林若宁「早心动、慢信任」的 2025 主推关系弧
 //   - supportingRoutes2025.ts  陈星禾和周明昭的行为型专属关系弧
+//   - affinityBeats.ts  2023、2024 一次性关系升温节点
+//   - dialogueText.ts  动作和对白的段落组合与拆分
+//   - relationshipDialogue.ts  关系路线的分段对白
 //   - copyPolish.ts  公共台词中的重复、翻译腔和中英混杂修正
 // ═══════════════════════════════════════════════════════════
 
 import { installCopyPolish } from "./copyPolish";
 import { installLinRoute2025 } from "./linRoute2025";
 import { installSupportingRoutes2025 } from "./supportingRoutes2025";
+import { installRelationshipDialogue } from "./relationshipDialogue";
 
 installLinRoute2025();
 installSupportingRoutes2025();
 installCopyPolish();
+installRelationshipDialogue();
 
 export * from "./characters";
 export * from "./storyArcs";

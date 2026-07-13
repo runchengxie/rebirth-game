@@ -96,6 +96,8 @@ for (const file of [
   "src/types.ts",
   "src/styles.css",
   "src/immersive.css",
+  "src/rebirth.css",
+  "src/rebirth-v2.css",
   "src/components/PixiStage.tsx",
   "src/components/EndingPanel.tsx",
   "src/components/StatusBar.tsx",
@@ -119,6 +121,17 @@ for (const file of [
   "src/game/linRoute2025.test.ts",
   "src/game/narrativeSemantics.ts",
   "src/game/narrativeSemantics.test.ts",
+  "src/game/rebirth.ts",
+  "src/game/rebirth.test.ts",
+  "src/game/rebirthBranches.ts",
+  "src/game/rebirthBranching.test.ts",
+  "src/game/rebirthDecisionBonus.ts",
+  "src/game/rebirthFlow.ts",
+  "src/game/rebirthFlow.test.ts",
+  "src/game/rebirthInvestigationData.ts",
+  "src/game/rebirthOffice.ts",
+  "src/game/rebirthOffice.test.ts",
+  "src/game/rebirthSpecialDecisions.ts",
   "src/game/runtime.ts",
   "src/game/runtime.test.ts",
   "src/game/saveState.ts",
@@ -155,7 +168,10 @@ requireText("src/App.tsx", ["ImmersiveGameScreen", "Chapter1Spike", "pixivn"]);
 requireText("src/app/ImmersiveGameScreen.tsx", [
   "DebatePanel",
   "PixiStage",
+  "RebirthFlowPanel",
+  "OfficeHubPanel",
   "canGoBack",
+  "跳过已读",
   "记录与档案",
 ]);
 requireText("src/app/useGameController.ts", [
@@ -164,6 +180,9 @@ requireText("src/app/useGameController.ts", [
   "staticStage",
   "readStoredStateFromStorage",
   "persistStoredState",
+  "readRebirthMeta",
+  "skipReadSceneNodes",
+  "inspectOfficeProp",
   "rewindScene",
 ]);
 requireText("src/game/saveState.ts", [

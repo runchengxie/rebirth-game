@@ -33,14 +33,14 @@ describe("关系升温节点", () => {
       monthIndex: 5,
       relations: { ...state2023.relations, lin_ruoning: 60 },
     });
-    expect(linScene.nodes.some((node) => node.id === "affinity-2023-lin_ruoning-5")).toBe(true);
+    expect(linScene.nodes.some((node) => node.id === "m5-affinity")).toBe(true);
 
     const nextScene = buildMonthScene(6, "2023", {
       ...state2023,
       monthIndex: 6,
       relations: { ...state2023.relations, lin_ruoning: 60 },
     });
-    expect(nextScene.nodes.some((node) => node.id === "affinity-2023-lin_ruoning-5")).toBe(false);
+    expect(nextScene.nodes.some((node) => node.id === "m5-affinity")).toBe(false);
   });
 
   it("每段往年关系内容都不同，并按动作和对白分段", () => {

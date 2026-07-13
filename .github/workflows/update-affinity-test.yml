@@ -48,6 +48,7 @@ jobs:
           });'''
           path.write_text(text[:start] + replacement + text[end:], encoding="utf-8")
           PY
+          git rm -f .github/trigger-affinity-test
           git rm -f .github/workflows/debug-check.yml
           git rm -f .github/workflows/update-affinity-test.yml
           git config user.name "github-actions[bot]"

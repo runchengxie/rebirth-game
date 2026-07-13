@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RoundResult } from "../types";
-import { createRebirthMeta } from "./rebirth";
+import { createRebirthMeta, type RebirthMetaState } from "./rebirth";
 import {
   inspectOfficeProp,
   officeDiscoveryEntries,
@@ -60,9 +60,9 @@ describe("研究室中枢", () => {
 
   it("研究捷径板把跨周目关系资产可视化", () => {
     const state = developedOfficeState();
-    const meta = {
+    const meta: RebirthMetaState = {
       ...createRebirthMeta("2025"),
-      shortcuts: ["zhao_factor_pipeline"] as const,
+      shortcuts: ["zhao_factor_pipeline"],
     };
     const view = officePropViews(meta, state).find((entry) => entry.id === "shortcuts");
     expect(view?.lockedReason).toBeNull();

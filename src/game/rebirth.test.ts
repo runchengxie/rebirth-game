@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ResearchDecision, RoundResult } from "../types";
+import type { GameState, ResearchDecision, RoundResult } from "../types";
 import { createInitialState } from "./runtime";
 import {
   LEGACY_REBIRTH_META_KEY_PREFIX,
@@ -13,6 +13,7 @@ import {
   persistRebirthMeta,
   prepareDecisionForRebirth,
   readRebirthMeta,
+  type RebirthMetaState,
 } from "./rebirth";
 
 const BASE_DECISION: ResearchDecision = {
@@ -137,10 +138,10 @@ describe("重生元状态", () => {
 
   it("四月用因果缺口解锁事后正确审计和专属方案", () => {
     let state = stateAtMonth(3);
-    let meta = {
+    let meta: RebirthMetaState = {
       ...createRebirthMeta("2025"),
       cycle: 2,
-      memoryKeys: ["causal_gap"] as const,
+      memoryKeys: ["causal_gap"],
     };
     for (const nodeId of [
       "apr_earnings_scan",
@@ -161,11 +162,11 @@ describe("重生元状态", () => {
 
   it("七月需要回测捷径才能在预算内拼出失败样本与再平衡路线", () => {
     let state = stateAtMonth(6);
-    let meta = {
+    let meta: RebirthMetaState = {
       ...createRebirthMeta("2025"),
       cycle: 2,
-      memoryKeys: ["sample_pollution", "opportunity_cost"] as const,
-      shortcuts: ["zhao_factor_pipeline"] as const,
+      memoryKeys: ["sample_pollution", "opportunity_cost"],
+      shortcuts: ["zhao_factor_pipeline"],
     };
     for (const nodeId of [
       "jul_segment_margins",
@@ -193,9 +194,9 @@ describe("重生元状态", () => {
       .find((node) => node.id === "sep_closed_door_access");
     expect(locked?.lockedReason).toContain("自动回测管线");
 
-    const withShortcut = {
+    const withShortcut: RebirthMetaState = {
       ...withoutShortcut,
-      shortcuts: ["zhao_factor_pipeline"] as const,
+      shortcuts: ["zhao_factor_pipeline"],
     };
     const available = investigationNodeViews(withShortcut, state)
       .find((node) => node.id === "sep_closed_door_access");
@@ -204,14 +205,14 @@ describe("重生元状态", () => {
   });
 
   it("十二月真相路线要求档案、双钥匙和可持续边界共同完成", () => {
-    let state = {
+    let state: GameState = {
       ...stateAtMonth(11),
       flags: { year_2025: true, office_archive_reviewed: true },
     };
-    let meta = {
+    let meta: RebirthMetaState = {
       ...createRebirthMeta("2025"),
       cycle: 2,
-      memoryKeys: ["causal_gap", "sample_pollution", "body_memory"] as const,
+      memoryKeys: ["causal_gap", "sample_pollution", "body_memory"],
     };
     for (const nodeId of [
       "dec_archive_audit",

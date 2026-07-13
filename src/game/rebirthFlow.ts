@@ -1,6 +1,11 @@
-import type { GameState } from "../types";
+import type {
+  BranchMetaContext,
+  GameDataYear,
+  GameState,
+} from "../types";
 import { getTheme } from "./content";
 import type { RebirthMetaState } from "./rebirth";
+import { advanceScene, currentSceneNode } from "./runtime";
 
 export type FlowMonthStatus = "completed" | "current" | "locked";
 
@@ -52,7 +57,28 @@ export function markSceneNodeRead(
   return { ...meta, readSceneNodeIds: [...meta.readSceneNodeIds, key] };
 }
 
-function resultTags(method: string | undefined, isParachuted: boolean | undefined): string[] {
+export function skipReadSceneNodes(
+  meta: RebirthMetaState,
+  state: GameState,
+  data: GameDataYear,
+  branchMeta: BranchMetaContext,
+): GameState {
+  if (meta.cycle < 2 || state.locked) return state;
+  let next = state;
+  for (let guard = 0; guard < 40; guard += 1) {
+    const node = currentSceneNode(next, branchMeta);
+    if (node.type !== "dialogue" || !isSceneNodeRead(meta, next, node.id)) break;
+    const advanced = advanceScene(next, data, branchMeta);
+    if (advanced === next || advanced.monthIndex !== state.monthIndex) break;
+    next = advanced;
+  }
+  return next;
+}
+
+function resultTags(
+  method: string | undefined,
+  isParachuted: boolean | undefined,
+): string[] {
   const tags: string[] = [];
   if (method) tags.push(method);
   if (isParachuted) tags.push("空降结论");

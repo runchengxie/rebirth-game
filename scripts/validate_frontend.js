@@ -98,6 +98,7 @@ for (const file of [
   "src/immersive.css",
   "src/components/PixiStage.tsx",
   "src/components/EndingPanel.tsx",
+  "src/components/StatusBar.tsx",
   "src/components/StoryRecapPanel.tsx",
   "src/audio/bgm.ts",
   "src/audio/sfx.ts",
@@ -114,6 +115,8 @@ for (const file of [
   "src/game/decisionFactory.ts",
   "src/game/engine.ts",
   "src/game/engine.test.ts",
+  "src/game/linRoute2025.ts",
+  "src/game/linRoute2025.test.ts",
   "src/game/narrativeSemantics.ts",
   "src/game/narrativeSemantics.test.ts",
   "src/game/runtime.ts",
@@ -122,6 +125,7 @@ for (const file of [
   "src/game/saveState.test.ts",
   "src/game/sceneBuilders.ts",
   "src/game/storyArcs.ts",
+  "src/game/verified2025.ts",
   "src/game/content/schema.ts",
   "src/game/content/content.test.ts",
   "src/spike/pixivn/Chapter1Spike.tsx",
@@ -166,13 +170,24 @@ requireText("src/game/saveState.ts", [
   "sceneNodeId",
   "contentRevision",
 ]);
-requireText("src/game/runtime.ts", ["canRewindScene", "rewindScene", "sceneNodeId"]);
+requireText("src/game/runtime.ts", ["canRewindScene", "rewindScene", "sceneNodeId", "year_2025"]);
 requireText("src/game/narrativeSemantics.ts", [
   "decisionMethod",
   "decisionQuality",
   "decisionOutcomeAlignment",
   "YEAR_NARRATIVE_PROFILES",
   "sceneProfileFor",
+]);
+requireText("src/game/linRoute2025.ts", [
+  "LIN_2025_BRANCHES",
+  "lin_route_committed",
+  "lin_route_regret",
+  "lin_used_hindsight_as_proof",
+]);
+requireText("src/game/verified2025.ts", [
+  "VERIFIED_2025_TIMELINE",
+  "applyVerified2025Timeline",
+  "2025-08-26",
 ]);
 requireText("src/components/PixiStage.tsx", [
   "pixi.js",
@@ -186,7 +201,7 @@ requireText("src/data/gameData.ts", [
   '"2024"',
   '"2025"',
   '"demo"',
-  "GAME_YEARS",
+  'GAME_YEARS = ["2025"]',
   "themeReturn: 0",
 ]);
 
@@ -226,4 +241,4 @@ for (const year of years) {
   }
 }
 
-console.log(`前端结构校验通过。正式剧情年份：2023、2024、2025。静态数据年份：${years.join("、")}。`);
+console.log(`前端结构校验通过。当前正式入口：2025。往年档案：2023、2024。静态数据年份：${years.join("、")}。`);

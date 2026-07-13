@@ -64,6 +64,15 @@ describe("正式年份内容层", () => {
     expect(chase?.quality).toBe("reckless");
   });
 
+  it("生活管理和团队协作不会因研究证据维度较低被误判为冒进", () => {
+    const decisions = YEARS.flatMap((sample) => validateYearContent(sample.raw).decisions.flat());
+    const nonAnalytical = decisions.filter((decision) =>
+      decision.method === "self_management" || decision.method === "collaboration");
+    expect(nonAnalytical.length).toBeGreaterThan(0);
+    expect(nonAnalytical.every((decision) => decision.quality !== "reckless")).toBe(true);
+    expect(nonAnalytical.every((decision) => !decision.behaviorTags?.includes("thin_evidence"))).toBe(true);
+  });
+
   it("拒绝缺少月份内容的数据", () => {
     expect(() =>
       validateYearContent({ year: "2025", themes: [], decisions: [] }),

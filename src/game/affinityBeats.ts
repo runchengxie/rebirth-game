@@ -13,6 +13,18 @@ interface AffinityBeat {
 
 export const LEGACY_AFFINITY_BEATS: AffinityBeat[] = [
   {
+    year: "2024",
+    monthIndex: 0,
+    characterId: "lin_ruoning",
+    mood: "信任",
+    text: dialogueText(
+      "林若宁把你重写过的研究提纲放回桌面。原本空着的证据来源，已经被你逐项补上。",
+      "这次我不用追着问每一步是怎么来的了。",
+      "她把第一页折出一个小角。",
+      "这份先留在我这里。下次晨会，我想听你自己讲。",
+    ),
+  },
+  {
     year: "2023",
     monthIndex: 5,
     characterId: "lin_ruoning",
@@ -102,7 +114,7 @@ export function affinityNodeFor(
 
   const character = CHARACTERS[characterId];
   return {
-    id: `affinity-${beat.year}-${characterId}-${monthIndex}`,
+    id: `m${monthIndex}-affinity`,
     type: "dialogue",
     characterId,
     speaker: character.name,

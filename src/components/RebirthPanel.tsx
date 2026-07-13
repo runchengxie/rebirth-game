@@ -1,6 +1,8 @@
 import type { GameState } from "../types";
 import {
   contradictionEntries,
+  currentInvestigation,
+  currentInvestigationChapter,
   investigationClues,
   investigationNodeViews,
   isInvestigationActive,
@@ -10,6 +12,12 @@ import {
   type InvestigationNodeId,
   type RebirthMetaState,
 } from "../game/rebirth";
+import { flowMapEntries, readSceneCount } from "../game/rebirthFlow";
+import {
+  officeDiscoveryEntries,
+  officePropViews,
+  type OfficePropId,
+} from "../game/rebirthOffice";
 
 export function InvestigationPanel({
   meta,
@@ -21,18 +29,19 @@ export function InvestigationPanel({
   onInvestigate: (nodeId: InvestigationNodeId) => void;
 }) {
   if (!isInvestigationActive(meta, state)) return null;
-  const investigation = meta.investigation;
-  if (!investigation) return null;
+  const investigation = currentInvestigation(meta, state);
+  const chapter = currentInvestigationChapter(state);
+  if (!investigation || !chapter) return null;
   const remaining = Math.max(0, investigation.timeBudget - investigation.timeSpent);
   const nodes = investigationNodeViews(meta, state);
-  const clues = investigationClues(meta);
+  const clues = investigationClues(meta, state);
 
   return (
     <section className="rebirth-investigation" aria-label="本月调查网络">
       <header className="rebirth-investigation-head">
         <div>
-          <span>第 {meta.cycle} 周目 · 调查网络</span>
-          <strong>把未来记忆拆成现在能验证的证据</strong>
+          <span>第 {meta.cycle} 周目 · {chapter.title}</span>
+          <strong>{chapter.thesis}</strong>
         </div>
         <b>{remaining} / {investigation.timeBudget} 时间块</b>
       </header>
@@ -60,7 +69,7 @@ export function InvestigationPanel({
               type="button"
               onClick={() => onInvestigate(node.id)}
             >
-              <span>{node.completed ? "已验证" : `${node.cost} 时间`}</span>
+              <span>{node.completed ? node.reliabilityLabel : `${node.cost} 时间`}</span>
               <strong>{node.label}</strong>
               <p>{node.summary}</p>
               {node.shortcutLabel ? <small>捷径生效：{node.shortcutLabel}</small> : null}
@@ -72,13 +81,14 @@ export function InvestigationPanel({
       </div>
 
       <div className="rebirth-clues">
-        <span>已验证线索</span>
+        <span>当前证据板</span>
         {clues.length === 0 ? (
           <p>还没有。直接提交也可以，只是未来记忆会继续替你把中间步骤含糊过去。</p>
         ) : (
           <ul>
             {clues.map((clue) => (
-              <li key={clue.id}>
+              <li className={`reliability-${clue.reliability}`} key={clue.id}>
+                <small>{clue.reliabilityLabel}</small>
                 <strong>{clue.label}</strong>
                 <span>{clue.description}</span>
               </li>
@@ -90,10 +100,105 @@ export function InvestigationPanel({
   );
 }
 
+export function RebirthFlowPanel({
+  meta,
+  state,
+}: {
+  meta: RebirthMetaState;
+  state: GameState;
+}) {
+  const entries = flowMapEntries(meta, state);
+  const readCount = readSceneCount(meta, state.year);
+  return (
+    <section className="archive-section rebirth-flow" aria-label="年度流程图">
+      <header className="rebirth-section-head">
+        <div>
+          <h3>年度因果流程图</h3>
+          <p>已读剧情节点 {readCount} 个。第二周目以后可以跳过已经读过的对白。</p>
+        </div>
+        <b>第 {meta.cycle} 周目</b>
+      </header>
+      <ol>
+        {entries.map((entry) => (
+          <li className={`${entry.status} ${entry.keyMonth ? "key-month" : ""}`} key={entry.monthKey}>
+            <div className="flow-month">
+              <span>{entry.label}</span>
+              {entry.keyMonth ? <b>{entry.investigationLabel}</b> : null}
+            </div>
+            <div className="flow-copy">
+              <strong>{entry.title}</strong>
+              {entry.decisionLabel ? <p>{entry.decisionLabel}</p> : null}
+              {entry.investigationProgress ? <small>{entry.investigationProgress}</small> : null}
+              {entry.grade ? <i>评级 {entry.grade}</i> : null}
+              {entry.tags.length > 0 ? (
+                <div>{entry.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
+              ) : null}
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+export function OfficeHubPanel({
+  meta,
+  state,
+  onInspect,
+}: {
+  meta: RebirthMetaState;
+  state: GameState;
+  onInspect: (propId: OfficePropId) => void;
+}) {
+  const props = officePropViews(meta, state);
+  const discoveries = officeDiscoveryEntries(meta);
+  return (
+    <section className="archive-section office-hub" aria-label="研究室中枢">
+      <header className="rebirth-section-head">
+        <div>
+          <h3>研究室中枢</h3>
+          <p>物件会积累关系、透支和研究过程。它们现在终于有工作，不再只是背景装修。</p>
+        </div>
+        <b>{discoveries.length} 项发现</b>
+      </header>
+      <div className="office-prop-grid">
+        {props.map((prop) => (
+          <button
+            className={prop.completed ? "completed" : ""}
+            disabled={prop.completed || Boolean(prop.lockedReason)}
+            key={prop.id}
+            title={prop.lockedReason ?? undefined}
+            type="button"
+            onClick={() => onInspect(prop.id)}
+          >
+            <span>{prop.countLabel}</span>
+            <strong>{prop.label}</strong>
+            <p>{prop.discovery ?? prop.summary}</p>
+            <small>
+              {prop.completed ? "已整理" : prop.lockedReason ?? prop.actionLabel}
+            </small>
+          </button>
+        ))}
+      </div>
+      {discoveries.length > 0 ? (
+        <ul className="office-discoveries">
+          {discoveries.map((entry) => (
+            <li key={entry.id}>
+              <strong>{entry.label}</strong>
+              <span>{entry.description}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </section>
+  );
+}
+
 export function RebirthArchiveSection({ meta }: { meta: RebirthMetaState }) {
   const keys = memoryKeyEntries(meta);
   const shortcuts = shortcutEntries(meta);
   const contradictions = contradictionEntries(meta);
+  const officeDiscoveries = officeDiscoveryEntries(meta);
   return (
     <section className="archive-section rebirth-archive">
       <h3>重生档案 · 第 {meta.cycle} 周目</h3>
@@ -128,6 +233,17 @@ export function RebirthArchiveSection({ meta }: { meta: RebirthMetaState }) {
         {contradictions.length === 0 ? <span>档案暂时一致，令人可疑地省心。</span> : (
           <ul>
             {contradictions.map((entry) => (
+              <li key={entry.id}><b>{entry.label}</b><span>{entry.description}</span></li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="rebirth-archive-group">
+        <strong>研究室发现</strong>
+        {officeDiscoveries.length === 0 ? <span>尚未整理研究室物件</span> : (
+          <ul>
+            {officeDiscoveries.map((entry) => (
               <li key={entry.id}><b>{entry.label}</b><span>{entry.description}</span></li>
             ))}
           </ul>

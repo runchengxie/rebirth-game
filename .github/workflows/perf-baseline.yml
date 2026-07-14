@@ -15,11 +15,23 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
-      - name: Apply lazy archive and tree view
+      - id: apply
+        name: Apply lazy archive and tree view
+        shell: bash
         run: |
-          python scripts/dev/fix_perf_patch_script.py
-          python scripts/dev/apply_perf_lazy_tree.py
+          set +e
+          python scripts/dev/fix_perf_patch_script.py > apply.log 2>&1
+          first=$?
+          if [ "$first" -eq 0 ]; then
+            python scripts/dev/apply_perf_lazy_tree.py >> apply.log 2>&1
+            code=$?
+          else
+            code=$first
+          fi
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit 0
       - name: Commit optimization
+        if: steps.apply.outputs.exit_code == '0'
         shell: bash
         run: |
           if ! git diff --quiet; then
@@ -30,30 +42,41 @@ jobs:
             git push origin HEAD:${{ github.head_ref }}
           fi
       - uses: actions/setup-node@v4
+        if: steps.apply.outputs.exit_code == '0'
         with:
           node-version: "22"
           cache: npm
-      - run: npm ci
+      - if: steps.apply.outputs.exit_code == '0'
+        run: npm ci
       - id: full-check
+        if: steps.apply.outputs.exit_code == '0'
         shell: bash
         run: |
           set +e
           npm run check > perf-check.log 2>&1
           code=$?
           echo "exit_code=$code" >> "$GITHUB_OUTPUT"
-          {
-            echo "=== JavaScript assets ==="
-            find dist/assets -maxdepth 1 -type f -name '*.js' -printf '%s %f\n' | sort -nr
-            echo "=== CSS assets ==="
-            find dist/assets -maxdepth 1 -type f -name '*.css' -printf '%s %f\n' | sort -nr
-            echo "=== Check output ==="
-            cat perf-check.log
-          } > perf-optimized.txt
+          if [ -d dist/assets ]; then
+            {
+              echo "=== JavaScript assets ==="
+              find dist/assets -maxdepth 1 -type f -name '*.js' -printf '%s %f\n' | sort -nr
+              echo "=== CSS assets ==="
+              find dist/assets -maxdepth 1 -type f -name '*.css' -printf '%s %f\n' | sort -nr
+              echo "=== Check output ==="
+              cat perf-check.log
+            } > perf-optimized.txt
+          else
+            cp perf-check.log perf-optimized.txt
+          fi
           exit 0
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: perf-optimized
-          path: perf-optimized.txt
-      - name: Fail when check failed
-        if: steps.full-check.outputs.exit_code != '0'
+          path: |
+            apply.log
+            perf-optimized.txt
+          if-no-files-found: ignore
+      - name: Fail when optimization failed
+        if: steps.apply.outputs.exit_code != '0' || steps.full-check.outputs.exit_code != '0'
         run: exit 1

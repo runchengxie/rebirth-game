@@ -55,6 +55,46 @@ function rootBranchLabel(cycle: number, serial: number): string {
   return serial === 1 ? `第 ${cycle} 周目主线` : `第 ${cycle} 周目路线 ${serial}`;
 }
 
+function removeTimelineBranch(
+  timeline: RebirthTimelineState,
+  branchId: string,
+): RebirthTimelineState {
+  const anchorIds = new Set(
+    timeline.anchors
+      .filter((anchor) => anchor.branchId === branchId)
+      .map((anchor) => anchor.id),
+  );
+  return {
+    ...timeline,
+    activeBranchId: timeline.activeBranchId === branchId ? null : timeline.activeBranchId,
+    branches: timeline.branches.filter((branch) => branch.id !== branchId),
+    anchors: timeline.anchors.filter((anchor) => anchor.branchId !== branchId),
+    simulations: timeline.simulations.filter((simulation) => (
+      simulation.branchId !== branchId && !anchorIds.has(simulation.anchorId)
+    )),
+  };
+}
+
+function trimTimelineForNewBranch(
+  timeline: RebirthTimelineState,
+  preferredDropId?: string | null,
+): RebirthTimelineState {
+  if (timeline.branches.length < TIMELINE_BRANCH_LIMIT) return timeline;
+  const preferred = preferredDropId
+    ? timeline.branches.find((branch) => (
+        branch.id === preferredDropId && branch.status === "paused"
+      ))
+    : undefined;
+  const paused = [...timeline.branches]
+    .filter((branch) => branch.status === "paused")
+    .sort((left, right) => left.sequence - right.sequence)[0];
+  const completed = [...timeline.branches]
+    .filter((branch) => branch.status === "completed")
+    .sort((left, right) => left.sequence - right.sequence)[0];
+  const removable = preferred ?? paused ?? completed;
+  return removable ? removeTimelineBranch(timeline, removable.id) : timeline;
+}
+
 function createBranch(
   timeline: RebirthTimelineState,
   state: GameState,
@@ -164,11 +204,12 @@ export function ensureTimelineInitialized(
   if (meta.timeline.branches.length > 0 && meta.timeline.activeBranchId) {
     return captureTimelineAnchor(syncActiveTimelineBranch(meta, state), state);
   }
-  if (meta.timeline.branches.length > 0 && !meta.timeline.activeBranchId) {
+  if (meta.timeline.branches.length > 0 && !meta.timeline.activeBranchId && state.finished) {
     return meta;
   }
+  const availableTimeline = trimTimelineForNewBranch(meta.timeline);
   const created = createBranch(
-    meta.timeline,
+    availableTimeline,
     state,
     meta.investigations,
     meta.cycle,
@@ -275,8 +316,9 @@ export function startTimelineCycle(
   state: GameState,
 ): RebirthMetaState {
   if (meta.timeline.activeBranchId) return captureTimelineAnchor(meta, state);
+  const availableTimeline = trimTimelineForNewBranch(meta.timeline);
   const created = createBranch(
-    meta.timeline,
+    availableTimeline,
     state,
     meta.investigations,
     meta.cycle,
@@ -291,12 +333,14 @@ export function restartTimelineRun(
   currentState: GameState,
   nextState: GameState,
 ): RebirthMetaState {
+  const previousBranchId = meta.timeline.activeBranchId;
   const paused = pauseCurrentBranch(meta.timeline, currentState, meta.investigations);
+  const availableTimeline = trimTimelineForNewBranch(paused, previousBranchId);
   const cleared: RebirthMetaState = {
     ...meta,
     lastCycleUnlocks: [],
     investigations: {},
-    timeline: paused,
+    timeline: availableTimeline,
   };
   const created = createBranch(
     cleared.timeline,

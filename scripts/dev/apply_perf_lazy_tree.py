@@ -56,7 +56,7 @@ replace_between(
     "src/app/ImmersiveGameScreen.tsx",
     "function DialogueHistory",
     "function SettingsPopover",
-    "function SettingsPopover",
+    "",
 )
 replace_once(
     "src/app/ImmersiveGameScreen.tsx",
@@ -282,17 +282,17 @@ replace_once(
     '''          groups: [
             {
               name: "tone",
-              test: /node_modules[\\/]tone[\\/]/,
+              test: /node_modules[\\\\/]tone[\\\\/]/,
             },
           ],''',
     '''          groups: [
             {
               name: "react-vendor",
-              test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+              test: /node_modules[\\\\/](react|react-dom|scheduler)[\\\\/]/,
             },
             {
               name: "tone",
-              test: /node_modules[\\/]tone[\\/]/,
+              test: /node_modules[\\\\/]tone[\\\\/]/,
             },
           ],''',
 )
@@ -356,7 +356,7 @@ if (mainEntry.includes("timeline.css")) {
   fail("时间线样式应由异步回溯组件加载");
 }
 requireText("vite.config.ts", ["react-vendor", "tone"]);
-requireText("src/app/useGameController.ts", [''',
+''',
 )
 
 print("performance lazy tree patch applied")

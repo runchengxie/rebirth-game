@@ -4,7 +4,6 @@ import "./styles.css";
 import "./immersive.css";
 import "./rebirth.css";
 import "./rebirth-v2.css";
-import "./timeline.css";
 
 const root = document.getElementById("root");
 

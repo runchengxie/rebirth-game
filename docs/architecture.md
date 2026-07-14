@@ -26,7 +26,8 @@
   │     └── 条件分支
   │
   └── 浏览器本地存储
-        └── 按年份保存完整 GameState
+        ├── 按年份保存完整 GameState
+        └── 按年份保存 RebirthMetaState 与时间线
 ```
 
 构建产物位于 `dist/`，可以部署到 GitHub Pages，也可以通过离线分享包直接打开。
@@ -114,13 +115,21 @@
 
 每次状态变化都会写回当前年份。切换年份时优先恢复该年份存档，重新开始则创建当前年份的新状态并覆盖旧存档。
 
-### 跨周目状态
+### 跨周目状态与时间线
 
-`src/game/rebirth.ts` 以 `rebirthMeta:v2:<year>` 为键保存周目编号、记忆钥匙、研究捷径、调查进度、已读节点、系统异常和研究室发现。读取时兼容 `rebirthMeta:v1:<year>`，旧的一月单调查会迁移到按月份保存的调查记录。
+`src/game/rebirth.ts` 以 `rebirthMeta:v3:<year>` 为键保存周目编号、记忆钥匙、研究捷径、调查进度、已读节点、系统异常、研究室发现和时间线。读取时兼容 v2 与 v1。旧存档不会伪造缺失的历史锚点，会从恢复后的当前进度开始记录。
 
-关键月份调查数据位于 `rebirthInvestigationData.ts`，调查解锁方案位于 `rebirthSpecialDecisions.ts`，线索评分规则位于 `rebirthDecisionBonus.ts`。年度流程和已读跳过由 `rebirthFlow.ts` 负责，研究室物件由 `rebirthOffice.ts` 负责。
+关键月份调查数据位于 `rebirthInvestigationData.ts`，调查解锁方案位于 `rebirthSpecialDecisions.ts`，线索评分规则位于 `rebirthDecisionBonus.ts`。已读跳过由 `rebirthFlow.ts` 负责，研究室物件由 `rebirthOffice.ts` 负责。
 
-单周目 `GameState` 和跨周目 `RebirthMetaState` 分别持久化。重新开始会重置本轮调查和剧情状态，保留钥匙、捷径、已读记录、异常和研究室发现。
+时间线模块分为三层：
+
+- `rebirthTimelineState.ts` 定义快照、分支、事件、推演和恢复规则。
+- `rebirthTimeline.ts` 负责锚点捕获、事件写入、分叉、暂停、恢复和周目衔接。
+- `rebirthTimelineInsights.ts` 负责流程视图、因果注释和反事实推演。
+
+关键月月初保存 `GameState`、调查进度和当时可用的跨周目信息。分支头保存该路线最近状态。原路线完成后仍保留，分叉只创建新的活跃路线。
+
+单周目 `GameState` 和跨周目 `RebirthMetaState` 分别持久化。重新开始会暂停当前路线并创建新路线。完成年度结局会封存当前路线并创建下一周目路线。
 
 ### 结算引擎
 
@@ -191,6 +200,8 @@
 - `src/game/content/content.test.ts`：年份 JSON 和加载器
 - `src/game/runtime.test.ts`：剧情游标、回看和跨月流程
 - `src/game/engine.test.ts`：评分、状态变化、关系、旗标、分支和结局
+- `src/game/rebirthTimeline.test.ts`：锚点、事件、分叉、恢复、推演和迁移
+- `src/game/rebirthTimelineGuards.test.ts`：内容版本与分支数量边界
 - `src/data/gameData.test.ts`：正式年份和 `demo` 深链约束
 - `scripts/test_build_data.py`：市场复盘生成器
 - `scripts/test_validate_data.py`：静态股票选项数据
@@ -219,6 +230,7 @@
 | 修改 2025 年业务事实和分歧假设 | `src/game/content2025.ts` |
 | 修改评分和状态结算 | `src/game/engine.ts` |
 | 修改剧情推进和回看 | `src/game/runtime.ts` |
+| 修改因果回溯、分叉和推演 | `src/game/rebirthTimeline*.ts` |
 | 修改状态持久化和控制器 | `src/app/useGameController.ts` |
 | 修改主页面展示 | `src/app/ImmersiveGameScreen.tsx` |
 | 修改单视口布局 | `src/immersive.css` |

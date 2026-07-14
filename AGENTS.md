@@ -25,7 +25,7 @@
 - `demo` 只通过 `?year=demo` 深链访问，不出现在年份选择器。
 - 月度结算依据研究方案、多维评分和编写好的业务事实。运行时不读取真实月度涨跌幅。
 - `src/data/gameData.ts` 中的 `themeReturn` 当前固定为 0，行业轮动和风格因子为空。
-- 游戏按年份把完整 `GameState` 保存在浏览器本地。刷新和切换年份会恢复最近状态，重新开始会覆盖当前年份存档。
+- 游戏按年份保存 `GameState` 和跨周目元状态。关键月会保存回溯锚点，重新开始会暂停当前时间线并创建新路线。
 - 结算前可以返回当前话的上一段对白。结算后只通过记录抽屉回看，不撤销数值和旗标。
 - 背景音乐和提示音使用 Web Audio API。关键对白可以使用 Web Speech API 调用系统中文语音。
 - `?pixivn=1` 会动态加载第一话 Pixi'VN 原型。默认线路不会挂载该原型。
@@ -59,6 +59,7 @@
 - 常规舞台资源映射：`src/components/PixiStage.tsx`
 - 角色立绘、姿势映射和舞台调色：`src/components/PixiStage.tsx`
 - 音频：`src/audio/bgm.ts` 和 `src/audio/sfx.ts`
+- 回溯时间线：`src/game/rebirthTimelineState.ts`、`src/game/rebirthTimeline.ts` 和 `src/game/rebirthTimelineInsights.ts`
 
 新增玩法逻辑时优先放在 `src/game/`，React 组件只负责展示和交互。修改角色编号或类型时，以 `src/types.ts` 为唯一类型来源，并同步检查 JSON 校验器、关系初始值、资源映射和测试。
 

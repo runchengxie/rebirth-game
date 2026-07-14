@@ -136,6 +136,7 @@ for (const file of [
   "src/game/rebirthSpecialDecisions.ts",
   "src/game/rebirthTimeline.ts",
   "src/game/rebirthTimeline.test.ts",
+  "src/game/rebirthTimelineGuards.test.ts",
   "src/game/rebirthTimelineInsights.ts",
   "src/game/rebirthTimelineState.ts",
   "src/game/runtime.ts",

@@ -11,7 +11,9 @@
 - `src/main.tsx`：前端入口和样式加载顺序
 - `src/App.tsx`：顶层入口和 Pixi'VN 原型切换
 - `src/app/useGameController.ts`：游戏状态、存档、设置、主题和音频控制
-- `src/app/ImmersiveGameScreen.tsx`：主游戏的单视口页面和档案抽屉
+- `src/app/ImmersiveGameScreen.tsx`：主游戏的单视口页面，档案抽屉通过动态导入加载
+- `src/components/ArchiveDrawer.tsx`：按需加载的档案和研究室入口
+- `src/components/RebirthTimelinePanel.tsx`：按需加载的树状因果回溯界面
 - `src/app/GameScreen.tsx`：旧版长页面展示，暂时保留用于对照
 - `src/components/PixiStage.tsx`：常规角色的 PixiJS 舞台
 - `src/game/runtime.ts`：状态初始化、剧情游标、回看和跨月推进
@@ -103,6 +105,7 @@ npm run lint:ci
 npm run typecheck
 npm run test:run
 npm run build
+npm run validate:bundle
 ```
 
 `scripts/check.py` 默认把 BasedPyright 和 ty 作为非阻塞诊断，其余检查失败会返回非零状态。仓库当前没有拉取请求代码检查工作流，提交前需要本地运行完整检查。GitHub Pages 在 `main` 更新后执行 `npm run check`。

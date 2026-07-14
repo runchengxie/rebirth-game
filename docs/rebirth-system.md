@@ -74,7 +74,7 @@
 
 ### 观看模式
 
-玩家可以查看每条时间线的十二个月状态、关键月锚点、调查路径、行动日志、实际研究判断和月度结果。观看不会修改游戏状态。
+玩家先通过树状图查看主时间线和回溯分支。父子连接表示分支从哪条旧路线产生，节点会显示周目、完成月份、结局和分叉月份。选择一条路线后，可以查看十二个月状态、关键月锚点、调查路径、行动日志、实际研究判断和月度结果。观看不会修改游戏状态。
 
 记忆钥匙会给旧锚点添加后来获得的理解。例如因果缺口会补出收入、利润和时点变量，样本污染会标记被筛掉的失败区间，身体记忆会显示疲劳影响，机会成本会显示没有行动的后果。
 
@@ -163,7 +163,9 @@ rebirthMeta:v3:<year>
 - `src/game/rebirthBranches.ts`：读取周目和记忆钥匙的剧情分支。
 - `src/game/rebirthFlow.ts`：已读记录和连续跳过。
 - `src/game/rebirthOffice.ts`：研究室物件、发现和状态变化。
-- `src/components/RebirthPanel.tsx`：调查、研究室和跨周目档案界面。
-- `src/components/RebirthTimelinePanel.tsx`：观看、分叉和推演界面。
-- `src/rebirth.css`、`src/rebirth-v2.css` 和 `src/timeline.css`：重生与回溯界面样式。
+- `src/components/InvestigationPanel.tsx`：首屏需要的关键月调查界面。
+- `src/components/ArchiveDrawer.tsx`：按需加载的记录、档案和研究室抽屉。
+- `src/components/RebirthPanel.tsx`：研究室和跨周目档案界面。
+- `src/components/RebirthTimelinePanel.tsx`：按需加载的树状时间线、观看、分叉和推演界面。
+- `src/rebirth.css` 与 `src/rebirth-v2.css`：首屏重生界面样式。`src/timeline.css` 随回溯面板异步加载。
 - `src/app/useGameController.ts`：同步单周目、跨周目和时间线状态。

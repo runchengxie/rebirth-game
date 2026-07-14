@@ -9,6 +9,10 @@ export default defineConfig({
         codeSplitting: {
           groups: [
             {
+              name: "react-vendor",
+              test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+            },
+            {
               name: "tone",
               test: /node_modules[\\/]tone[\\/]/,
             },

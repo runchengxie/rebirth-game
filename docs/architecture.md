@@ -40,7 +40,9 @@
 
 - `src/App.tsx`：顶层组合，负责默认游戏和 Pixi'VN 原型入口切换
 - `src/app/useGameController.ts`：年份深链、存档恢复、场景推进、决策结算、设置、主题和音频控制
-- `src/app/ImmersiveGameScreen.tsx`：单视口舞台、对白、观点卡、研究选择和档案抽屉
+- `src/app/ImmersiveGameScreen.tsx`：单视口舞台、对白、观点卡和研究选择，按需加载档案抽屉
+- `src/components/ArchiveDrawer.tsx`：记录、研究档案、研究室和异步回溯入口
+- `src/components/RebirthTimelinePanel.tsx`：树状时间线、关键月详情和反事实推演
 - `src/immersive.css`：主流程布局和响应式约束
 
 `src/app/GameScreen.tsx` 是旧版长页面装配，当前没有从默认入口挂载，暂时保留用于对照。
@@ -130,6 +132,12 @@
 关键月月初保存 `GameState`、调查进度和当时可用的跨周目信息。分支头保存该路线最近状态。原路线完成后仍保留，分叉只创建新的活跃路线。
 
 单周目 `GameState` 和跨周目 `RebirthMetaState` 分别持久化。重新开始会暂停当前路线并创建新路线。完成年度结局会封存当前路线并创建下一周目路线。
+
+### 构建拆包
+
+`vite.config.ts` 把 React 运行库拆成稳定的 `react-vendor` 缓存块。档案抽屉通过动态导入加载，因果回溯面板在抽屉内再次动态导入。`src/timeline.css` 由回溯组件导入，因此不会进入首屏 CSS。
+
+`scripts/validate_bundle_size.mjs` 在生产构建后检查：单个 JavaScript chunk 不超过 500000 bytes、首屏入口不超过 150000 bytes、档案和回溯异步面板各不超过 25000 bytes、时间线异步样式不超过 20000 bytes。
 
 ### 结算引擎
 

@@ -26,31 +26,111 @@
   font-size: 12px;
 }
 
-.timeline-branch-list {
+.timeline-tree {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow-x: auto;
 }
 
-.timeline-branch-list article {
+.timeline-tree-legend {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.timeline-tree-legend span {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.timeline-tree-legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--line);
+}
+
+.timeline-tree-legend i.root { background: var(--ink); }
+.timeline-tree-legend i.fork { background: var(--gold); }
+.timeline-tree-legend i.active { background: var(--pink); }
+
+.timeline-tree ol {
   display: grid;
-  gap: 6px;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.timeline-tree > ol {
+  min-width: 300px;
+}
+
+.timeline-tree-item {
+  position: relative;
+}
+
+.timeline-tree-item > ol {
+  position: relative;
+  margin: 8px 0 0 18px;
+  padding-left: 18px;
+  border-left: 1px solid color-mix(in srgb, var(--pink) 28%, var(--line));
+}
+
+.timeline-tree-item > ol > .timeline-tree-item::before {
+  content: "";
+  position: absolute;
+  top: 24px;
+  left: -18px;
+  width: 18px;
+  border-top: 1px solid color-mix(in srgb, var(--pink) 28%, var(--line));
+}
+
+.timeline-tree-item article {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
   padding: 8px;
   border: 1px solid var(--line);
   border-radius: 11px;
-  background: var(--surface);
+  background: var(--surface-strong);
 }
 
-.timeline-branch-list article.selected {
+.timeline-tree-item article::before {
+  content: "";
+  position: absolute;
+  top: 12px;
+  left: -4px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--line);
+}
+
+.timeline-tree-item.active article::before { background: var(--pink); }
+.timeline-tree-item.completed article::before { background: var(--green); }
+.timeline-tree-item.paused article::before { background: var(--gold); }
+
+.timeline-tree-item article.selected {
   border-color: var(--pink);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pink) 26%, transparent);
 }
 
-.timeline-branch-list article.completed {
-  background: color-mix(in srgb, var(--surface) 90%, var(--green-soft) 10%);
+.timeline-tree-item.completed > article {
+  background: color-mix(in srgb, var(--surface-strong) 90%, var(--green-soft) 10%);
 }
 
-.timeline-branch-list article > button:first-child {
+.timeline-tree-item article > button:first-child {
   display: grid;
   gap: 3px;
   width: 100%;
@@ -61,19 +141,20 @@
   text-align: left;
 }
 
-.timeline-branch-list span,
-.timeline-branch-list small {
+.timeline-tree-item span,
+.timeline-tree-item small {
   color: var(--muted);
   font-size: 10px;
   line-height: 1.4;
 }
 
-.timeline-branch-list strong {
+.timeline-tree-item strong {
   font-size: 13px;
 }
 
 .timeline-resume {
   min-height: 30px;
+  padding: 0 9px;
   border: 1px solid var(--pink);
   border-radius: 8px;
   background: var(--pink-soft);
@@ -82,7 +163,39 @@
   font-weight: 900;
 }
 
-.timeline-month-graph {
+.timeline-path-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.timeline-path-head div {
+  display: grid;
+  gap: 2px;
+}
+
+.timeline-path-head span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.timeline-path-head strong {
+  font-size: 13px;
+}
+
+.timeline-path-head button {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.timeline-month-graph {.timeline-month-graph {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
@@ -433,7 +546,6 @@
 
 @media (max-width: 720px) {
   .timeline-mode-strip,
-  .timeline-branch-list,
   .timeline-annotation-list,
   .timeline-simulation-actions {
     grid-template-columns: 1fr;

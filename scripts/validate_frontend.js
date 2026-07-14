@@ -61,6 +61,7 @@ for (const script of [
   "test:run",
   "typecheck",
   "validate:brand",
+  "validate:bundle",
   "validate:frontend",
 ]) {
   if (!packageJson.scripts?.[script]) {
@@ -100,7 +101,9 @@ for (const file of [
   "src/rebirth-v2.css",
   "src/timeline.css",
   "src/components/PixiStage.tsx",
+  "src/components/ArchiveDrawer.tsx",
   "src/components/EndingPanel.tsx",
+  "src/components/InvestigationPanel.tsx",
   "src/components/RebirthTimelinePanel.tsx",
   "src/components/StatusBar.tsx",
   "src/components/StoryRecapPanel.tsx",
@@ -154,6 +157,7 @@ for (const file of [
   "scripts/content-dumps/dump2023.mjs",
   "scripts/content-dumps/dump2024.mjs",
   "scripts/validate_brand_refs.mjs",
+  "scripts/validate_bundle_size.mjs",
   "vite.config.ts",
   "tsconfig.json",
   "tsconfig.app.json",
@@ -172,16 +176,35 @@ for (const asset of rasterAssets) {
 }
 
 requireText("src/App.tsx", ["ImmersiveGameScreen", "Chapter1Spike", "pixivn"]);
-requireText("src/app/ImmersiveGameScreen.tsx", [
+const immersiveScreen = requireText("src/app/ImmersiveGameScreen.tsx", [
   "DebatePanel",
   "PixiStage",
-  "RebirthTimelinePanel",
-  "OfficeHubPanel",
-  "因果回溯",
+  "loadArchiveDrawer",
+  "ArchiveDrawer",
+  "InvestigationPanel",
   "canGoBack",
   "跳过已读",
   "记录与档案",
 ]);
+if (immersiveScreen.includes("RebirthTimelinePanel")) {
+  fail("主界面不应同步导入因果回溯面板");
+}
+requireText("src/components/ArchiveDrawer.tsx", [
+  "loadTimelinePanel",
+  "RebirthTimelinePanel",
+  "OfficeHubPanel",
+  "因果回溯",
+]);
+requireText("src/components/RebirthTimelinePanel.tsx", [
+  'import "../timeline.css"',
+  "timeline-tree",
+  "显示全部月份",
+]);
+const mainEntry = requireText("src/main.tsx", ["createRoot", "rebirth-v2.css"]);
+if (mainEntry.includes("timeline.css")) {
+  fail("时间线样式应由异步回溯组件加载");
+}
+requireText("vite.config.ts", ["react-vendor", "tone"]);
 requireText("src/app/useGameController.ts", [
   "ProceduralBgm",
   "NarrativeAudio",

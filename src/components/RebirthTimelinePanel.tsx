@@ -1,17 +1,17 @@
 import { useMemo, useState } from "react";
 import type { GameState } from "../types";
 import type { RebirthMetaState } from "../game/rebirth";
-import {
-  canForkTimelineAnchor,
-} from "../game/rebirthTimeline";
+import { canForkTimelineAnchor } from "../game/rebirthTimeline";
 import {
   simulationProfileViews,
   simulationsForAnchor,
   timelineAnchorDetail,
   timelineBranchViews,
   timelineMonthViews,
+  type TimelineBranchView,
 } from "../game/rebirthTimelineInsights";
 import type { TimelineSimulationProfileId } from "../game/rebirthTimelineState";
+import "../timeline.css";
 
 interface RebirthTimelinePanelProps {
   meta: RebirthMetaState;
@@ -27,7 +27,67 @@ function statusLabel(status: "active" | "paused" | "completed"): string {
   return "已完成";
 }
 
-function BranchSelector({
+function forkLabel(meta: RebirthMetaState, branchId: string): string | null {
+  const branch = meta.timeline.branches.find((candidate) => candidate.id === branchId);
+  if (!branch?.forkAnchorId) return null;
+  const anchor = meta.timeline.anchors.find((candidate) => candidate.id === branch.forkAnchorId);
+  return anchor ? `从 ${anchor.monthIndex + 1} 月分叉` : "从旧锚点分叉";
+}
+
+function BranchTreeItem({
+  meta,
+  branch,
+  childrenByParent,
+  selectedBranchId,
+  onSelect,
+  onResume,
+}: {
+  meta: RebirthMetaState;
+  branch: TimelineBranchView;
+  childrenByParent: Map<string, TimelineBranchView[]>;
+  selectedBranchId: string;
+  onSelect: (branchId: string) => void;
+  onResume: (branchId: string) => void;
+}) {
+  const children = childrenByParent.get(branch.id) ?? [];
+  const source = forkLabel(meta, branch.id);
+  return (
+    <li className={`timeline-tree-item ${branch.status}`}>
+      <article className={branch.id === selectedBranchId ? "selected" : ""}>
+        <button type="button" onClick={() => onSelect(branch.id)}>
+          <span>第 {branch.cycle} 周目 · {statusLabel(branch.status)}</span>
+          <strong>{branch.label}</strong>
+          <small>
+            {source ? `${source} · ` : ""}完成 {branch.completedMonths}/12 月
+            {branch.endingId ? ` · 结局 ${branch.endingId}` : ""}
+          </small>
+        </button>
+        {branch.canResume ? (
+          <button className="timeline-resume" type="button" onClick={() => onResume(branch.id)}>
+            继续这条线
+          </button>
+        ) : null}
+      </article>
+      {children.length > 0 ? (
+        <ol>
+          {children.map((child) => (
+            <BranchTreeItem
+              branch={child}
+              childrenByParent={childrenByParent}
+              key={child.id}
+              meta={meta}
+              selectedBranchId={selectedBranchId}
+              onSelect={onSelect}
+              onResume={onResume}
+            />
+          ))}
+        </ol>
+      ) : null}
+    </li>
+  );
+}
+
+function BranchTree({
   meta,
   selectedBranchId,
   onSelect,
@@ -39,28 +99,37 @@ function BranchSelector({
   onResume: (branchId: string) => void;
 }) {
   const branches = timelineBranchViews(meta);
+  const branchIds = new Set(branches.map((branch) => branch.id));
+  const childrenByParent = new Map<string, TimelineBranchView[]>();
+  for (const branch of branches) {
+    if (!branch.parentBranchId || !branchIds.has(branch.parentBranchId)) continue;
+    const siblings = childrenByParent.get(branch.parentBranchId) ?? [];
+    siblings.push(branch);
+    childrenByParent.set(branch.parentBranchId, siblings);
+  }
+  const roots = branches.filter((branch) => (
+    !branch.parentBranchId || !branchIds.has(branch.parentBranchId)
+  ));
   return (
-    <div className="timeline-branch-list" aria-label="时间线列表">
-      {branches.map((branch) => (
-        <article
-          className={`${branch.id === selectedBranchId ? "selected" : ""} ${branch.status}`}
-          key={branch.id}
-        >
-          <button type="button" onClick={() => onSelect(branch.id)}>
-            <span>第 {branch.cycle} 周目 · {statusLabel(branch.status)}</span>
-            <strong>{branch.label}</strong>
-            <small>
-              完成 {branch.completedMonths}/12 月
-              {branch.endingId ? ` · 结局 ${branch.endingId}` : ""}
-            </small>
-          </button>
-          {branch.canResume ? (
-            <button className="timeline-resume" type="button" onClick={() => onResume(branch.id)}>
-              继续这条线
-            </button>
-          ) : null}
-        </article>
-      ))}
+    <div className="timeline-tree" aria-label="时间线树状图">
+      <div className="timeline-tree-legend">
+        <span><i className="root" /> 主时间线</span>
+        <span><i className="fork" /> 回溯分支</span>
+        <span><i className="active" /> 当前路线</span>
+      </div>
+      <ol>
+        {roots.map((branch) => (
+          <BranchTreeItem
+            branch={branch}
+            childrenByParent={childrenByParent}
+            key={branch.id}
+            meta={meta}
+            selectedBranchId={selectedBranchId}
+            onSelect={onSelect}
+            onResume={onResume}
+          />
+        ))}
+      </ol>
     </div>
   );
 }
@@ -69,17 +138,22 @@ function TimelineMonthGraph({
   meta,
   branchId,
   selectedAnchorId,
+  showAllMonths,
   onSelectAnchor,
 }: {
   meta: RebirthMetaState;
   branchId: string;
   selectedAnchorId: string | null;
+  showAllMonths: boolean;
   onSelectAnchor: (anchorId: string) => void;
 }) {
   const months = timelineMonthViews(meta, branchId);
+  const visibleMonths = showAllMonths
+    ? months
+    : months.filter((month) => month.keyMonth || month.status === "current");
   return (
     <ol className="timeline-month-graph">
-      {months.map((month) => (
+      {visibleMonths.map((month) => (
         <li className={`${month.status} ${month.keyMonth ? "key-month" : ""}`} key={month.monthKey}>
           <button
             className={month.anchorId === selectedAnchorId ? "selected" : ""}
@@ -219,6 +293,7 @@ export function RebirthTimelinePanel({
   const defaultBranchId = meta.timeline.activeBranchId ?? branches[0]?.id ?? "";
   const [selectedBranchId, setSelectedBranchId] = useState(defaultBranchId);
   const [selectedAnchorId, setSelectedAnchorId] = useState<string | null>(null);
+  const [showAllMonths, setShowAllMonths] = useState(false);
 
   const resolvedBranchId = branches.some((branch) => branch.id === selectedBranchId)
     ? selectedBranchId
@@ -244,7 +319,7 @@ export function RebirthTimelinePanel({
       <header className="rebirth-section-head">
         <div>
           <h3>因果回溯</h3>
-          <p>观看旧路线、从关键月分叉，或只做反事实推演。原错误不会被覆盖。</p>
+          <p>树干保留原路线，枝条显示从关键月产生的回溯实验。错误不会因为界面变漂亮就消失。</p>
         </div>
         <b>{branches.length} 条时间线</b>
       </header>
@@ -254,7 +329,7 @@ export function RebirthTimelinePanel({
         <span><b>推演</b> 比较可能结果但不改存档</span>
       </div>
 
-      <BranchSelector
+      <BranchTree
         meta={meta}
         selectedBranchId={resolvedBranchId}
         onSelect={(branchId) => {
@@ -266,10 +341,20 @@ export function RebirthTimelinePanel({
 
       {selectedBranch ? (
         <>
+          <div className="timeline-path-head">
+            <div>
+              <span>当前查看</span>
+              <strong>{selectedBranch.label}</strong>
+            </div>
+            <button type="button" onClick={() => setShowAllMonths((value) => !value)}>
+              {showAllMonths ? "只看关键月" : "显示全部月份"}
+            </button>
+          </div>
           <TimelineMonthGraph
             meta={meta}
             branchId={selectedBranch.id}
             selectedAnchorId={selectedAnchorId}
+            showAllMonths={showAllMonths}
             onSelectAnchor={setSelectedAnchorId}
           />
           {selectedEvents.length > 0 ? (

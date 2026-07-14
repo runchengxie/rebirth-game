@@ -134,7 +134,11 @@ npm run check
 - `npm run typecheck`
 - `npm run test:run`
 - `npm run validate:frontend`
+- `npm run validate:brand`
 - `npm run build`
+- `npm run validate:bundle`
+
+`npm run validate:bundle` 读取 `dist/assets`，检查首屏入口、异步档案、回溯面板和时间线样式的体积预算。它必须在生产构建之后运行。
 
 ### 联合检查
 

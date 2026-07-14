@@ -1,0 +1,36 @@
+name: Performance baseline
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  baseline:
+    if: github.head_ref == 'perf/lazy-timeline-tree'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Build and record assets
+        shell: bash
+        run: |
+          npm run build > build.log 2>&1
+          {
+            echo "=== JavaScript assets ==="
+            find dist/assets -maxdepth 1 -type f -name '*.js' -printf '%s %f\n' | sort -nr
+            echo "=== CSS assets ==="
+            find dist/assets -maxdepth 1 -type f -name '*.css' -printf '%s %f\n' | sort -nr
+            echo "=== Build output ==="
+            cat build.log
+          } > perf-baseline.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: perf-baseline
+          path: perf-baseline.txt

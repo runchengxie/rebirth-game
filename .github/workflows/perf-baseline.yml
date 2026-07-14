@@ -1,52 +1,59 @@
-name: Performance baseline
+name: Performance optimization
 
 on:
   pull_request:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  baseline:
+  optimize:
     if: github.head_ref == 'perf/lazy-timeline-tree'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Apply lazy archive and tree view
+        run: |
+          python scripts/dev/fix_perf_patch_script.py
+          python scripts/dev/apply_perf_lazy_tree.py
+      - name: Commit optimization
+        shell: bash
+        run: |
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add src scripts package.json vite.config.ts
+            git commit -m "perf: 懒加载档案并拆分回溯时间线"
+            git push origin HEAD:${{ github.head_ref }}
+          fi
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: npm
       - run: npm ci
-      - name: Build and record assets
+      - id: full-check
         shell: bash
         run: |
-          npm run build -- --sourcemap > build.log 2>&1
-          node <<'NODE' > source-map-report.txt
-          const fs = require('fs');
-          const path = require('path');
-          const assets = path.join(process.cwd(), 'dist', 'assets');
-          const mapName = fs.readdirSync(assets).find((name) => /^index-.*\.js\.map$/.test(name));
-          if (!mapName) throw new Error('index source map not found');
-          const map = JSON.parse(fs.readFileSync(path.join(assets, mapName), 'utf8'));
-          const rows = map.sources.map((source, index) => ({
-            source,
-            bytes: Buffer.byteLength(map.sourcesContent?.[index] ?? '', 'utf8'),
-          })).sort((a, b) => b.bytes - a.bytes);
-          console.log(`index map: ${mapName}`);
-          for (const row of rows.slice(0, 80)) console.log(`${row.bytes}\t${row.source}`);
-          NODE
+          set +e
+          npm run check > perf-check.log 2>&1
+          code=$?
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
           {
             echo "=== JavaScript assets ==="
             find dist/assets -maxdepth 1 -type f -name '*.js' -printf '%s %f\n' | sort -nr
             echo "=== CSS assets ==="
             find dist/assets -maxdepth 1 -type f -name '*.css' -printf '%s %f\n' | sort -nr
-            echo "=== Largest index sources ==="
-            cat source-map-report.txt
-            echo "=== Build output ==="
-            cat build.log
-          } > perf-baseline.txt
+            echo "=== Check output ==="
+            cat perf-check.log
+          } > perf-optimized.txt
+          exit 0
       - uses: actions/upload-artifact@v4
         with:
-          name: perf-baseline
-          path: perf-baseline.txt
+          name: perf-optimized
+          path: perf-optimized.txt
+      - name: Fail when check failed
+        if: steps.full-check.outputs.exit_code != '0'
+        run: exit 1

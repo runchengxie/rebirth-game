@@ -163,6 +163,17 @@ function restoreInvestigationMap(
   return restored;
 }
 
+function restorePayload(value: unknown): Record<string, string | number | boolean> {
+  if (!isObject(value)) return {};
+  const payload: Record<string, string | number | boolean> = {};
+  for (const [key, item] of Object.entries(value)) {
+    if (typeof item === "string" || typeof item === "number" || typeof item === "boolean") {
+      payload[key] = item;
+    }
+  }
+  return payload;
+}
+
 function restoreEvent(value: unknown): TimelineEvent | null {
   if (!isObject(value)) return null;
   if (typeof value.id !== "string" || typeof value.branchId !== "string") return null;
@@ -175,11 +186,7 @@ function restoreEvent(value: unknown): TimelineEvent | null {
     monthKey: typeof value.monthKey === "string" ? value.monthKey : "",
     type: typeof value.type === "string" ? value.type as TimelineEventType : "rewind",
     label: typeof value.label === "string" ? value.label : "时间线事件",
-    payload: isObject(value.payload)
-      ? Object.fromEntries(Object.entries(value.payload).filter(([, item]) => (
-          typeof item === "string" || typeof item === "number" || typeof item === "boolean"
-        )))
-      : {},
+    payload: restorePayload(value.payload),
   };
 }
 

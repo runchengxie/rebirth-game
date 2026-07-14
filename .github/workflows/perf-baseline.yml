@@ -20,13 +20,18 @@ jobs:
         shell: bash
         run: |
           set +e
-          python scripts/dev/fix_perf_patch_script.py > apply.log 2>&1
-          first=$?
-          if [ "$first" -eq 0 ]; then
-            python scripts/dev/apply_perf_lazy_tree.py >> apply.log 2>&1
-            code=$?
+          if grep -q 'loadArchiveDrawer' src/app/ImmersiveGameScreen.tsx; then
+            echo "optimization already applied" > apply.log
+            code=0
           else
-            code=$first
+            python scripts/dev/fix_perf_patch_script.py > apply.log 2>&1
+            first=$?
+            if [ "$first" -eq 0 ]; then
+              python scripts/dev/apply_perf_lazy_tree.py >> apply.log 2>&1
+              code=$?
+            else
+              code=$first
+            fi
           fi
           echo "exit_code=$code" >> "$GITHUB_OUTPUT"
           exit 0

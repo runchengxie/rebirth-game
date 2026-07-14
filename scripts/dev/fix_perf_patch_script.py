@@ -14,8 +14,8 @@ text = text.replace(
     1,
 )
 text = text.replace(
-    "node_modules[\\\\/]",
-    "node_modules[\\\\\\\\/]",
+    "[\\\\/]",
+    "[\\\\\\\\/]",
 )
 path.write_text(text, encoding="utf-8")
 print("performance patch script fixed")

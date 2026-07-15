@@ -7,6 +7,7 @@ import "./rebirth.css";
 import "./rebirth-v2.css";
 import "./research-ux.css";
 import "./platform-shell.css";
+import "./stability.css";
 
 // Full platform.css is loaded with the lazy committee, daily and studio modes.
 try {

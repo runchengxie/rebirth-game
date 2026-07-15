@@ -9,13 +9,14 @@
 1. [`gameplay.md`](gameplay.md)：了解 2025 主线、往年档案、角色路线和当前边界。
 2. [`research-commitment.md`](research-commitment.md)：了解置信度、失效条件、投委会自检、组织压力和存档转移。
 3. [`platform-modes.md`](platform-modes.md)：了解独立投委会、每日挑战、内容工坊、状态机和加密云同步。
-4. [`rebirth-system.md`](rebirth-system.md)：了解时间块调查、记忆钥匙、研究捷径和跨周目存档。
-5. [`2025-source-ledger.md`](2025-source-ledger.md)：了解每个月现实事件的来源、时间和叙事改编边界。
-6. [`ux.md`](ux.md)：了解单视口操作、回看、自动保存和观点交锋的界面规则。
-7. [`characters.md`](characters.md)：了解角色定位、语言特点和剧情写作边界。
-8. [`dialogue-writing.md`](dialogue-writing.md)：了解对白去重、回调设计、术语密度和中文表达要求。
-9. [`architecture.md`](architecture.md)：了解 React、PixiJS、剧情运行时、结算引擎和数据文件之间的关系。
-10. [`maintenance.md`](maintenance.md)：了解本地环境、测试命令、数据维护和发布流程。
+4. [`stability-and-accessibility.md`](stability-and-accessibility.md)：了解浏览器回归、键盘焦点、错误恢复、内容包限制和发布门槛。
+5. [`rebirth-system.md`](rebirth-system.md)：了解时间块调查、记忆钥匙、研究捷径和跨周目存档。
+6. [`2025-source-ledger.md`](2025-source-ledger.md)：了解每个月现实事件的来源、时间和叙事改编边界。
+7. [`ux.md`](ux.md)：了解单视口操作、回看、自动保存和观点交锋的界面规则。
+8. [`characters.md`](characters.md)：了解角色定位、语言特点和剧情写作边界。
+9. [`dialogue-writing.md`](dialogue-writing.md)：了解对白去重、回调设计、术语密度和中文表达要求。
+10. [`architecture.md`](architecture.md)：了解 React、PixiJS、剧情运行时、结算引擎和数据文件之间的关系。
+11. [`maintenance.md`](maintenance.md)：了解本地环境、测试命令、数据维护和发布流程。
 
 ## 按需求查找
 
@@ -24,6 +25,7 @@
 | 了解玩法、年份线、角色路线和当前限制 | [`gameplay.md`](gameplay.md) |
 | 了解研究承诺、置信度、失效条件和投委会自检 | [`research-commitment.md`](research-commitment.md) |
 | 了解独立模式、社区内容包与云同步安全边界 | [`platform-modes.md`](platform-modes.md) |
+| 了解浏览器回归、无障碍、错误恢复与内容包资源限制 | [`stability-and-accessibility.md`](stability-and-accessibility.md) |
 | 了解时间块调查、记忆钥匙、研究捷径和跨周目状态 | [`rebirth-system.md`](rebirth-system.md) |
 | 核对 2025 现实事件与月份映射 | [`2025-source-ledger.md`](2025-source-ledger.md) |
 | 了解一屏操作、剧情回看、自动保存和档案抽屉 | [`ux.md`](ux.md) |
@@ -39,6 +41,7 @@
 - `gameplay.md` 记录当前可以看到和操作的功能。
 - `research-commitment.md` 记录研究承诺、投委会自检、组织压力、存档转移和本地游玩数据。
 - `platform-modes.md` 记录平台模式、内容包契约、客户端云同步与扩展边界。
+- `stability-and-accessibility.md` 记录浏览器回归、焦点管理、错误恢复、内容包限制与 CI 发布门槛。
 - `rebirth-system.md` 记录调查与跨周目系统的当前行为和存储边界。
 - `2025-source-ledger.md` 记录现实事件来源和叙事改编边界。
 - `ux.md` 记录主界面的操作规则和呈现约束。

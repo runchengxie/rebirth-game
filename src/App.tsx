@@ -14,13 +14,22 @@ import {
 } from "./game/platformModes";
 
 const CommitteeMode = lazy(() =>
-  import("./modes/CommitteeMode").then((module) => ({ default: module.CommitteeMode })),
+  Promise.all([
+    import("./modes/CommitteeMode"),
+    import("./platform.css"),
+  ]).then(([module]) => ({ default: module.CommitteeMode })),
 );
 const DailyChallengeMode = lazy(() =>
-  import("./modes/DailyChallengeMode").then((module) => ({ default: module.DailyChallengeMode })),
+  Promise.all([
+    import("./modes/DailyChallengeMode"),
+    import("./platform.css"),
+  ]).then(([module]) => ({ default: module.DailyChallengeMode })),
 );
 const ContentStudioMode = lazy(() =>
-  import("./modes/ContentStudioMode").then((module) => ({ default: module.ContentStudioMode })),
+  Promise.all([
+    import("./modes/ContentStudioMode"),
+    import("./platform.css"),
+  ]).then(([module]) => ({ default: module.ContentStudioMode })),
 );
 
 function StoryMode() {

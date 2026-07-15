@@ -38,6 +38,13 @@ const ContentStudioMode = lazy(() =>
   ]).then(([module]) => ({ default: module.ContentStudioMode })),
 );
 
+function focusMainContent(): void {
+  const target = document.getElementById("main-content");
+  if (!target) return;
+  target.focus();
+  window.history.replaceState({}, "", `${window.location.pathname}${window.location.search}#main-content`);
+}
+
 function StoryMode() {
   const audio = useGameAudio();
   const session = useGameSessionMachine(audio);
@@ -90,7 +97,16 @@ export default function App() {
   const [mode] = useState(() => platformModeFromSearch(window.location.search));
   return (
     <>
-      <a className="skip-link" href="#main-content">跳到主要内容</a>
+      <a
+        className="skip-link"
+        href="#main-content"
+        onClick={(event) => {
+          event.preventDefault();
+          focusMainContent();
+        }}
+      >
+        跳到主要内容
+      </a>
       <ModeSwitcher activeMode={mode} />
       <div className="app-main-focus-target" id="main-content" tabIndex={-1}>
         <AppErrorBoundary>

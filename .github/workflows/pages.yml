@@ -25,7 +25,20 @@ jobs:
           node-version: "22"
           cache: "npm"
       - run: npm ci
-      - run: npm run check
+      - name: Lint
+        run: npm run lint:ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Unit and integration tests
+        run: npm run test:run
+      - name: Frontend contract validation
+        run: npm run validate:frontend
+      - name: Brand reference validation
+        run: npm run validate:brand
+      - name: Production build
+        run: npm run build
+      - name: Bundle budget validation
+        run: npm run validate:bundle
       - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/configure-pages@v5
       - if: github.event_name == 'push' && github.ref == 'refs/heads/main'

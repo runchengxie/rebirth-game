@@ -57,12 +57,85 @@ const RECOMMENDED_FALSIFIER: Partial<Record<DecisionMethod, FalsifierId>> = {
   self_management: "timing",
 };
 
+interface CommitmentContext {
+  completed: number;
+  fullyReviewed: boolean;
+  unsupportedHighConfidence: boolean;
+}
+
+interface CommitmentDeltas {
+  credibility: number;
+  committee: number;
+  trust: number;
+}
+
 function clamp(value: number, max: number): number {
   return Math.max(0, Math.min(max, Math.round(value)));
 }
 
 function falsifierLabel(id: FalsifierId): string {
   return FALSIFIER_OPTIONS.find((option) => option.id === id)?.label ?? id;
+}
+
+function commitmentContext(commitment: ResearchCommitment): CommitmentContext {
+  const completed = completedReviewCount(commitment);
+  return {
+    completed,
+    fullyReviewed: completed === 3,
+    unsupportedHighConfidence: commitment.confidence === 85 && completed < 3,
+  };
+}
+
+function commitmentDeltas(
+  decision: ResearchDecision,
+  commitment: ResearchCommitment,
+  context: CommitmentContext,
+): CommitmentDeltas {
+  const alignment = decisionOutcomeAlignment(decision);
+  let credibility = context.completed - 1;
+  let committee = context.fullyReviewed ? 2 : 0;
+  let trust = context.completed >= 2 ? 1 : 0;
+
+  committee -= Number(commitment.confidence === 55);
+  if (context.unsupportedHighConfidence) {
+    credibility -= 4;
+    committee -= 4;
+    trust -= 2;
+  }
+
+  const confidentContradiction = alignment === "contradicts" && commitment.confidence === 85;
+  credibility -= Number(confidentContradiction) * 3;
+  trust -= Number(confidentContradiction) * 2;
+
+  const supportedConviction = alignment === "supports"
+    && commitment.confidence === 85
+    && context.fullyReviewed;
+  committee += Number(supportedConviction);
+  return { credibility, committee, trust };
+}
+
+function commitmentNarrative(context: CommitmentContext): string {
+  if (context.unsupportedHighConfidence) {
+    return "证据链尚未补齐却给出高确信，团队会把这次判断当作校准样本。";
+  }
+  if (context.fullyReviewed) {
+    return "你把支持证据、最强反例和退出条件一起交上了桌。";
+  }
+  return "未完成的审查项会在月度复盘中保留。";
+}
+
+function commitmentFlags(
+  decision: ResearchDecision,
+  commitment: ResearchCommitment,
+  context: CommitmentContext,
+): Record<string, boolean | number> {
+  return {
+    ...(decision.setsFlags ?? {}),
+    [`commitment_confidence_${commitment.confidence}`]: true,
+    [`commitment_falsifier_${commitment.falsifier}`]: true,
+    ...(context.fullyReviewed ? { commitment_fully_reviewed: true } : {}),
+    ...(context.unsupportedHighConfidence ? { commitment_overconfident: true } : {}),
+  };
 }
 
 export function createDefaultResearchCommitment(): ResearchCommitment {
@@ -99,62 +172,28 @@ export function applyResearchCommitment(
   decision: ResearchDecision,
   commitment: ResearchCommitment,
 ): ResearchDecision {
-  const completed = completedReviewCount(commitment);
+  const context = commitmentContext(commitment);
+  const deltas = commitmentDeltas(decision, commitment, context);
   const method = decisionMethod(decision);
-  const alignment = decisionOutcomeAlignment(decision);
   const falsifierMatches = RECOMMENDED_FALSIFIER[method] === commitment.falsifier;
-  const unsupportedHighConfidence = commitment.confidence === 85 && completed < 3;
-  const fullyReviewed = completed === 3;
-
-  let credibilityDelta = completed - 1;
-  let committeeDelta = fullyReviewed ? 2 : 0;
-  let trustDelta = completed >= 2 ? 1 : 0;
-
-  if (commitment.confidence === 55) committeeDelta -= 1;
-  if (unsupportedHighConfidence) {
-    credibilityDelta -= 4;
-    committeeDelta -= 4;
-    trustDelta -= 2;
-  }
-
-  if (alignment === "contradicts" && commitment.confidence === 85) {
-    credibilityDelta -= 3;
-    trustDelta -= 2;
-  }
-  if (alignment === "supports" && commitment.confidence === 85 && fullyReviewed) {
-    committeeDelta += 1;
-  }
-
   const note = [
     decision.backgroundNote,
-    `提交前承诺：置信度 ${commitment.confidence}%；失效条件为「${falsifierLabel(commitment.falsifier)}」；投委会自检 ${completed}/3。`,
-    unsupportedHighConfidence
-      ? "证据链尚未补齐却给出高确信，团队会把这次判断当作校准样本。"
-      : fullyReviewed
-        ? "你把支持证据、最强反例和退出条件一起交上了桌。"
-        : "未完成的审查项会在月度复盘中保留。",
+    `提交前承诺：置信度 ${commitment.confidence}%；失效条件为「${falsifierLabel(commitment.falsifier)}」；投委会自检 ${context.completed}/3。`,
+    commitmentNarrative(context),
   ].filter(Boolean).join(" ");
-
-  const flags: Record<string, boolean | number> = {
-    ...(decision.setsFlags ?? {}),
-    [`commitment_confidence_${commitment.confidence}`]: true,
-    [`commitment_falsifier_${commitment.falsifier}`]: true,
-  };
-  if (fullyReviewed) flags.commitment_fully_reviewed = true;
-  if (unsupportedHighConfidence) flags.commitment_overconfident = true;
 
   return {
     ...decision,
-    clarityLevel: clamp(decision.clarityLevel + completed + Number(falsifierMatches), 20),
-    riskAwareness: clamp(decision.riskAwareness + completed + Number(falsifierMatches), 20),
-    reflectionValue: clamp(decision.reflectionValue + completed, 15),
+    clarityLevel: clamp(decision.clarityLevel + context.completed + Number(falsifierMatches), 20),
+    riskAwareness: clamp(decision.riskAwareness + context.completed + Number(falsifierMatches), 20),
+    reflectionValue: clamp(decision.reflectionValue + context.completed, 15),
     effects: {
       ...decision.effects,
-      researchCredibility: decision.effects.researchCredibility + credibilityDelta,
-      committeeAdoption: decision.effects.committeeAdoption + committeeDelta,
-      teamTrust: decision.effects.teamTrust + trustDelta,
+      researchCredibility: decision.effects.researchCredibility + deltas.credibility,
+      committeeAdoption: decision.effects.committeeAdoption + deltas.committee,
+      teamTrust: decision.effects.teamTrust + deltas.trust,
     },
     backgroundNote: note,
-    setsFlags: flags,
+    setsFlags: commitmentFlags(decision, commitment, context),
   };
 }

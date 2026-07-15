@@ -1,39 +1,124 @@
 :root {
-  --platform-bg: color-mix(in srgb, var(--bg, #f5f1e8) 92%, #dce7f3);
-  --platform-panel: color-mix(in srgb, var(--panel, #ffffff) 92%, transparent);
-  --platform-border: color-mix(in srgb, var(--ink, #24222a) 16%, transparent);
-  --platform-accent: #315f75;
-  --platform-accent-soft: color-mix(in srgb, var(--platform-accent) 14%, transparent);
+  --platform-bg: #f8f3f7;
+  --platform-panel: #fffafc;
+  --platform-panel-strong: #ffffff;
+  --platform-panel-muted: #f3eaf1;
+  --platform-border: #d8c7d6;
+  --platform-text: #352a3b;
+  --platform-muted: #6f6177;
+  --platform-subtle: #88788f;
+  --platform-input: #ffffff;
+  --platform-input-border: #bca9bd;
+  --platform-placeholder: #7d6d84;
+  --platform-disabled-bg: #eee5eb;
+  --platform-disabled-text: #766a7a;
+  --platform-accent: #ae4f80;
+  --platform-accent-soft: #f7ddea;
+  --platform-accent-ink: #ffffff;
+  --platform-focus: #bd4d87;
+  --platform-shadow: 0 18px 48px rgba(58, 36, 60, 0.16);
+  --platform-dock-height: 68px;
+}
+
+:root[data-theme="dark"] {
+  --platform-bg: #130f1a;
+  --platform-panel: #211a2a;
+  --platform-panel-strong: #2b2236;
+  --platform-panel-muted: #30253b;
+  --platform-border: #6d5a79;
+  --platform-text: #fbf6fd;
+  --platform-muted: #d7c9de;
+  --platform-subtle: #b9a8c2;
+  --platform-input: #17121e;
+  --platform-input-border: #806b8e;
+  --platform-placeholder: #b8a8c1;
+  --platform-disabled-bg: #332a3b;
+  --platform-disabled-text: #b5a8bc;
+  --platform-accent: #ff9dcc;
+  --platform-accent-soft: #4a293c;
+  --platform-accent-ink: #2b1421;
+  --platform-focus: #ffc2df;
+  --platform-shadow: 0 24px 64px rgba(0, 0, 0, 0.42);
+}
+
+html,
+body,
+#root {
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
 }
 
 body {
-  padding-bottom: 78px;
+  overflow-x: hidden;
+  padding-bottom: 0;
+}
+
+#root {
+  isolation: isolate;
+}
+
+.app-shell {
+  min-height: 100vh;
+  color: var(--platform-text);
+}
+
+.app-shell.mode-story {
+  display: grid;
+  grid-template-areas:
+    "main"
+    "dock";
+  grid-template-rows: minmax(0, 1fr) auto;
+  height: 100svh;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.mode-story .app-main-focus-target {
+  grid-area: main;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.mode-story .immersive-app {
+  height: 100%;
+  min-height: 0;
 }
 
 .platform-mode-switcher {
-  position: fixed;
+  position: sticky;
+  top: 10px;
   z-index: 1200;
-  left: 50%;
-  bottom: 12px;
   display: flex;
   align-items: center;
   gap: 10px;
-  width: min(760px, calc(100vw - 24px));
+  width: min(880px, calc(100vw - 24px));
+  margin: 10px auto 0;
   padding: 8px 10px;
   border: 1px solid var(--platform-border);
-  border-radius: 18px;
-  background: color-mix(in srgb, var(--platform-panel) 94%, transparent);
-  box-shadow: 0 16px 42px rgba(18, 24, 32, 0.22);
-  backdrop-filter: blur(18px);
-  transform: translateX(-50%);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--platform-panel-strong) 94%, transparent);
+  box-shadow: var(--platform-shadow);
+  backdrop-filter: blur(20px) saturate(1.15);
+}
+
+.mode-story .platform-mode-switcher {
+  position: relative;
+  top: auto;
+  grid-area: dock;
+  width: min(820px, calc(100vw - 20px));
+  margin: 7px auto max(7px, env(safe-area-inset-bottom));
+  box-shadow: 0 10px 30px rgba(28, 18, 36, 0.18);
 }
 
 .platform-mode-switcher > strong {
   padding: 0 8px;
   white-space: nowrap;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  color: var(--muted, #666);
+  color: var(--platform-muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
 }
 
 .platform-mode-switcher > div {
@@ -45,69 +130,359 @@ body {
 
 .platform-mode-switcher button {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
   min-width: 0;
-  padding: 8px 10px;
-  border: 0;
-  border-radius: 12px;
-  color: var(--ink, #24222a);
+  min-height: 46px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  padding: 7px 11px;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  color: var(--platform-text);
   background: transparent;
   cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
 }
 
-.platform-mode-switcher button:hover,
+.platform-mode-switcher button:hover {
+  border-color: color-mix(in srgb, var(--platform-accent) 32%, transparent);
+  background: color-mix(in srgb, var(--platform-accent-soft) 72%, transparent);
+}
+
 .platform-mode-switcher button.active {
+  border-color: color-mix(in srgb, var(--platform-accent) 56%, transparent);
+  color: var(--platform-accent);
   background: var(--platform-accent-soft);
-}
-
-.platform-mode-switcher button.active {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--platform-accent) 35%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--platform-accent) 12%, transparent);
 }
 
 .platform-mode-switcher span,
 .platform-mode-switcher small {
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .platform-mode-switcher span {
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 850;
 }
 
-.platform-mode-switcher small,
-.cloud-sync-heading span,
-.cloud-sync-warning {
-  color: var(--muted, #666);
+.platform-mode-switcher small {
+  color: var(--platform-muted);
+  font-size: 10px;
+  line-height: 1.2;
 }
 
-.cloud-sync-panel {
-  margin-top: 18px;
-  padding: 16px;
+.platform-mode-switcher button.active small {
+  color: color-mix(in srgb, var(--platform-accent) 76%, var(--platform-text));
+}
+
+.platform-mode-switcher button:focus-visible,
+.immersive-settings-popover button:focus-visible,
+.immersive-settings-popover input:focus-visible,
+.immersive-settings-popover textarea:focus-visible,
+.immersive-settings-popover select:focus-visible,
+.settings-disclosure > summary:focus-visible,
+.cloud-sync-panel > summary:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--platform-focus) 76%, transparent);
+  outline-offset: 2px;
+}
+
+.immersive-settings-popover {
+  width: min(520px, calc(100vw - 28px));
+  max-height: calc(100svh - var(--platform-dock-height) - 86px);
+  padding: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border: 1px solid var(--platform-border);
-  border-radius: 18px;
-  background: var(--platform-accent-soft);
+  border-radius: 20px;
+  color: var(--platform-text);
+  background: var(--platform-panel-strong);
+  box-shadow: var(--platform-shadow);
+  scrollbar-color: var(--platform-border) transparent;
+  scrollbar-width: thin;
 }
 
-.cloud-sync-heading {
+.settings-popover-head {
+  position: sticky;
+  top: 0;
+  z-index: 3;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 16px 12px;
+  border-bottom: 1px solid var(--platform-border);
+  background: color-mix(in srgb, var(--platform-panel-strong) 94%, transparent);
+  backdrop-filter: blur(18px);
+}
+
+.settings-popover-head > div {
+  display: grid;
+  gap: 2px;
+}
+
+.settings-popover-head span {
+  color: var(--platform-muted);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+}
+
+.settings-popover-head strong {
+  font-size: 16px;
+}
+
+.settings-close-button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--platform-border);
+  border-radius: 11px;
+  color: var(--platform-text);
+  background: var(--platform-panel-muted);
+}
+
+.settings-card {
+  display: grid;
+  gap: 12px;
+  margin: 14px;
+  padding: 14px;
+  border: 1px solid var(--platform-border);
+  border-radius: 16px;
+  background: var(--platform-panel);
+}
+
+.settings-card-heading {
+  display: flex;
+  align-items: baseline;
   justify-content: space-between;
   gap: 12px;
 }
 
-.cloud-sync-heading div {
+.settings-card-heading strong {
+  font-size: 14px;
+}
+
+.settings-card-heading span,
+.metric-mode-note {
+  color: var(--platform-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.immersive-settings-popover .settings-row > span {
+  color: var(--platform-muted);
+  font-size: 11px;
+}
+
+.immersive-settings-popover .settings-years button,
+.immersive-settings-popover .settings-switches button,
+.save-transfer-panel button,
+.cloud-sync-panel button {
+  border-color: var(--platform-border);
+  color: var(--platform-text);
+  background: var(--platform-panel-strong);
+}
+
+.immersive-settings-popover .settings-years button:hover,
+.immersive-settings-popover .settings-switches button:hover,
+.save-transfer-panel button:hover:not(:disabled),
+.cloud-sync-panel button:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--platform-accent) 62%, var(--platform-border));
+  background: var(--platform-accent-soft);
+}
+
+.immersive-settings-popover .settings-years button.active,
+.immersive-settings-popover .settings-switches button[aria-pressed="true"] {
+  border-color: var(--platform-accent);
+  color: var(--platform-accent);
+  background: var(--platform-accent-soft);
+}
+
+.settings-disclosure,
+.cloud-sync-panel {
+  margin: 14px;
+  border: 1px solid var(--platform-border);
+  border-radius: 18px;
+  background: var(--platform-panel);
+  overflow: clip;
+}
+
+.settings-disclosure > summary,
+.cloud-sync-panel > summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 11px;
+  align-items: center;
+  padding: 14px;
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.settings-disclosure > summary::-webkit-details-marker,
+.cloud-sync-panel > summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-disclosure > summary::after,
+.cloud-sync-panel > summary::after {
+  content: "⌄";
+  color: var(--platform-muted);
+  font-size: 18px;
+  transition: transform 160ms ease;
+}
+
+.settings-disclosure[open] > summary::after,
+.cloud-sync-panel[open] > summary::after {
+  transform: rotate(180deg);
+}
+
+.settings-disclosure-icon,
+.cloud-sync-mark {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 12px;
+  color: var(--platform-accent);
+  background: var(--platform-accent-soft);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.settings-disclosure-copy,
+.cloud-sync-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.settings-disclosure-copy strong,
+.cloud-sync-copy strong {
+  font-size: 14px;
+}
+
+.settings-disclosure-copy small,
+.cloud-sync-copy small {
+  color: var(--platform-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.settings-disclosure-tag,
+.cloud-sync-badge {
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, var(--platform-accent) 38%, var(--platform-border));
+  border-radius: 999px;
+  color: var(--platform-accent);
+  background: var(--platform-accent-soft);
+  font-size: 10px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.save-transfer-body,
+.cloud-sync-body {
+  display: grid;
+  gap: 12px;
+  padding: 0 14px 14px;
+  border-top: 1px solid var(--platform-border);
+}
+
+.save-transfer-card,
+.share-code-card {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 13px;
+  border: 1px solid var(--platform-border);
+  border-radius: 14px;
+  background: var(--platform-panel-strong);
+}
+
+.save-transfer-card header,
+.share-code-card header {
+  display: grid;
+  gap: 2px;
+}
+
+.save-transfer-card header span,
+.share-code-card header span {
+  color: var(--platform-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.save-transfer-actions {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.save-transfer-actions button,
+.cloud-sync-panel button {
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid var(--platform-border);
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.share-code-field {
+  display: grid;
+  gap: 6px;
+}
+
+.share-code-field span,
+.cloud-sync-grid label > span {
+  color: var(--platform-muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.share-code-field textarea,
+.cloud-sync-grid input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--platform-input-border);
+  border-radius: 11px;
+  color: var(--platform-text);
+  background: var(--platform-input);
+  caret-color: var(--platform-accent);
+}
+
+.share-code-field textarea {
+  min-height: 72px;
+  padding: 9px 10px;
+  resize: vertical;
+  font: 11px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.share-code-field textarea::placeholder,
+.cloud-sync-grid input::placeholder {
+  color: var(--platform-placeholder);
+  opacity: 1;
+}
+
+.cloud-sync-panel {
+  margin: 0;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--platform-accent-soft) 72%, var(--platform-panel)), var(--platform-panel));
+}
+
+.cloud-sync-body {
+  padding-top: 14px;
 }
 
 .cloud-sync-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  margin: 14px 0;
 }
 
 .cloud-sync-grid label {
@@ -115,50 +490,77 @@ body {
   gap: 6px;
 }
 
-.cloud-sync-grid label > span {
-  color: var(--muted, #666);
-  font-size: 12px;
-  font-weight: 700;
+.cloud-sync-grid label:last-child {
+  grid-column: 1 / -1;
 }
 
 .cloud-sync-grid input {
-  width: 100%;
-  box-sizing: border-box;
+  min-height: 40px;
   padding: 9px 10px;
-  border: 1px solid var(--platform-border);
-  border-radius: 10px;
-  color: var(--ink, #24222a);
-  background: color-mix(in srgb, var(--platform-panel) 96%, transparent);
   font: inherit;
-}
-
-.cloud-sync-panel button {
-  border: 1px solid var(--platform-border);
-  border-radius: 12px;
-  color: var(--ink, #24222a);
-  background: color-mix(in srgb, var(--platform-panel) 88%, var(--platform-accent-soft));
-  cursor: pointer;
-}
-
-.cloud-sync-panel button:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
 }
 
 .cloud-sync-warning {
   display: block;
-  margin-top: 10px;
+  padding: 10px 11px;
+  border-left: 3px solid var(--platform-accent);
+  border-radius: 0 10px 10px 0;
+  color: var(--platform-muted);
+  background: color-mix(in srgb, var(--platform-accent-soft) 52%, transparent);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.save-transfer-status {
+  margin: 0;
+  padding: 9px 10px;
+  border-radius: 10px;
+  color: var(--platform-text);
+  background: var(--platform-accent-soft);
+  font-size: 11px;
   line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.save-transfer-panel button:disabled,
+.cloud-sync-panel button:disabled {
+  border-color: var(--platform-border);
+  color: var(--platform-disabled-text);
+  background: var(--platform-disabled-bg);
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.immersive-settings-popover::-webkit-scrollbar,
+.platform-mode-switcher::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+.immersive-settings-popover::-webkit-scrollbar-thumb,
+.platform-mode-switcher::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: var(--platform-border);
+  background-clip: padding-box;
 }
 
 @media (max-width: 780px) {
-  body {
-    padding-bottom: 96px;
+  :root {
+    --platform-dock-height: 58px;
   }
 
   .platform-mode-switcher {
-    align-items: stretch;
-    bottom: 8px;
+    top: 6px;
+    width: calc(100vw - 14px);
+    margin-top: 6px;
+    padding: 5px;
+    border-radius: 16px;
+  }
+
+  .mode-story .platform-mode-switcher {
+    width: calc(100vw - 12px);
+    margin-block: 5px max(5px, env(safe-area-inset-bottom));
   }
 
   .platform-mode-switcher > strong,
@@ -167,12 +569,65 @@ body {
   }
 
   .platform-mode-switcher button {
+    min-height: 42px;
     align-items: center;
-    padding-inline: 4px;
-    font-size: 12px;
+    padding-inline: 3px;
+    font-size: 11px;
+  }
+
+  .platform-mode-switcher span {
+    font-size: 11px;
+  }
+
+  .immersive-settings-popover {
+    position: fixed;
+    top: 52px;
+    right: 7px;
+    bottom: calc(var(--platform-dock-height) + env(safe-area-inset-bottom) + 9px);
+    left: 7px;
+    width: auto;
+    max-height: none;
+    border-radius: 18px;
+  }
+
+  .settings-card,
+  .settings-disclosure {
+    margin: 10px;
   }
 
   .cloud-sync-grid {
     grid-template-columns: 1fr;
+  }
+
+  .cloud-sync-grid label:last-child {
+    grid-column: auto;
+  }
+
+  .save-transfer-actions button {
+    flex: 1 1 42%;
+  }
+
+  .settings-disclosure-tag,
+  .cloud-sync-badge {
+    display: none;
+  }
+}
+
+@media (max-height: 650px) and (orientation: landscape) {
+  :root {
+    --platform-dock-height: 50px;
+  }
+
+  .mode-story .platform-mode-switcher {
+    margin-block: 3px;
+    padding-block: 3px;
+  }
+
+  .platform-mode-switcher button {
+    min-height: 38px;
+  }
+
+  .platform-mode-switcher small {
+    display: none;
   }
 }

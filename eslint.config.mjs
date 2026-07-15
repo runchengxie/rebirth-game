@@ -62,6 +62,8 @@ export default tseslint.config(
       ecmaVersion: 2022,
       globals: {
         console: "readonly",
+        document: "readonly",
+        getComputedStyle: "readonly",
         localStorage: "readonly",
         module: "readonly",
         process: "readonly",

@@ -120,7 +120,7 @@ export function DailyChallengeMode() {
         <h2>{caseData.title}</h2>
         <p>{caseData.context}</p>
 
-        {result && !practice ? (
+        {result && !practice && roundIndex < 0 ? (
           <div className="daily-complete">
             <span>今日已完成</span>
             <strong>{result.score.grade} · {result.score.total}/100</strong>

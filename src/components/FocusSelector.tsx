@@ -5,18 +5,19 @@ import type { GameState, MarketTheme } from "../types";
 export function FocusSelector({
   state,
   theme,
-  monthIndex,
+  monthIndex = state.monthIndex,
   onSelect,
 }: {
   state: GameState;
-  theme: MarketTheme;
-  monthIndex: number;
+  theme?: MarketTheme;
+  monthIndex?: number;
   onSelect: (focusId: string) => void;
 }) {
+  const activeTheme = theme ?? { title: "本月研究" };
   return (
     <div className="focus-grid" aria-label="本话日程">
       {FOCUS_ACTIONS.map((focus) => {
-        const presentation = focusPresentation(focus, theme, monthIndex);
+        const presentation = focusPresentation(focus, activeTheme, monthIndex);
         return (
           <button
             key={focus.id}

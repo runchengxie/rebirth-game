@@ -53,7 +53,6 @@ export type GameSessionAction =
   | { type: "simulate-timeline"; anchorId: string; profileId: TimelineSimulationProfileId };
 
 function withTimeline(
-  snapshot: GameSessionSnapshot,
   state: GameState,
   rebirth: RebirthMetaState,
 ): GameSessionSnapshot {
@@ -107,7 +106,7 @@ function reduceSkipRead(snapshot: GameSessionSnapshot): GameSessionSnapshot {
     GAME_DATA[state.year],
     branchMeta,
   );
-  return withTimeline(snapshot, nextState, rebirth);
+  return withTimeline(nextState, rebirth);
 }
 
 function reduceOffice(
@@ -196,7 +195,7 @@ export function gameSessionReducer(
       const branchMeta = branchMetaContext(snapshot.rebirth);
       if (!canRewindScene(snapshot.state, branchMeta)) return snapshot;
       const state = rewindScene(snapshot.state, branchMeta);
-      return withTimeline(snapshot, state, snapshot.rebirth);
+      return withTimeline(state, snapshot.rebirth);
     }
     case "skip-read":
       return reduceSkipRead(snapshot);

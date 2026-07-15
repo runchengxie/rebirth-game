@@ -23,7 +23,7 @@ const MONTH_TASKS = [
 
 export function focusPresentation(
   focus: FocusAction,
-  theme: MarketTheme,
+  theme: Pick<MarketTheme, "title">,
   monthIndex: number,
 ): FocusPresentation {
   const task = MONTH_TASKS[monthIndex % MONTH_TASKS.length] ?? theme.title;

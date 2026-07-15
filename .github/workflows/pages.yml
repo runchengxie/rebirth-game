@@ -46,6 +46,8 @@ jobs:
           retention-days: 3
       - name: Frontend contract validation
         run: npm run validate:frontend
+      - name: Stability contract validation
+        run: npm run validate:stability
       - name: Brand reference validation
         run: npm run validate:brand
       - name: Production build

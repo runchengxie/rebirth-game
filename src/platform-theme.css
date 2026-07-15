@@ -60,3 +60,8 @@
   color: var(--platform-accent);
   background: var(--platform-accent-soft);
 }
+
+.studio-preview {
+  max-height: none;
+  overflow: visible;
+}

@@ -38,6 +38,15 @@ const ContentStudioMode = lazy(() =>
   ]).then(([module]) => ({ default: module.ContentStudioMode })),
 );
 
+const INTERACTIVE_TARGETS = [
+  "a[href]",
+  "button",
+  "input",
+  "select",
+  "textarea",
+  "[contenteditable='true']",
+].join(",");
+
 function focusMainContent(): void {
   const target = document.getElementById("main-content");
   if (!target) return;
@@ -96,7 +105,16 @@ function ModeContent({ mode }: { mode: PlatformMode }) {
 export default function App() {
   const [mode] = useState(() => platformModeFromSearch(window.location.search));
   return (
-    <>
+    <div
+      className="app-shell"
+      onKeyDown={(event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        const target = event.target;
+        if (target instanceof HTMLElement && target.closest(INTERACTIVE_TARGETS)) {
+          event.stopPropagation();
+        }
+      }}
+    >
       <a
         className="skip-link"
         href="#main-content"
@@ -127,6 +145,6 @@ export default function App() {
           </Suspense>
         </AppErrorBoundary>
       </div>
-    </>
+    </div>
   );
 }

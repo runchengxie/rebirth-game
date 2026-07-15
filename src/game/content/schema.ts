@@ -21,7 +21,14 @@ export const CHARACTER_IDS: readonly CharacterId[] = [
   "lin_ruoning",
   "chen_xinghe",
   "zhou_mingzhao",
+  "zhao_chengyu",
 ];
+
+export const MENTOR_IDS = [
+  "lin_ruoning",
+  "chen_xinghe",
+  "zhou_mingzhao",
+] as const;
 
 export const DECISION_CATEGORIES: readonly DecisionCategory[] = [
   "deep_research",

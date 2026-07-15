@@ -8,6 +8,8 @@
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest",
     "test:run": "vitest run",
+    "e2e:prepare": "npm install --no-save --no-package-lock @playwright/test@1.55.0 @axe-core/playwright@4.10.2 && npx playwright install chromium",
+    "test:e2e": "playwright test --config scripts/playwright.config.js",
     "typecheck": "tsc -b",
     "validate:frontend": "node scripts/validate_frontend.js",
     "dump:2023": "node scripts/content-dumps/dump2023.mjs",

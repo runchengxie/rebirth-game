@@ -7,6 +7,7 @@ import {
   useSettingsMenu,
   useThemeControl,
 } from "./app/useGameController";
+import { AppErrorBoundary } from "./components/AppErrorBoundary";
 import { ModeSwitcher } from "./components/ModeSwitcher";
 import {
   platformModeFromSearch,
@@ -89,17 +90,27 @@ export default function App() {
   const [mode] = useState(() => platformModeFromSearch(window.location.search));
   return (
     <>
+      <a className="skip-link" href="#main-content">跳到主要内容</a>
       <ModeSwitcher activeMode={mode} />
-      <Suspense
-        fallback={(
-          <main className="platform-screen platform-loading" role="status">
-            <strong>正在加载研究模式</strong>
-            <p>浏览器在整理档案、会议室和人类制造的各种流程。</p>
-          </main>
-        )}
-      >
-        <ModeContent mode={mode} />
-      </Suspense>
+      <div className="app-main-focus-target" id="main-content" tabIndex={-1}>
+        <AppErrorBoundary>
+          <Suspense
+            fallback={(
+              <main
+                aria-busy="true"
+                aria-live="polite"
+                className="platform-screen platform-loading"
+                role="status"
+              >
+                <strong>正在加载研究模式</strong>
+                <p>浏览器在整理档案、会议室和人类制造的各种流程。</p>
+              </main>
+            )}
+          >
+            <ModeContent mode={mode} />
+          </Suspense>
+        </AppErrorBoundary>
+      </div>
     </>
   );
 }

@@ -23,6 +23,7 @@ const Chapter1Spike = lazy(() =>
 async function loadPlatformChrome(): Promise<void> {
   await import("./platform.css");
   await import("./platform-polish.css");
+  await import("./platform-theme.css");
 }
 
 const CommitteeMode = lazy(async () => {

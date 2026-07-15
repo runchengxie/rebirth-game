@@ -153,53 +153,76 @@ export function SaveTransferPanel({ year }: { year: string }) {
   };
 
   return (
-    <section className="save-transfer-panel" aria-label="存档与游玩数据">
-      <div className="save-transfer-heading">
-        <strong>存档与跨设备转移</strong>
-        <span>数据默认只保存在本地；云同步需要玩家主动配置。</span>
+    <details className="settings-disclosure save-transfer-panel">
+      <summary>
+        <span className="settings-disclosure-icon" aria-hidden="true">↕</span>
+        <span className="settings-disclosure-copy">
+          <strong>存档与跨设备转移</strong>
+          <small>本地导出、分享码与可选加密云端</small>
+        </span>
+        <span className="settings-disclosure-tag">本地优先</span>
+      </summary>
+      <div className="save-transfer-body">
+        <section className="save-transfer-card" aria-label="本地存档操作">
+          <header>
+            <strong>本地文件</strong>
+            <span>适合备份、换浏览器和离线保存，不需要任何账号。</span>
+          </header>
+          <div className="save-transfer-actions">
+            <button type="button" onClick={exportSave}>导出存档</button>
+            <button type="button" onClick={() => fileInputRef.current?.click()}>导入文件</button>
+            <button type="button" onClick={exportPlaytest}>导出游玩记录</button>
+          </div>
+          <input
+            accept="application/json,.json"
+            hidden
+            ref={fileInputRef}
+            type="file"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) void file.text().then(importText);
+              event.currentTarget.value = "";
+            }}
+          />
+        </section>
+
+        <section className="share-code-card" aria-label="分享码转移">
+          <header>
+            <strong>分享码</strong>
+            <span>复制一段文本完成手动转移，适合临时设备。</span>
+          </header>
+          <div className="save-transfer-actions">
+            <button type="button" onClick={copyShareCode}>生成并复制</button>
+            <button disabled={!shareCode.trim()} type="button" onClick={importShareCode}>导入分享码</button>
+          </div>
+          <label className="share-code-field">
+            <span>分享码内容</span>
+            <textarea
+              placeholder="生成或粘贴存档分享码"
+              rows={3}
+              value={shareCode}
+              onChange={(event) => setShareCode(event.target.value)}
+            />
+          </label>
+        </section>
+
+        <CloudSyncPanel year={year} />
+
+        <div className="save-transfer-actions secondary">
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm("清除本地游玩记录？这不会删除游戏存档。")) {
+                clearPlaytestTelemetry();
+                setStatus("本地游玩记录已清除。");
+              }
+            }}
+          >
+            清除游玩记录
+          </button>
+        </div>
+        {status ? <p className="save-transfer-status" role="status">{status}</p> : null}
       </div>
-      <div className="save-transfer-actions">
-        <button type="button" onClick={exportSave}>导出存档</button>
-        <button type="button" onClick={copyShareCode}>复制分享码</button>
-        <button type="button" onClick={() => fileInputRef.current?.click()}>导入文件</button>
-        <button type="button" onClick={exportPlaytest}>导出游玩记录</button>
-      </div>
-      <input
-        accept="application/json,.json"
-        hidden
-        ref={fileInputRef}
-        type="file"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          if (file) void file.text().then(importText);
-          event.currentTarget.value = "";
-        }}
-      />
-      <label className="share-code-field">
-        <span>分享码</span>
-        <textarea
-          placeholder="复制或粘贴存档分享码"
-          rows={3}
-          value={shareCode}
-          onChange={(event) => setShareCode(event.target.value)}
-        />
-      </label>
-      <div className="save-transfer-actions secondary">
-        <button disabled={!shareCode.trim()} type="button" onClick={importShareCode}>导入分享码</button>
-        <button
-          type="button"
-          onClick={() => {
-            if (window.confirm("清除本地游玩记录？这不会删除游戏存档。")) {
-              clearPlaytestTelemetry();
-              setStatus("本地游玩记录已清除。");
-            }
-          }}
-        >
-          清除游玩记录
-        </button>
-      </div>
-      <CloudSyncPanel year={year} />
-      {status ? <p className="save-transfer-status" role="status">{status}</p> : null}
-    </section>
+    </details>
   );
 }

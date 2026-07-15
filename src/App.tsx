@@ -41,8 +41,8 @@ const ContentStudioMode = lazy(() =>
 function focusMainContent(): void {
   const target = document.getElementById("main-content");
   if (!target) return;
-  target.focus();
   window.history.replaceState({}, "", `${window.location.pathname}${window.location.search}#main-content`);
+  window.requestAnimationFrame(() => target.focus());
 }
 
 function StoryMode() {

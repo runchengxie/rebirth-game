@@ -5,7 +5,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["dist", "dist-package", "node_modules", ".venv", "*.tsbuildinfo", "data/game-data.js"],
+    ignores: ["dist", "dist-package", "node_modules", ".venv", "*.tsbuildinfo", "data/game-data.js", "playwright-report", "test-results"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -62,8 +62,11 @@ export default tseslint.config(
       ecmaVersion: 2022,
       globals: {
         console: "readonly",
+        localStorage: "readonly",
+        module: "readonly",
         process: "readonly",
         require: "readonly",
+        window: "readonly",
       },
     },
     rules: {

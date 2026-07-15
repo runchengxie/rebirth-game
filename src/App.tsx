@@ -7,6 +7,7 @@ import {
   useSettingsMenu,
   useThemeControl,
 } from "./app/useGameController";
+import { AppErrorBoundary } from "./components/AppErrorBoundary";
 import { ModeSwitcher } from "./components/ModeSwitcher";
 import {
   platformModeFromSearch,
@@ -36,6 +37,22 @@ const ContentStudioMode = lazy(() =>
     import("./platform.css"),
   ]).then(([module]) => ({ default: module.ContentStudioMode })),
 );
+
+const INTERACTIVE_TARGETS = [
+  "a[href]",
+  "button",
+  "input",
+  "select",
+  "textarea",
+  "[contenteditable='true']",
+].join(",");
+
+function focusMainContent(): void {
+  const target = document.getElementById("main-content");
+  if (!target) return;
+  window.history.replaceState({}, "", `${window.location.pathname}${window.location.search}#main-content`);
+  window.requestAnimationFrame(() => target.focus());
+}
 
 function StoryMode() {
   const audio = useGameAudio();
@@ -88,18 +105,46 @@ function ModeContent({ mode }: { mode: PlatformMode }) {
 export default function App() {
   const [mode] = useState(() => platformModeFromSearch(window.location.search));
   return (
-    <>
-      <ModeSwitcher activeMode={mode} />
-      <Suspense
-        fallback={(
-          <main className="platform-screen platform-loading" role="status">
-            <strong>正在加载研究模式</strong>
-            <p>浏览器在整理档案、会议室和人类制造的各种流程。</p>
-          </main>
-        )}
+    <div
+      className="app-shell"
+      onKeyDown={(event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        const target = event.target;
+        if (target instanceof HTMLElement && target.closest(INTERACTIVE_TARGETS)) {
+          event.stopPropagation();
+        }
+      }}
+    >
+      <a
+        className="skip-link"
+        href="#main-content"
+        onClick={(event) => {
+          event.preventDefault();
+          focusMainContent();
+        }}
       >
-        <ModeContent mode={mode} />
-      </Suspense>
-    </>
+        跳到主要内容
+      </a>
+      <ModeSwitcher activeMode={mode} />
+      <div className="app-main-focus-target" id="main-content" tabIndex={-1}>
+        <AppErrorBoundary>
+          <Suspense
+            fallback={(
+              <main
+                aria-busy="true"
+                aria-live="polite"
+                className="platform-screen platform-loading"
+                role="status"
+              >
+                <strong>正在加载研究模式</strong>
+                <p>浏览器在整理档案、会议室和人类制造的各种流程。</p>
+              </main>
+            )}
+          >
+            <ModeContent mode={mode} />
+          </Suspense>
+        </AppErrorBoundary>
+      </div>
+    </div>
   );
 }

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { CHARACTERS } from "../game/content";
 import type { GameSession } from "../app/useGameController";
 import { EndingPanel } from "./EndingPanel";
@@ -10,6 +10,21 @@ const RebirthTimelinePanel = lazy(() =>
 );
 
 type ArchiveTab = "log" | "archive" | "flow" | "office";
+
+const ARCHIVE_TABS: ArchiveTab[] = ["log", "archive", "flow", "office"];
+const FOCUSABLE_SELECTOR = [
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "[tabindex]:not([tabindex='-1'])",
+].join(",");
+
+function focusableElements(root: HTMLElement): HTMLElement[] {
+  return [...root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)]
+    .filter((element) => !element.hasAttribute("hidden"));
+}
 
 function DialogueHistory({ session }: { session: GameSession }) {
   const nodes = session.scene.nodes.slice(0, session.state.sceneNodeIndex + 1);
@@ -111,30 +126,93 @@ export function ArchiveDrawer({
   onClose: () => void;
 }) {
   const [tab, setTab] = useState<ArchiveTab>("log");
+  const dialogRef = useRef<HTMLElement | null>(null);
+  const closeRef = useRef<HTMLButtonElement | null>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    previousFocusRef.current = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+    closeRef.current?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const dialog = dialogRef.current;
+      if (!dialog) return;
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== "Tab") return;
+
+      const elements = focusableElements(dialog);
+      if (elements.length === 0) {
+        event.preventDefault();
+        dialog.focus();
+        return;
+      }
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === dialog)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      previousFocusRef.current?.focus();
+    };
+  }, []);
+
+  const handleTabKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    const currentIndex = ARCHIVE_TABS.indexOf(tab);
+    const delta = event.key === "ArrowRight" ? 1 : -1;
+    const nextTab = ARCHIVE_TABS[(currentIndex + delta + ARCHIVE_TABS.length) % ARCHIVE_TABS.length];
+    event.preventDefault();
+    setTab(nextTab);
+    document.getElementById(`archive-tab-${nextTab}`)?.focus();
+  };
+
   return (
     <div className="archive-backdrop" role="presentation" onMouseDown={onClose}>
       <aside
-        className="archive-drawer"
-        aria-label="剧情记录与研究档案"
+        aria-labelledby="archive-dialog-title"
         aria-modal="true"
+        className="archive-drawer"
+        ref={dialogRef}
         role="dialog"
-        onMouseDown={(event: { stopPropagation(): void }) => event.stopPropagation()}
+        tabIndex={-1}
+        onMouseDown={(event) => event.stopPropagation()}
       >
         <header className="archive-drawer-head">
           <div>
             <span>{session.scene.label} · 第 {session.rebirth.cycle} 周目</span>
-            <strong>{session.scene.theme.title}</strong>
+            <strong id="archive-dialog-title">{session.scene.theme.title}</strong>
           </div>
-          <button type="button" onClick={onClose} aria-label="关闭档案">×</button>
+          <button ref={closeRef} type="button" onClick={onClose} aria-label="关闭档案">×</button>
         </header>
-        <div className="archive-tabs" role="tablist">
-          <button aria-controls="archive-tabpanel" aria-selected={tab === "log"} className={tab === "log" ? "active" : ""} role="tab" type="button" onClick={() => setTab("log")}>本话记录</button>
-          <button aria-controls="archive-tabpanel" aria-selected={tab === "archive"} className={tab === "archive" ? "active" : ""} role="tab" type="button" onClick={() => setTab("archive")}>研究档案</button>
+        <div className="archive-tabs" role="tablist" onKeyDown={handleTabKeyDown}>
+          <button id="archive-tab-log" aria-controls="archive-tabpanel" aria-selected={tab === "log"} className={tab === "log" ? "active" : ""} role="tab" tabIndex={tab === "log" ? 0 : -1} type="button" onClick={() => setTab("log")}>本话记录</button>
+          <button id="archive-tab-archive" aria-controls="archive-tabpanel" aria-selected={tab === "archive"} className={tab === "archive" ? "active" : ""} role="tab" tabIndex={tab === "archive" ? 0 : -1} type="button" onClick={() => setTab("archive")}>研究档案</button>
           <button
+            id="archive-tab-flow"
             aria-controls="archive-tabpanel"
             aria-selected={tab === "flow"}
             className={tab === "flow" ? "active" : ""}
             role="tab"
+            tabIndex={tab === "flow" ? 0 : -1}
             type="button"
             onFocus={() => void loadTimelinePanel()}
             onPointerEnter={() => void loadTimelinePanel()}
@@ -142,9 +220,15 @@ export function ArchiveDrawer({
           >
             因果回溯
           </button>
-          <button aria-controls="archive-tabpanel" aria-selected={tab === "office"} className={tab === "office" ? "active" : ""} role="tab" type="button" onClick={() => setTab("office")}>研究室</button>
+          <button id="archive-tab-office" aria-controls="archive-tabpanel" aria-selected={tab === "office"} className={tab === "office" ? "active" : ""} role="tab" tabIndex={tab === "office" ? 0 : -1} type="button" onClick={() => setTab("office")}>研究室</button>
         </div>
-        <div className="archive-scroll" id="archive-tabpanel" role="tabpanel">
+        <div
+          aria-labelledby={`archive-tab-${tab}`}
+          className="archive-scroll"
+          id="archive-tabpanel"
+          role="tabpanel"
+          tabIndex={0}
+        >
           {tab === "log" ? <DialogueHistory session={session} /> : null}
           {tab === "archive" ? <ResearchArchive session={session} /> : null}
           {tab === "flow" ? (

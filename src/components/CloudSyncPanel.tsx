@@ -39,7 +39,7 @@ function currentSaveText(year: string): string {
   const state = envelope?.state ?? parseJson(localStorage.getItem(`rebirthGameState:v2:${year}`));
   const rebirth = envelope?.rebirth ?? parseJson(localStorage.getItem(`rebirthMeta:v3:${year}`));
   if (!isRecord(state) || state.year !== year || rebirth === null) {
-    throw new Error("当前年份还没有可同步的有效存档。") ;
+    throw new Error("当前年份还没有可同步的有效存档。");
   }
   const bundle: CloudSaveBundle = {
     format: "rebirth-research-save",
@@ -56,7 +56,7 @@ function currentSaveText(year: string): string {
 
 function applyCloudSave(raw: string): CloudSaveBundle {
   const parsed: unknown = JSON.parse(raw);
-  if (!isCloudSaveBundle(parsed)) throw new Error("解密后的云端内容不是有效存档。") ;
+  if (!isCloudSaveBundle(parsed)) throw new Error("解密后的云端内容不是有效存档。");
   localStorage.setItem(`rebirthGameState:v2:${parsed.year}`, JSON.stringify(parsed.state));
   localStorage.setItem(`rebirthMeta:v3:${parsed.year}`, JSON.stringify(parsed.rebirth));
   writeSessionEnvelope(localStorage, parsed.state, parsed.rebirth);
@@ -98,7 +98,7 @@ export function CloudSyncPanel({ year }: { year: string }) {
       localStorage.setItem(gistStorageKey(year), result.gistId);
       setStatus(`加密存档已同步。Gist ID：${result.gistId}`);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "云同步失败。") ;
+      setStatus(error instanceof Error ? error.message : "云同步失败。");
     } finally {
       setBusy(false);
     }
@@ -116,63 +116,66 @@ export function CloudSyncPanel({ year }: { year: string }) {
         window.location.reload();
       }
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "云端存档拉取失败。") ;
+      setStatus(error instanceof Error ? error.message : "云端存档拉取失败。");
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <section className="cloud-sync-panel" aria-label="加密云同步">
-      <div className="cloud-sync-heading">
-        <div>
+    <details className="cloud-sync-panel">
+      <summary>
+        <span className="cloud-sync-mark" aria-hidden="true">锁</span>
+        <span className="cloud-sync-copy">
           <strong>加密云同步</strong>
-          <span>使用私密 GitHub Gist。仓库无需后端，token 不会写入本地存储。</span>
+          <small>私密 GitHub Gist，token 与口令均不落盘</small>
+        </span>
+        <span className="cloud-sync-badge">AES-GCM</span>
+      </summary>
+      <div className="cloud-sync-body">
+        <div className="cloud-sync-grid">
+          <label>
+            <span>GitHub token</span>
+            <input
+              autoComplete="off"
+              placeholder="需要 Gist 读写权限"
+              type="password"
+              value={token}
+              onChange={(event) => setToken(event.target.value)}
+            />
+          </label>
+          <label>
+            <span>同步口令</span>
+            <input
+              autoComplete="new-password"
+              placeholder="至少 8 个字符，请自行妥善保存"
+              type="password"
+              value={passphrase}
+              onChange={(event) => setPassphrase(event.target.value)}
+            />
+          </label>
+          <label>
+            <span>Gist ID</span>
+            <input
+              placeholder="首次上传后自动生成"
+              value={gistId}
+              onChange={(event) => setGistId(event.target.value)}
+            />
+          </label>
         </div>
-        <span>AES-GCM</span>
+        <div className="save-transfer-actions">
+          <button disabled={busy || !token.trim() || passphrase.length < 8} type="button" onClick={() => void push()}>
+            {gistId.trim() ? "更新云端存档" : "创建云端存档"}
+          </button>
+          <button disabled={busy || !token.trim() || !gistId.trim() || passphrase.length < 8} type="button" onClick={() => void pull()}>
+            拉取并解密
+          </button>
+        </div>
+        <small className="cloud-sync-warning">
+          GitHub token 仅存在于当前输入框；同步口令无法找回。Gist 文件即使被看到，也只包含加密密文。
+        </small>
+        {status ? <p className="save-transfer-status" role="status">{status}</p> : null}
       </div>
-      <div className="cloud-sync-grid">
-        <label>
-          <span>GitHub token</span>
-          <input
-            autoComplete="off"
-            placeholder="需要 Gist 读写权限"
-            type="password"
-            value={token}
-            onChange={(event) => setToken(event.target.value)}
-          />
-        </label>
-        <label>
-          <span>同步口令</span>
-          <input
-            autoComplete="new-password"
-            placeholder="至少 8 个字符，请自行妥善保存"
-            type="password"
-            value={passphrase}
-            onChange={(event) => setPassphrase(event.target.value)}
-          />
-        </label>
-        <label>
-          <span>Gist ID</span>
-          <input
-            placeholder="首次上传后自动生成"
-            value={gistId}
-            onChange={(event) => setGistId(event.target.value)}
-          />
-        </label>
-      </div>
-      <div className="save-transfer-actions">
-        <button disabled={busy || !token.trim() || passphrase.length < 8} type="button" onClick={() => void push()}>
-          {gistId.trim() ? "更新云端存档" : "创建云端存档"}
-        </button>
-        <button disabled={busy || !token.trim() || !gistId.trim() || passphrase.length < 8} type="button" onClick={() => void pull()}>
-          拉取并解密
-        </button>
-      </div>
-      <small className="cloud-sync-warning">
-        GitHub token 只保存在当前输入框内；同步口令无法找回。Gist 文件即使被看到，也只包含加密密文。
-      </small>
-      {status ? <p className="save-transfer-status" role="status">{status}</p> : null}
-    </section>
+    </details>
   );
 }

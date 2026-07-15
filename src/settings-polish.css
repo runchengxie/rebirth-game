@@ -1,0 +1,89 @@
+.immersive-settings-popover > .settings-row {
+  display: grid;
+  gap: 10px;
+  margin: 14px;
+  padding: 14px;
+  border: 1px solid var(--platform-border);
+  border-radius: 16px;
+  background: var(--platform-panel);
+}
+
+.immersive-settings-popover > .settings-row + .settings-row {
+  margin-top: -4px;
+}
+
+.immersive-settings-popover > .settings-row:first-child::before {
+  content: "游戏设置";
+  color: var(--platform-text);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.immersive-settings-popover > .settings-row:first-child::after {
+  content: "年份、显示与音频选项";
+  grid-row: 2;
+  color: var(--platform-muted);
+  font-size: 11px;
+}
+
+.immersive-settings-popover > .settings-row:first-child > span,
+.immersive-settings-popover > .settings-row:first-child > .settings-years {
+  grid-row: auto;
+}
+
+.immersive-settings-popover > .settings-switches {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.immersive-settings-popover > .settings-switches button:last-child {
+  grid-column: span 2;
+  color: var(--red, #c24f6d);
+}
+
+.immersive-settings-popover > .metric-mode-note {
+  display: block;
+  margin: -4px 18px 4px;
+  color: var(--platform-muted);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.immersive-settings-popover .settings-years,
+.immersive-settings-popover .settings-switches {
+  gap: 7px;
+}
+
+.immersive-settings-popover .settings-years button,
+.immersive-settings-popover .settings-switches button {
+  min-height: 38px;
+  border-radius: 10px;
+}
+
+.settings-disclosure > summary,
+.cloud-sync-panel > summary {
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+}
+
+@media (max-width: 780px) {
+  .immersive-settings-popover > .settings-row {
+    margin: 10px;
+    padding: 12px;
+  }
+
+  .immersive-settings-popover > .settings-switches {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .immersive-settings-popover > .settings-switches button:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .immersive-settings-popover > .metric-mode-note {
+    margin-inline: 14px;
+  }
+
+  .settings-disclosure > summary,
+  .cloud-sync-panel > summary {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+}

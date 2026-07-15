@@ -7,9 +7,10 @@ import "./rebirth.css";
 import "./rebirth-v2.css";
 import "./research-ux.css";
 import "./platform-shell.css";
+import "./settings-polish.css";
 import "./stability.css";
 
-// Full platform.css is loaded with the lazy committee, daily and studio modes.
+// Full platform.css and platform-polish.css are loaded with the lazy platform modes.
 try {
   restoreSessionEnvelopeForUrl(localStorage, window.location.search);
 } catch {

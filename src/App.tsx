@@ -19,24 +19,33 @@ const Chapter1Spike = lazy(() =>
     default: module.Chapter1Spike,
   })),
 );
-const CommitteeMode = lazy(() =>
-  Promise.all([
-    import("./modes/CommitteeMode"),
-    import("./platform.css"),
-  ]).then(([module]) => ({ default: module.CommitteeMode })),
-);
-const DailyChallengeMode = lazy(() =>
-  Promise.all([
-    import("./modes/DailyChallengeMode"),
-    import("./platform.css"),
-  ]).then(([module]) => ({ default: module.DailyChallengeMode })),
-);
-const ContentStudioMode = lazy(() =>
-  Promise.all([
-    import("./modes/ContentStudioMode"),
-    import("./platform.css"),
-  ]).then(([module]) => ({ default: module.ContentStudioMode })),
-);
+
+async function loadPlatformChrome(): Promise<void> {
+  await import("./platform.css");
+  await import("./platform-polish.css");
+  await import("./platform-theme.css");
+}
+
+const CommitteeMode = lazy(async () => {
+  const modulePromise = import("./modes/CommitteeMode");
+  await loadPlatformChrome();
+  const module = await modulePromise;
+  return { default: module.CommitteeMode };
+});
+
+const DailyChallengeMode = lazy(async () => {
+  const modulePromise = import("./modes/DailyChallengeMode");
+  await loadPlatformChrome();
+  const module = await modulePromise;
+  return { default: module.DailyChallengeMode };
+});
+
+const ContentStudioMode = lazy(async () => {
+  const modulePromise = import("./modes/ContentStudioMode");
+  await loadPlatformChrome();
+  const module = await modulePromise;
+  return { default: module.ContentStudioMode };
+});
 
 const INTERACTIVE_TARGETS = [
   "a[href]",
@@ -106,7 +115,8 @@ export default function App() {
   const [mode] = useState(() => platformModeFromSearch(window.location.search));
   return (
     <div
-      className="app-shell"
+      className={`app-shell mode-${mode}`}
+      data-platform-mode={mode}
       onKeyDown={(event) => {
         if (event.key !== "Enter" && event.key !== " ") return;
         const target = event.target;

@@ -6,6 +6,7 @@ import "./immersive.css";
 import "./rebirth.css";
 import "./rebirth-v2.css";
 import "./research-ux.css";
+import "./platform.css";
 
 try {
   restoreSessionEnvelopeForUrl(localStorage, window.location.search);

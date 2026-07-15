@@ -140,6 +140,11 @@ function NumberField({
   );
 }
 
+function installedPacksForRevision(revision: number): CommunityPack[] {
+  void revision;
+  return readCommunityPacks();
+}
+
 export function ContentStudioMode() {
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [pack, setPack] = useState<CommunityPack>(createStarterCommunityPack);
@@ -147,7 +152,10 @@ export function ContentStudioMode() {
   const [status, setStatus] = useState("");
   const [importText, setImportText] = useState("");
   const [libraryRevision, setLibraryRevision] = useState(0);
-  const installedPacks = useMemo(readCommunityPacks, [libraryRevision]);
+  const installedPacks = useMemo(
+    () => installedPacksForRevision(libraryRevision),
+    [libraryRevision],
+  );
   const validation = useMemo(() => validateCommunityPack(pack), [pack]);
   const activeCase = pack.cases[Math.min(caseIndex, pack.cases.length - 1)];
 
@@ -163,9 +171,9 @@ export function ContentStudioMode() {
     try {
       writeCommunityPack(pack);
       setLibraryRevision((value) => value + 1);
-      setStatus("内容包已保存到本地案例库，可以直接在投委会模式中游玩。") ;
+      setStatus("内容包已保存到本地案例库，可以直接在投委会模式中游玩。");
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "内容包保存失败。") ;
+      setStatus(error instanceof Error ? error.message : "内容包保存失败。");
     }
   };
 
@@ -175,9 +183,9 @@ export function ContentStudioMode() {
       setPack(parsed);
       setCaseIndex(0);
       setImportText("");
-      setStatus("内容包已载入编辑器。导入不会自动覆盖本地案例库。") ;
+      setStatus("内容包已载入编辑器。导入不会自动覆盖本地案例库。");
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "无法导入内容包。") ;
+      setStatus(error instanceof Error ? error.message : "无法导入内容包。");
     }
   };
 
@@ -203,7 +211,7 @@ export function ContentStudioMode() {
           <button type="button" onClick={() => {
             setPack(createStarterCommunityPack());
             setCaseIndex(0);
-            setStatus("已创建新的内容包草稿。") ;
+            setStatus("已创建新的内容包草稿。");
           }}>新建内容包</button>
           {installedPacks.map((item) => (
             <div className="studio-library-item" key={item.id}>

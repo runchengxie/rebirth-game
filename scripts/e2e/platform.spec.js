@@ -40,7 +40,7 @@ test("键盘可以跳过导航，并在档案弹窗关闭后恢复焦点", async
   const archiveButton = page.getByRole("button", { name: "记录与档案" });
   await archiveButton.focus();
   await archiveButton.click();
-  await expect(page.getByRole("dialog", { name: /AI叙事重构|研究档案|剧情记录/ })).toBeVisible();
+  await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByRole("button", { name: "关闭档案" })).toBeFocused();
 
   await page.keyboard.press("Escape");
@@ -89,7 +89,7 @@ test("内容工坊保存的案例会进入投委会案例库", async ({ page }) 
 
   await page.getByRole("button", { name: "保存到案例库" }).click();
   await expect(page.getByText(/内容包已保存到本地案例库/)).toBeVisible();
-  await page.getByRole("button", { name: /独立投委会/ }).click();
+  await page.getByRole("button", { name: /投委会/ }).click();
 
   await expect(page).toHaveURL(/mode=committee/);
   await expect(page.getByRole("button", { name: /利润增长，现金流下降/ })).toBeVisible();

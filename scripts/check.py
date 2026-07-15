@@ -70,14 +70,8 @@ def check_python() -> bool:
         label="compileall",
     )
     ok &= run(
-        _uv_run("basedpyright", "scripts"),
-        label="basedpyright",
-        allow_failure=True,
-    )
-    ok &= run(
         _uv_run("ty", "check", "scripts"),
         label="ty",
-        allow_failure=True,
     )
     ok &= run(
         _uv_run("pytest", "scripts/", "-v"),

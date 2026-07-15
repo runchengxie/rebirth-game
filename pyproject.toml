@@ -10,7 +10,6 @@ dev = [
     "pytest>=8.0",
     "ruff>=0.11.0",
     "ty>=0.0.50",
-    "basedpyright>=1.30.0",
 ]
 
 [tool.ruff]
@@ -29,13 +28,3 @@ python_files = ["test_*.py"]
 
 [tool.ty]
 # ty infers src from the project root; use CLI `ty check scripts` instead
-
-[tool.basedpyright]
-include = ["scripts"]
-typeCheckingMode = "basic"
-reportMissingImports = false
-reportMissingTypeStubs = false
-reportAny = false
-reportExplicitAny = false
-reportImplicitStringConcatenation = false
-reportUnusedCallResult = false

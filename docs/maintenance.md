@@ -188,7 +188,7 @@ npm run test:e2e
 uv run python scripts/check.py
 ```
 
-默认执行全部阻塞检查，其中包含 Ruff、格式化、编译、BasedPyright、ty、Pytest、静态数据校验和前端静态完整检查。可用参数：
+默认执行全部阻塞检查，其中包含 Ruff、格式化、编译、ty、Pytest、静态数据校验和前端静态完整检查。可用参数：
 
 ```bash
 uv run python scripts/check.py --python

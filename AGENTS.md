@@ -111,7 +111,7 @@ Python 与前端联合检查：
 uv run python scripts/check.py
 ```
 
-联合检查会运行 BasedPyright 和 ty，但当前作为非阻塞诊断。`--all` 仅作为旧命令的兼容参数保留。
+联合检查使用 ty 作为阻塞 Python 类型检查。`--all` 仅作为旧命令的兼容参数保留。
 
 需要逐项排查时运行：
 
@@ -120,7 +120,6 @@ uv run ruff check .
 uv run ruff format --check .
 uv run python -m compileall scripts
 uv run pytest scripts/ -v
-uv run basedpyright scripts
 uv run ty check scripts
 uv run python scripts/validate_data.py
 node scripts/validate_frontend.js

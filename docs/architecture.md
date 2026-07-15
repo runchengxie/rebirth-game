@@ -222,7 +222,7 @@
 
 `vite.config.ts` 将 `base` 设置为 `./`，构建产物可以从相对路径加载资源。
 
-仓库当前没有拉取请求代码检查工作流。维护者需要在提交前本地运行 `npm run check` 和 `uv run python scripts/check.py`。`scripts/check.py` 中的 BasedPyright 和 ty 当前作为非阻塞诊断。
+仓库当前没有拉取请求代码检查工作流。维护者需要在提交前本地运行 `npm run check` 和 `uv run python scripts/check.py`。`scripts/check.py` 中的 ty 是阻塞类型检查。
 
 `.github/workflows/pages.yml` 在 `main` 分支有新提交时运行 `npm ci` 和 `npm run check`，通过 lint、类型检查、测试、资源预算校验和生产构建后发布 `dist/`。
 

@@ -19,6 +19,10 @@
 11. [`architecture.md`](architecture.md)：了解 React、PixiJS、剧情运行时、结算引擎和数据文件之间的关系。
 12. [`maintenance.md`](maintenance.md)：了解本地环境、测试命令、复杂度基线、数据维护和发布流程。
 
+## 推进规划
+
+[`product-roadmap.md`](product-roadmap.md) 集中记录移动端、组织角色、场景与环境叙事的分阶段任务、依赖关系和验收门槛。已经实现的行为仍以其他现状文档为准。
+
 ## 按需求查找
 
 | 需求 | 文档 |
@@ -35,6 +39,7 @@
 | 控制对白重复、回调、术语和中文表达 | [`dialogue-writing.md`](dialogue-writing.md) |
 | 查找模块边界、状态流转、数据关系和常见修改位置 | [`architecture.md`](architecture.md) |
 | 安装依赖、运行测试、检查复杂度、更新数据、构建和发布 | [`maintenance.md`](maintenance.md) |
+| 查看后续产品改进、依赖关系、任务清单和验收标准 | [`product-roadmap.md`](product-roadmap.md) |
 | 了解自动化助手和维护者的操作约定 | [`../AGENTS.md`](../AGENTS.md) |
 
 ## 文档分工
@@ -52,6 +57,7 @@
 - `dialogue-writing.md` 记录对白去重、回调设计和中文表达要求。
 - `architecture.md` 记录代码结构和技术边界。
 - `maintenance.md` 记录具体命令和维护流程。
+- `product-roadmap.md` 是唯一记录未来候选工作、推进顺序和验收门槛的文档。
 - `AGENTS.md` 记录修改项目时需要长期遵守的约定。
 
-文档只描述当前实现。历史调整过程留在提交记录和拉取请求中，避免把维护说明写成项目考古报告。
+除 `product-roadmap.md` 外，文档只描述当前实现。历史调整过程留在提交记录和拉取请求中，避免把维护说明写成项目考古报告。

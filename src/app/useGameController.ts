@@ -3,6 +3,7 @@ import { GAME_DATA, GAME_YEARS } from "../data/gameData";
 import { ProceduralBgm } from "../audio/bgm";
 import { NarrativeAudio } from "../audio/sfx";
 import { CHARACTERS } from "../game/content";
+import { romanceDecisionOptions } from "../game/experienceMode";
 import { focusById, makeDecision, selectFocus, storyForMonth } from "../game/engine";
 import {
   advanceScene,
@@ -330,9 +331,13 @@ export function useGameSession(audio: GameAudio) {
       : rebirth;
     const isCycleEnd = state.finished && state.sceneNodeIndex >= scene.nodes.length - 1;
     if (isCycleEnd) {
-      nextMeta = completeActiveTimelineBranch(nextMeta, state, endingIdFor(state));
+      nextMeta = completeActiveTimelineBranch(
+        nextMeta,
+        state,
+        endingIdFor(state, nextMeta.experienceMode),
+      );
       nextMeta = completeRebirthCycle(nextMeta, state);
-      const nextState = createInitialState(state.year);
+      const nextState = createInitialState(state.year, nextMeta.experienceMode);
       nextMeta = startTimelineCycle(nextMeta, nextState);
       setRebirth(nextMeta);
       setState(nextState);
@@ -584,7 +589,12 @@ function advanceLabelFor(
   return "继续";
 }
 
-export function buildSceneView(session: GameSession) {
+type SceneViewSession = Pick<
+  GameSession,
+  "rebirth" | "scene" | "sceneNode" | "state" | "story"
+>;
+
+export function buildSceneView(session: SceneViewSession) {
   const { scene, sceneNode, state, story } = session;
   const last = state.history[state.history.length - 1];
   const sceneProgress = `${Math.min(state.sceneNodeIndex + 1, scene.nodes.length)}/${scene.nodes.length}`;
@@ -614,7 +624,9 @@ export function buildSceneView(session: GameSession) {
     sceneProgress,
     speakerName: speakerNameFor(state, sceneNode, story, last),
     speakerRole: speakerRoleFor(state, sceneNode, story, last),
-    topDecisions: decisionOptionsForRebirth(session.rebirth, state, baseDecisions),
+    topDecisions: session.rebirth.experienceMode === "romance"
+      ? romanceDecisionOptions(baseDecisions)
+      : decisionOptionsForRebirth(session.rebirth, state, baseDecisions),
   };
 }
 

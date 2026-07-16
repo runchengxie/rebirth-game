@@ -54,6 +54,11 @@ describe("初始状态", () => {
     expect(state.relations.lin_ruoning).toBeGreaterThan(0);
     expect(state.focusId).toBe("deep_research");
   });
+
+  it("剧情模式使用轻量日程默认值", () => {
+    const state = createInitialState("2025", "romance");
+    expect(state.focusId).toBe("team_collab");
+  });
 });
 
 describe("当前剧情节点", () => {
@@ -173,6 +178,20 @@ describe("进入下一话", () => {
     expect(next.sceneNodeId).toBe(sceneForMonth(next).nodes[0].id);
     expect(next.locked).toBe(false);
     expect(next.focusId).toBe("deep_research");
+  });
+
+  it("剧情模式进入下一话时继续使用轻量日程", () => {
+    const state = {
+      ...createInitialState("2025", "romance"),
+      locked: true,
+      focusId: "deep_research",
+    };
+    const next = nextMonth(state, {
+      cycle: 1,
+      experienceMode: "romance",
+      memoryKeys: [],
+    });
+    expect(next.focusId).toBe("team_collab");
   });
 
   it("完成全年后开启同年份的新周目", () => {

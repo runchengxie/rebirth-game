@@ -9,6 +9,10 @@ import {
   readSessionEnvelope,
   writeSessionEnvelope,
 } from "../game/sessionEnvelope";
+import {
+  LEGACY_REBIRTH_META_V3_KEY_PREFIX,
+  REBIRTH_META_KEY_PREFIX,
+} from "../game/rebirth";
 
 interface SaveBundle {
   format: "rebirth-research-save";
@@ -68,7 +72,8 @@ function readCurrentBundle(year: string): SaveBundle | null {
   const state = envelope?.state
     ?? parseStoredJson(localStorage.getItem(`rebirthGameState:v2:${year}`));
   const rebirth = envelope?.rebirth
-    ?? parseStoredJson(localStorage.getItem(`rebirthMeta:v3:${year}`));
+    ?? parseStoredJson(localStorage.getItem(`${REBIRTH_META_KEY_PREFIX}${year}`))
+    ?? parseStoredJson(localStorage.getItem(`${LEGACY_REBIRTH_META_V3_KEY_PREFIX}${year}`));
   if (!isRecord(state) || state.year !== year || rebirth === null) return null;
 
   return {
@@ -85,7 +90,7 @@ function readCurrentBundle(year: string): SaveBundle | null {
 
 function applyBundle(bundle: SaveBundle): void {
   localStorage.setItem(`rebirthGameState:v2:${bundle.year}`, JSON.stringify(bundle.state));
-  localStorage.setItem(`rebirthMeta:v3:${bundle.year}`, JSON.stringify(bundle.rebirth));
+  localStorage.setItem(`${REBIRTH_META_KEY_PREFIX}${bundle.year}`, JSON.stringify(bundle.rebirth));
   writeSessionEnvelope(localStorage, bundle.state, bundle.rebirth);
   if (bundle.theme) localStorage.setItem("rebirthGameTheme", bundle.theme);
   localStorage.setItem("rebirthShowExactMetrics", bundle.showExactMetrics ? "1" : "0");

@@ -32,6 +32,8 @@ import {
 import { simulateTimelineAnchor } from "./rebirthTimelineInsights";
 import type { TimelineSimulationProfileId } from "./rebirthTimelineState";
 import { focusById, makeDecision, selectFocus } from "./engine";
+import { prepareDecisionForExperience } from "./experienceMode";
+import type { ResearchCommitment } from "./researchCommitment";
 
 export interface GameSessionSnapshot {
   state: GameState;
@@ -47,7 +49,11 @@ export type GameSessionAction =
   | { type: "inspect-office"; propId: OfficePropId }
   | { type: "select-focus"; focusId: string }
   | { type: "investigate"; nodeId: string }
-  | { type: "make-decision"; decision: ResearchDecision }
+  | {
+      type: "make-decision";
+      decision: ResearchDecision;
+      commitment?: ResearchCommitment;
+    }
   | { type: "fork-timeline"; anchorId: string }
   | { type: "resume-timeline"; branchId: string }
   | { type: "simulate-timeline"; anchorId: string; profileId: TimelineSimulationProfileId };
@@ -75,9 +81,13 @@ function reduceAdvance(snapshot: GameSessionSnapshot): GameSessionSnapshot {
   const isCycleEnd = state.finished && state.sceneNodeIndex >= scene.nodes.length - 1;
 
   if (isCycleEnd) {
-    nextMeta = completeActiveTimelineBranch(nextMeta, state, endingIdFor(state));
+    nextMeta = completeActiveTimelineBranch(
+      nextMeta,
+      state,
+      endingIdFor(state, nextMeta.experienceMode),
+    );
     nextMeta = completeRebirthCycle(nextMeta, state);
-    const nextState = createInitialState(state.year);
+    const nextState = createInitialState(state.year, nextMeta.experienceMode);
     nextMeta = startTimelineCycle(nextMeta, nextState);
     return { state: nextState, rebirth: nextMeta };
   }
@@ -158,8 +168,18 @@ function reduceInvestigation(
 function reduceDecision(
   snapshot: GameSessionSnapshot,
   decision: ResearchDecision,
+  commitment?: ResearchCommitment,
 ): GameSessionSnapshot {
-  const prepared = prepareDecisionForRebirth(snapshot.rebirth, snapshot.state, decision);
+  const experiencePrepared = prepareDecisionForExperience(
+    snapshot.rebirth.experienceMode,
+    decision,
+    commitment,
+  );
+  const prepared = prepareDecisionForRebirth(
+    snapshot.rebirth,
+    snapshot.state,
+    experiencePrepared,
+  );
   const nextState = makeDecision(
     snapshot.state,
     GAME_DATA[snapshot.state.year],
@@ -203,7 +223,10 @@ export function gameSessionReducer(
     case "replace":
       return action.snapshot;
     case "restart": {
-      const state = createInitialState(snapshot.state.year);
+      const state = createInitialState(
+        snapshot.state.year,
+        snapshot.rebirth.experienceMode,
+      );
       const rebirth = restartTimelineRun(snapshot.rebirth, snapshot.state, state);
       return { state, rebirth };
     }
@@ -224,7 +247,7 @@ export function gameSessionReducer(
     case "investigate":
       return reduceInvestigation(snapshot, action.nodeId);
     case "make-decision":
-      return reduceDecision(snapshot, action.decision);
+      return reduceDecision(snapshot, action.decision, action.commitment);
     case "fork-timeline":
       return reduceFork(snapshot, action.anchorId);
     case "resume-timeline":

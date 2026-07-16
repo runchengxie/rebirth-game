@@ -1,11 +1,33 @@
+.stakeholder-pressure,
+.research-commitment {
+  --research-surface: var(--surface-strong);
+  --research-control-surface: var(--surface-strong);
+  --research-check-surface: var(--surface);
+  --research-text: var(--ink);
+  --research-muted: var(--muted);
+  --research-border: var(--line);
+  --research-accent: var(--pink);
+}
+
+.app-shell:not(.mode-story) :where(.stakeholder-pressure, .research-commitment) {
+  --research-surface: var(--platform-panel-strong);
+  --research-control-surface: var(--platform-input);
+  --research-check-surface: var(--platform-panel-strong);
+  --research-text: var(--platform-text);
+  --research-muted: var(--platform-muted);
+  --research-border: var(--platform-border);
+  --research-accent: var(--platform-accent);
+}
+
 .stakeholder-pressure {
   display: grid;
   gap: 0.45rem;
   margin: 0.85rem 0;
   padding: 0.85rem 1rem;
-  border: 1px solid color-mix(in srgb, var(--accent, #8d6bd1) 32%, transparent);
+  border: 1px solid color-mix(in srgb, var(--research-accent) 32%, transparent);
   border-radius: 14px;
-  background: color-mix(in srgb, var(--panel, #fff) 88%, var(--accent, #8d6bd1) 12%);
+  color: var(--research-text);
+  background: color-mix(in srgb, var(--research-surface) 88%, var(--research-accent) 12%);
 }
 
 .stakeholder-pressure header {
@@ -18,7 +40,7 @@
 .stakeholder-pressure header span,
 .research-commitment-heading span,
 .save-transfer-heading span {
-  color: var(--muted);
+  color: var(--research-muted, var(--platform-muted));
   font-size: 0.76rem;
   letter-spacing: 0.06em;
 }
@@ -29,14 +51,19 @@
   line-height: 1.55;
 }
 
+.stakeholder-pressure small {
+  color: var(--research-muted);
+}
+
 .research-commitment {
   display: grid;
   gap: 0.9rem;
   margin: 1rem 0;
   padding: 1rem;
-  border: 1px solid color-mix(in srgb, var(--accent, #8d6bd1) 38%, transparent);
+  border: 1px solid color-mix(in srgb, var(--research-accent) 38%, transparent);
   border-radius: 16px;
-  background: color-mix(in srgb, var(--panel, #fff) 92%, var(--accent, #8d6bd1) 8%);
+  color: var(--research-text);
+  background: color-mix(in srgb, var(--research-surface) 92%, var(--research-accent) 8%);
 }
 
 .research-commitment-heading {
@@ -54,7 +81,7 @@
 .research-commitment-heading p,
 .commitment-warning {
   margin: 0;
-  color: var(--muted);
+  color: var(--research-muted);
   line-height: 1.55;
 }
 
@@ -78,27 +105,27 @@
   gap: 0.55rem;
 }
 
-.commitment-choice-grid button {
+.research-commitment .commitment-choice-grid button {
   display: grid;
   gap: 0.35rem;
   min-height: 86px;
   padding: 0.7rem;
   text-align: left;
-  border: 1px solid var(--line);
+  border: 1px solid var(--research-border);
   border-radius: 12px;
-  background: var(--panel);
-  color: inherit;
+  color: var(--research-text);
+  background: var(--research-control-surface);
 }
 
-.commitment-choice-grid button.active {
-  border-color: var(--accent, #8d6bd1);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #8d6bd1) 20%, transparent);
+.research-commitment .commitment-choice-grid button.active {
+  border-color: var(--research-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--research-accent) 20%, transparent);
 }
 
 .commitment-choice-grid button span,
 .commitment-falsifier small,
 .commitment-review-checks small {
-  color: var(--muted);
+  color: var(--research-muted);
   font-size: 0.76rem;
   line-height: 1.45;
 }
@@ -112,10 +139,10 @@
 .share-code-field textarea {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid var(--line);
+  border: 1px solid var(--research-border, var(--platform-input-border));
   border-radius: 10px;
-  background: var(--panel);
-  color: inherit;
+  color: var(--research-text, var(--platform-text));
+  background: var(--research-control-surface, var(--platform-input));
 }
 
 .commitment-falsifier select {
@@ -135,11 +162,13 @@
   align-items: start;
   padding: 0.55rem 0.65rem;
   border-radius: 10px;
-  background: color-mix(in srgb, var(--panel, #fff) 86%, transparent);
+  color: var(--research-text);
+  background: var(--research-check-surface);
 }
 
 .commitment-review-checks input {
   margin-top: 0.2rem;
+  accent-color: var(--research-accent);
 }
 
 .commitment-review-checks span {
@@ -153,11 +182,17 @@
 }
 
 .save-transfer-panel {
+  --research-control-surface: var(--platform-input);
+  --research-text: var(--platform-text);
+  --research-muted: var(--platform-muted);
+  --research-border: var(--platform-input-border);
+  --research-accent: var(--platform-accent);
+
   display: grid;
   gap: 0.65rem;
   margin-top: 0.75rem;
   padding-top: 0.75rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--platform-border);
 }
 
 .save-transfer-heading {
@@ -181,7 +216,7 @@
 }
 
 .share-code-field span {
-  color: var(--muted);
+  color: var(--research-muted);
   font-size: 0.78rem;
 }
 
@@ -190,11 +225,17 @@
   min-height: 64px;
   padding: 0.55rem;
   font: 0.72rem/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  caret-color: var(--research-accent);
+}
+
+.share-code-field textarea::placeholder {
+  color: var(--platform-placeholder);
+  opacity: 1;
 }
 
 .save-transfer-status {
   margin: 0;
-  color: var(--muted);
+  color: var(--research-muted);
   font-size: 0.78rem;
   line-height: 1.5;
 }

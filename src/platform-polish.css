@@ -17,14 +17,6 @@ body {
   min-height: calc(100vh - 84px);
 }
 
-.app-shell:not(.mode-story) .platform-mode-switcher {
-  position: sticky;
-  top: 8px;
-  left: auto;
-  bottom: auto;
-  transform: none;
-}
-
 .platform-screen {
   min-height: auto;
   padding: 22px clamp(14px, 4vw, 48px) 64px;

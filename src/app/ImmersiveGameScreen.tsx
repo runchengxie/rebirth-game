@@ -11,20 +11,20 @@ import { SaveTransferPanel } from "../components/SaveTransferPanel";
 import { StatusBar } from "../components/StatusBar";
 import { StoryRecapPanel } from "../components/StoryRecapPanel";
 import {
-  applyResearchCommitment,
   completedReviewCount,
   createDefaultResearchCommitment,
 } from "../game/researchCommitment";
+import { experiencePolicy } from "../game/experienceMode";
 import { recordPlaytestEvent } from "../game/playtestTelemetry";
 import { writeSessionEnvelope } from "../game/sessionEnvelope";
 import { stakeholderPressureFor } from "../game/stakeholderPressure";
 import { buildSceneView } from "./useGameController";
 import type {
   GameAudio,
-  GameSession,
   SettingsMenu,
   ThemeControl,
 } from "./useGameController";
+import type { MachineGameSession as GameSession } from "./useGameSessionMachine";
 
 const PixiStage = lazy(() =>
   import("../components/PixiStage").then((module) => ({ default: module.PixiStage })),
@@ -90,10 +90,18 @@ function OfficeMemoryLayer({ state }: { state: GameState }) {
   );
 }
 
-function StageArt({ session, usePixiStage }: { session: GameSession; usePixiStage: boolean }) {
+function StageArt({
+  session,
+  showDebate,
+  usePixiStage,
+}: {
+  session: GameSession;
+  showDebate: boolean;
+  usePixiStage: boolean;
+}) {
   const view = buildSceneView(session);
   let artwork;
-  if (session.sceneNode.id.endsWith("-competing")) {
+  if (showDebate) {
     artwork = <div className={`debate-stage debate-stage-${view.sceneBackground}`} aria-hidden="true" />;
   } else if (!usePixiStage) {
     artwork = <StaticStage color={view.activeCharacter.color} />;
@@ -182,6 +190,7 @@ function ResearchBriefs({ node }: { node: SceneNode }) {
 
 function DecisionPanel({ session }: { session: GameSession }) {
   const [commitment, setCommitment] = useState(createDefaultResearchCommitment);
+  const policy = experiencePolicy(session.rebirth.experienceMode);
   const view = buildSceneView(session);
   const decisionNode = view.decisionNode;
   if (!decisionNode) return null;
@@ -196,66 +205,89 @@ function DecisionPanel({ session }: { session: GameSession }) {
           <strong>{view.resultText}</strong>
           <p>{view.resultDetail}</p>
         </div>
-        <StoryRecapPanel result={result} state={session.state} />
+        <StoryRecapPanel
+          experienceMode={session.rebirth.experienceMode}
+          result={result}
+          state={session.state}
+        />
       </div>
     );
   }
 
   const submitDecision: GameSession["makeDecisionWithSound"] = (decision) => {
-    const committedDecision = applyResearchCommitment(decision, commitment);
     recordPlaytestEvent("decision_submit", {
       year: session.state.year,
       month: session.state.monthIndex + 1,
       cycle: session.rebirth.cycle,
       decisionId: decision.id,
-      confidence: commitment.confidence,
-      falsifier: commitment.falsifier,
-      reviewChecks: completedReviewCount(commitment),
+      experienceMode: session.rebirth.experienceMode,
+      confidence: policy.showResearchCommitment ? commitment.confidence : "assisted",
+      falsifier: policy.showResearchCommitment ? commitment.falsifier : "assisted",
+      reviewChecks: policy.showResearchCommitment ? completedReviewCount(commitment) : 3,
     });
-    session.makeDecisionWithSound(committedDecision);
+    session.makeDecisionWithSound(
+      decision,
+      policy.showResearchCommitment ? commitment : undefined,
+    );
   };
 
   return (
-    <div className="immersive-decision-panel">
+    <div className={`immersive-decision-panel experience-${policy.id}`}>
       <div className="decision-prompt">
-        <span>本话研究选择</span>
+        <span>{policy.id === "romance" ? "本话剧情选择" : "本话研究选择"}</span>
         <strong>{decisionNode.decisionPrompt || session.story.mission}</strong>
       </div>
-      <aside className="stakeholder-pressure">
-        <header>
-          <span>{pressure.source}</span>
-          <strong>{pressure.title}</strong>
-        </header>
-        <p>{pressure.detail}</p>
-        <small>{pressure.tradeoff}</small>
-      </aside>
-      <ResearchBriefs node={decisionNode} />
-      <InvestigationPanel
-        meta={session.rebirth}
-        state={session.state}
-        onInvestigate={session.investigateWithSound}
-      />
-      <FocusSelector
-        monthIndex={session.state.monthIndex}
-        state={session.state}
-        theme={session.scene.theme}
-        onSelect={(focusId) => {
-          recordPlaytestEvent("focus_select", {
-            year: session.state.year,
-            month: session.state.monthIndex + 1,
-            cycle: session.rebirth.cycle,
-            focusId,
-          });
-          session.selectFocusWithSound(focusId);
-        }}
-      />
-      <ResearchCommitmentPanel commitment={commitment} onChange={setCommitment} />
+      {policy.id === "romance" ? (
+        <aside className="romance-assist-note">
+          <span>剧情辅助已开启</span>
+          <strong>研究细节会采用稳健方案，你只需要决定如何回应眼前的人。</strong>
+          <small>关系中的承诺、诚实和边界仍会真实影响后续剧情。</small>
+        </aside>
+      ) : null}
+      {policy.showCareerMetrics ? (
+        <aside className="stakeholder-pressure">
+          <header>
+            <span>{pressure.source}</span>
+            <strong>{pressure.title}</strong>
+          </header>
+          <p>{pressure.detail}</p>
+          <small>{pressure.tradeoff}</small>
+        </aside>
+      ) : null}
+      {policy.showResearchBriefs ? <ResearchBriefs node={decisionNode} /> : null}
+      {policy.showInvestigation ? (
+        <InvestigationPanel
+          meta={session.rebirth}
+          state={session.state}
+          onInvestigate={session.investigateWithSound}
+        />
+      ) : null}
+      {policy.showSchedule ? (
+        <FocusSelector
+          monthIndex={session.state.monthIndex}
+          state={session.state}
+          theme={session.scene.theme}
+          onSelect={(focusId) => {
+            recordPlaytestEvent("focus_select", {
+              year: session.state.year,
+              month: session.state.monthIndex + 1,
+              cycle: session.rebirth.cycle,
+              focusId,
+            });
+            session.selectFocusWithSound(focusId);
+          }}
+        />
+      ) : null}
+      {policy.showResearchCommitment ? (
+        <ResearchCommitmentPanel commitment={commitment} onChange={setCommitment} />
+      ) : null}
       <div className="options">
         {view.topDecisions.map((decision, index) => (
           <DecisionCard
             decision={decision}
             index={index}
             key={decision.id}
+            experienceMode={session.rebirth.experienceMode}
             state={session.state}
             onChoose={submitDecision}
           />
@@ -288,6 +320,7 @@ function SettingsPopover({
   showExactMetrics,
   onToggleExactMetrics,
 }: SettingsPopoverProps) {
+  const policy = experiencePolicy(session.rebirth.experienceMode);
   return (
     <div className="immersive-settings" ref={settingsRef}>
       <button
@@ -327,20 +360,27 @@ function SettingsPopover({
             <button aria-pressed={audio.soundOn} type="button" onClick={() => void audio.toggleSound()}>
               音效 {audio.soundOn ? "开" : "关"}
             </button>
-            <button aria-pressed={showExactMetrics} type="button" onClick={onToggleExactMetrics}>
-              指标 {showExactMetrics ? "精确" : "叙事"}
-            </button>
+            {policy.showCareerMetrics ? (
+              <button aria-pressed={showExactMetrics} type="button" onClick={onToggleExactMetrics}>
+                指标 {showExactMetrics ? "精确" : "叙事"}
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => {
-                if (window.confirm("重新开始会覆盖当前年份的本周目存档，但保留已经获得的记忆钥匙和研究捷径。确定继续吗？")) session.restart();
+                const message = policy.id === "romance"
+                  ? "重新开始会覆盖当前剧情进度，但不会改变本存档的体验模式。确定继续吗？"
+                  : "重新开始会覆盖当前年份的本周目存档，但保留已经获得的记忆钥匙和研究捷径。确定继续吗？";
+                if (window.confirm(message)) session.restart();
               }}
             >
               重新开始
             </button>
           </div>
           <small className="metric-mode-note">
-            叙事模式隐藏精确关系与职业数值；精确模式用于攻略、调试和复盘。
+            {policy.id === "romance"
+              ? "剧情模式会协助处理职业细节，当前存档的体验模式在新游戏时确定。"
+              : "叙事指标隐藏精确关系与职业数值；精确指标用于攻略、调试和复盘。"}
           </small>
           <SaveTransferPanel year={session.state.year} />
         </div>
@@ -354,7 +394,9 @@ export function ImmersiveGameScreen(props: ImmersiveGameScreenProps) {
   const view = buildSceneView(session);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [showExactMetrics, setShowExactMetrics] = useState(readExactMetricPreference);
-  const isDebate = session.sceneNode.id.endsWith("-competing")
+  const policy = experiencePolicy(session.rebirth.experienceMode);
+  const isDebate = policy.showResearchBriefs
+    && session.sceneNode.id.endsWith("-competing")
     && Boolean(session.scene.theme.competingHypotheses);
   const headerCopy = useMemo(() => {
     if (session.state.finished) return { name: "年度复盘", role: `${session.state.year} 年研究结局` };
@@ -422,7 +464,9 @@ export function ImmersiveGameScreen(props: ImmersiveGameScreenProps) {
         <div className="immersive-brand">
           <span>重生投研部</span>
           <strong>{session.scene.theme.title}</strong>
-          <small>{session.scene.label} · 第 {session.rebirth.cycle} 周目 · 剧情 {view.sceneProgress}</small>
+          <small>{policy.id === "romance"
+            ? `${session.scene.label} · ${policy.label} · 剧情 ${view.sceneProgress}`
+            : `${session.scene.label} · ${policy.label} · 第 ${session.rebirth.cycle} 周目 · 剧情 ${view.sceneProgress}`}</small>
         </div>
         <SettingsPopover
           {...props}
@@ -430,10 +474,14 @@ export function ImmersiveGameScreen(props: ImmersiveGameScreenProps) {
           onToggleExactMetrics={toggleExactMetrics}
         />
       </header>
-      <StatusBar state={session.state} showExactMetrics={showExactMetrics} />
+      <StatusBar
+        experienceMode={session.rebirth.experienceMode}
+        state={session.state}
+        showExactMetrics={showExactMetrics}
+      />
       <section className="immersive-workspace" aria-label="剧情舞台与操作区">
         <div className="immersive-stage" aria-hidden="true">
-          <StageArt session={session} usePixiStage={usePixiStage} />
+          <StageArt session={session} showDebate={isDebate} usePixiStage={usePixiStage} />
         </div>
         <div className="immersive-stage-meta">
           {isDebate ? (
@@ -442,7 +490,7 @@ export function ImmersiveGameScreen(props: ImmersiveGameScreenProps) {
             <>
               <span>{view.activeCharacter.name}路线</span>
               <span>
-                {showExactMetrics
+                {policy.showCareerMetrics && showExactMetrics
                   ? `关系 ${session.state.relations[view.activeCharacter.id]}`
                   : relationshipSignal(session.state.relations[view.activeCharacter.id])}
               </span>
@@ -457,7 +505,10 @@ export function ImmersiveGameScreen(props: ImmersiveGameScreenProps) {
               <span className="speaker-role">{headerCopy.role}</span>
             </div>
             {session.state.finished ? (
-              <EndingPanel state={session.state} />
+              <EndingPanel
+                experienceMode={session.rebirth.experienceMode}
+                state={session.state}
+              />
             ) : isDebate ? (
               <DebatePanel hypotheses={session.scene.theme.competingHypotheses} />
             ) : view.isDecision ? (
@@ -493,7 +544,7 @@ export function ImmersiveGameScreen(props: ImmersiveGameScreenProps) {
               onPointerEnter={() => void loadArchiveDrawer()}
               onClick={() => setArchiveOpen(true)}
             >
-              记录与档案
+              {policy.id === "romance" ? "剧情回顾" : "记录与档案"}
             </button>
             <button
               className="primary-action"

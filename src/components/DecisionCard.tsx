@@ -1,12 +1,15 @@
-import type { GameState, ResearchDecision } from "../types";
+import type { ExperienceMode, GameState, ResearchDecision } from "../types";
+import { CHARACTERS } from "../game/content";
 
 export function DecisionCard({
   decision,
+  experienceMode = "career",
   index,
   state,
   onChoose,
 }: {
   decision: ResearchDecision;
+  experienceMode?: ExperienceMode;
   index: number;
   state: GameState;
   onChoose: (decision: ResearchDecision) => void;
@@ -14,6 +17,9 @@ export function DecisionCard({
   const optionLetter = String.fromCharCode(65 + index);
   const locked = state.locked;
   const selected = state.selectedId === decision.id;
+  const romanceLead = [...decision.effects.characterRelations]
+    .filter((effect) => effect.characterId !== "zhao_chengyu")
+    .sort((left, right) => right.value - left.value)[0];
 
   const categoryColors: Record<string, string> = {
     deep_research: "#4b8fe8",
@@ -59,9 +65,13 @@ export function DecisionCard({
     <button className={className} disabled={locked} type="button" onClick={() => onChoose(decision)}>
       <div className="option-kicker">
         <span style={{ borderColor: categoryColors[decision.category] || "#aaa" }}>
-          选项 {optionLetter}
+          {experienceMode === "romance" ? "回应" : "选项"} {optionLetter}
         </span>
-        <span>{categoryIcons[decision.category]} {categoryLabels[decision.category]}</span>
+        {experienceMode === "career" ? (
+          <span>{categoryIcons[decision.category]} {categoryLabels[decision.category]}</span>
+        ) : (
+          <span>♡ {romanceLead ? CHARACTERS[romanceLead.characterId].name : "这段关系"}会记住</span>
+        )}
       </div>
       <div className="option-top">
         <div className="stock-name">

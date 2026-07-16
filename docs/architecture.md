@@ -9,10 +9,11 @@
 ```text
 浏览器
   │
-  ├── React 单视口页面
-  │     ├── 设置、年份选择和流程控制
-  │     ├── 对白、观点卡、日程和研究方案
-  │     └── 记录抽屉、知识卡和结局
+  ├── React 应用外壳
+  │     ├── 主菜单、继续游戏和新游戏体验选择
+  │     ├── 年度剧情单视口页面
+  │     ├── 投委会、每日挑战和内容工坊
+  │     └── 返回主菜单、跳过导航和错误恢复
   │
   ├── 舞台层
   │     ├── PixiJS 统一角色舞台
@@ -36,10 +37,13 @@
 
 `src/main.tsx` 创建 React 根节点，依次加载基础样式和单视口覆盖样式。
 
-前端入口分为四层：
+前端入口分为以下几层：
 
-- `src/App.tsx`：顶层组合，负责默认游戏和 Pixi'VN 原型入口切换
-- `src/app/useGameController.ts`：年份深链、存档恢复、场景推进、决策结算、设置、主题和音频控制
+- `src/App.tsx`：顶层组合，负责主菜单、目标路由、懒加载和 Pixi'VN 原型入口切换
+- `src/components/StartMenu.tsx`：继续游戏、新游戏体验、挑战中心和内容工坊入口
+- `src/game/platformModes.ts`：查询参数解析、兼容深链和主菜单 URL 生成
+- `src/app/useGameSessionMachine.ts`：年份深链、存档恢复、场景推进和原子状态行动
+- `src/app/useGameController.ts`：主题、音频、设置菜单和舞台能力检测
 - `src/app/ImmersiveGameScreen.tsx`：单视口舞台、对白、观点卡和研究选择，按需加载档案抽屉
 - `src/components/ArchiveDrawer.tsx`：记录、研究档案、研究室和异步回溯入口
 - `src/components/RebirthTimelinePanel.tsx`：树状时间线、关键月详情和反事实推演
@@ -47,7 +51,9 @@
 
 `src/app/GameScreen.tsx` 是旧版长页面装配，当前没有从默认入口挂载，暂时保留用于对照。
 
-应用没有路由库。年份和原型入口通过 URL 查询参数控制。
+应用没有路由库。无查询参数时显示主菜单，`mode` 选择年度剧情或独立平台模式，`play` 选择新存档的年度剧情体验，`new=1` 要求创建新游戏。`year`、`pixivn`、`pixi` 和 `staticStage` 作为兼容深链继续直接进入年度剧情。
+
+`PlatformMode` 描述页面目标，包含 `story`、`committee`、`daily` 和 `studio`。`ExperienceMode` 描述年度剧情内部的规则策略，包含 `romance` 和 `career`。两种类型分开，避免把主菜单信息架构与结算规则耦合。
 
 ## 游戏模块
 
@@ -98,7 +104,7 @@
 
 `src/game/runtime.ts` 负责：
 
-- `createInitialState`：创建新周目状态
+- `createInitialState`：按年份和体验模式创建新周目状态
 - `sceneForMonth`：根据当前状态生成场景
 - `currentSceneNode`：取得当前节点
 - `canAdvanceScene`：判断能否继续
@@ -109,17 +115,23 @@
 
 运行时只管理流程，不计算评分和关系变化。回看在 `locked` 为 `true` 时禁用，避免撤销已经写入的结算结果。
 
+### 体验模式策略
+
+`src/game/experienceMode.ts` 把年度剧情体验转换成显式策略。React 页面只根据策略决定是否显示职业指标、调查、研究线索、研究承诺和日程。结算前由 `sessionMachine.ts` 统一调用体验适配器，防止隐藏一组表单后仍把未填写状态当成失败。
+
+剧情模式使用系统生成的稳健研究承诺和中性日程，并把隐藏的疲劳增量限制在不增加、生活平衡变化限制在不降低。职业模式使用玩家提交的置信度、失效条件和自检状态。两种体验最后都进入同一个 `engine.ts`，关系旗标和内容分支不需要复制。
+
 ### 状态持久化
 
-`src/app/useGameController.ts` 以 `rebirthGameState:v2:<year>` 为键保存完整 `GameState`，并兼容读取 v1 存档。
+`src/app/useGameSessionMachine.ts` 通过 `saveState.ts` 以 `rebirthGameState:v2:<year>` 为键保存完整 `GameState`，并兼容读取 v1 存档。
 
 读取存档时会先创建当前版本的初始状态，再合并可用字段。关系、旗标、类别计数、知识卡和研究室状态分别处理，旧存档缺少字段时使用当前默认值。年份、月份和剧情位置不合法时放弃该存档。剧情位置以稳定节点 id 为主，数字索引只作为旧存档迁移和运行时缓存。
 
-每次状态变化都会写回当前年份。切换年份时优先恢复该年份存档，重新开始则创建当前年份的新状态并覆盖旧存档。
+每次状态变化都会写回当前年份，并与跨周目状态一起写入原子 session envelope。切换年份时优先恢复该年份存档，重新开始则保留当前体验模式并创建当前年份的新状态。
 
 ### 跨周目状态与时间线
 
-`src/game/rebirth.ts` 以 `rebirthMeta:v3:<year>` 为键保存周目编号、记忆钥匙、研究捷径、调查进度、已读节点、系统异常、研究室发现和时间线。读取时兼容 v2 与 v1。旧存档不会伪造缺失的历史锚点，会从恢复后的当前进度开始记录。
+`src/game/rebirth.ts` 以 `rebirthMeta:v4:<year>` 为键保存体验模式、周目编号、记忆钥匙、研究捷径、调查进度、已读节点、系统异常、研究室发现和时间线。读取时依次兼容 v3、v2 与 v1。v3 缺少体验模式时迁移为职业模式，旧存档不会伪造缺失的历史锚点，会从恢复后的当前进度开始记录。
 
 关键月份调查数据位于 `rebirthInvestigationData.ts`，调查解锁方案位于 `rebirthSpecialDecisions.ts`，线索评分规则位于 `rebirthDecisionBonus.ts`。已读跳过由 `rebirthFlow.ts` 负责，研究室物件由 `rebirthOffice.ts` 负责。
 
@@ -153,6 +165,8 @@
 - 导师关系路线和赵承宇最佳搭档结局判定
 
 评分由证据、清晰度、风险意识、沟通、生活平衡、推荐跟踪和反思加成组成。短期市场价格当前不参与判断。
+
+`src/game/sessionMachine.ts` 在进入结算引擎前依次应用体验模式适配和跨周目调查加成。这样剧情模式的辅助承诺、职业模式的玩家承诺与重生调查都通过同一个原子行动写入状态和时间线。
 
 ### 条件分支
 
@@ -205,6 +219,8 @@
 
 ## 测试边界
 
+- `src/game/platformModes.test.ts`：主菜单目标、兼容深链、新游戏 URL 和继续游戏体验恢复
+- `src/game/experienceMode.test.ts`：体验策略、辅助承诺和隐藏职业效果
 - `src/game/content/content.test.ts`：年份 JSON 和加载器
 - `src/game/runtime.test.ts`：剧情游标、回看和跨月流程
 - `src/game/engine.test.ts`：评分、状态变化、关系、旗标、分支和结局
@@ -214,17 +230,18 @@
 - `scripts/test_build_data.py`：市场复盘生成器
 - `scripts/test_validate_data.py`：静态股票选项数据
 - `scripts/test_docs_style.py`：说明文档风格
+- `scripts/e2e/platform.spec.js`：主菜单、关键旅程、体验模式、焦点、深色对比度和 axe 检查
 - `scripts/validate_frontend.js`：入口、依赖、关键文件、资源和静态数据
 
-`npm run check` 负责前端检查。`uv run python scripts/check.py` 负责 Python 与前端联合检查。
+`npm run check` 与 `uv run python scripts/check.py` 指向同一套完整本地检查，覆盖 Python、前端静态检查、Vitest、生产构建、包体预算和 Chromium 回归。按范围排查时使用 `scripts/check.py --python`、`--frontend` 或 `--e2e`。
 
 ## 构建与部署
 
 `vite.config.ts` 将 `base` 设置为 `./`，构建产物可以从相对路径加载资源。
 
-仓库当前没有拉取请求代码检查工作流。维护者需要在提交前本地运行 `npm run check` 和 `uv run python scripts/check.py`。`scripts/check.py` 中的 ty 是阻塞类型检查。
+仓库当前没有拉取请求代码检查工作流。维护者需要在提交前本地运行一次 `npm run check`。`uv run python scripts/check.py` 是同一入口的直接调用方式，ty 是其中的阻塞类型检查。
 
-`.github/workflows/pages.yml` 在 `main` 分支有新提交时运行 `npm ci` 和 `npm run check`，通过 lint、类型检查、测试、资源预算校验和生产构建后发布 `dist/`。
+`.github/workflows/pages.yml` 只在 `main` 分支有新提交或手动触发时运行 `npm ci` 与 `npm run build:pages`，随后发布 `dist/`。`build:pages` 只执行 Vite 打包，GitHub Actions 不再运行 TypeScript、lint、Vitest、Python 或 Playwright。发布构建用于生成静态站点，不能替代本地完整检查。
 
 ## 常见改动位置
 
@@ -239,7 +256,10 @@
 | 修改评分和状态结算 | `src/game/engine.ts` |
 | 修改剧情推进和回看 | `src/game/runtime.ts` |
 | 修改因果回溯、分叉和推演 | `src/game/rebirthTimeline*.ts` |
-| 修改状态持久化和控制器 | `src/app/useGameController.ts` |
+| 修改状态持久化和会话行动 | `src/app/useGameSessionMachine.ts`、`src/game/sessionMachine.ts` |
+| 修改音频、主题和设置控制 | `src/app/useGameController.ts` |
+| 修改体验模式策略 | `src/game/experienceMode.ts` |
+| 修改主菜单和 URL 入口 | `src/components/StartMenu.tsx`、`src/game/platformModes.ts` |
 | 修改主页面展示 | `src/app/ImmersiveGameScreen.tsx` |
 | 修改单视口布局 | `src/immersive.css` |
 | 修改角色立绘和姿势映射 | `src/components/PixiStage.tsx` |

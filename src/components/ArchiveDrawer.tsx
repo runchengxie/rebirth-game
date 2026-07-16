@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { CHARACTERS } from "../game/content";
-import type { GameSession } from "../app/useGameController";
+import type { MachineGameSession as GameSession } from "../app/useGameSessionMachine";
+import type { ExperienceMode } from "../types";
 import { EndingPanel } from "./EndingPanel";
 import { OfficeHubPanel, RebirthArchiveSection } from "./RebirthPanel";
 
@@ -11,7 +12,8 @@ const RebirthTimelinePanel = lazy(() =>
 
 type ArchiveTab = "log" | "archive" | "flow" | "office";
 
-const ARCHIVE_TABS: ArchiveTab[] = ["log", "archive", "flow", "office"];
+const CAREER_ARCHIVE_TABS: ArchiveTab[] = ["log", "archive", "flow", "office"];
+const ROMANCE_ARCHIVE_TABS: ArchiveTab[] = ["log", "archive"];
 const FOCUSABLE_SELECTOR = [
   "a[href]",
   "button:not([disabled])",
@@ -26,7 +28,13 @@ function focusableElements(root: HTMLElement): HTMLElement[] {
     .filter((element) => !element.hasAttribute("hidden"));
 }
 
-function DialogueHistory({ session }: { session: GameSession }) {
+function DialogueHistory({
+  session,
+  experienceMode,
+}: {
+  session: GameSession;
+  experienceMode: ExperienceMode;
+}) {
   const nodes = session.scene.nodes.slice(0, session.state.sceneNodeIndex + 1);
   return (
     <section className="archive-section">
@@ -34,7 +42,9 @@ function DialogueHistory({ session }: { session: GameSession }) {
       <ol className="dialogue-history">
         {nodes.map((node) => (
           <li key={node.id}>
-            <span>{node.type === "dialogue" ? node.speaker : "研究选择"}</span>
+            <span>{node.type === "dialogue"
+              ? node.speaker
+              : experienceMode === "romance" ? "你的选择" : "研究选择"}</span>
             <p style={{ whiteSpace: "pre-line" }}>{node.id.endsWith("-competing")
               ? "三位同事围绕同一事实给出基本面、量价和风控三种假设。"
               : node.type === "dialogue" ? node.text : node.decisionPrompt || node.text}</p>
@@ -45,12 +55,27 @@ function DialogueHistory({ session }: { session: GameSession }) {
   );
 }
 
-function RelationSummary({ session }: { session: GameSession }) {
+function relationshipLabel(relation: number): string {
+  if (relation >= 75) return "心意相通";
+  if (relation >= 55) return "认真靠近";
+  if (relation >= 35) return "渐渐熟悉";
+  return "故事刚开始";
+}
+
+function RelationSummary({
+  session,
+  experienceMode,
+}: {
+  session: GameSession;
+  experienceMode: ExperienceMode;
+}) {
+  const characters = Object.values(CHARACTERS).filter((character) =>
+    experienceMode === "career" || character.id !== "zhao_chengyu");
   return (
     <section className="archive-section">
-      <h3>同事关系</h3>
+      <h3>{experienceMode === "romance" ? "心动关系" : "同事关系"}</h3>
       <div className="archive-relations">
-        {Object.values(CHARACTERS).map((character) => {
+        {characters.map((character) => {
           const relation = session.state.relations[character.id] ?? 0;
           return (
             <article className={character.color} key={character.id}>
@@ -58,7 +83,7 @@ function RelationSummary({ session }: { session: GameSession }) {
                 <strong>{character.name}</strong>
                 <span>{character.role}</span>
               </div>
-              <b>{relation}</b>
+              <b>{experienceMode === "romance" ? relationshipLabel(relation) : relation}</b>
               <i style={{ width: `${Math.max(0, Math.min(100, relation))}%` }} />
             </article>
           );
@@ -68,14 +93,24 @@ function RelationSummary({ session }: { session: GameSession }) {
   );
 }
 
-function ResearchArchive({ session }: { session: GameSession }) {
+function ResearchArchive({
+  session,
+  experienceMode,
+}: {
+  session: GameSession;
+  experienceMode: ExperienceMode;
+}) {
   return (
     <>
-      <RelationSummary session={session} />
+      <RelationSummary session={session} experienceMode={experienceMode} />
       <section className="archive-section">
-        <h3>研究札记</h3>
+        <h3>{experienceMode === "romance" ? "回忆札记" : "研究札记"}</h3>
         {session.state.history.length === 0 ? (
-          <p className="archive-empty">完成第一次研究选择后，复盘会留在这里。</p>
+          <p className="archive-empty">
+            {experienceMode === "romance"
+              ? "第一次回应之后，你们共同经历的片段会留在这里。"
+              : "完成第一次研究选择后，复盘会留在这里。"}
+          </p>
         ) : (
           <ul className="archive-history">
             {session.state.history.map((item) => (
@@ -88,7 +123,7 @@ function ResearchArchive({ session }: { session: GameSession }) {
           </ul>
         )}
       </section>
-      <section className="archive-section">
+      {experienceMode === "career" ? <section className="archive-section">
         <h3>知识卡</h3>
         {session.state.knowledgeCards.length === 0 ? (
           <p className="archive-empty">有方法的判断会逐渐积成你的工具书。</p>
@@ -102,9 +137,9 @@ function ResearchArchive({ session }: { session: GameSession }) {
             ))}
           </ul>
         )}
-      </section>
-      <RebirthArchiveSection meta={session.rebirth} />
-      <EndingPanel state={session.state} />
+      </section> : null}
+      {experienceMode === "career" ? <RebirthArchiveSection meta={session.rebirth} /> : null}
+      <EndingPanel state={session.state} experienceMode={experienceMode} />
     </>
   );
 }
@@ -118,6 +153,97 @@ function TimelineFallback() {
   );
 }
 
+function archiveTabsFor(experienceMode: ExperienceMode): ArchiveTab[] {
+  return experienceMode === "romance" ? ROMANCE_ARCHIVE_TABS : CAREER_ARCHIVE_TABS;
+}
+
+function archiveTabLabel(tab: ArchiveTab, experienceMode: ExperienceMode): string {
+  if (tab === "log") return "本话记录";
+  if (tab === "archive") return experienceMode === "romance" ? "心动档案" : "研究档案";
+  if (tab === "flow") return "因果回溯";
+  return "研究室";
+}
+
+function ArchiveTabList({
+  activeTab,
+  experienceMode,
+  onChange,
+  onKeyDown,
+}: {
+  activeTab: ArchiveTab;
+  experienceMode: ExperienceMode;
+  onChange: (tab: ArchiveTab) => void;
+  onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => void;
+}) {
+  return (
+    <div className="archive-tabs" role="tablist" onKeyDown={onKeyDown}>
+      {archiveTabsFor(experienceMode).map((tab) => {
+        const isActive = activeTab === tab;
+        const warmTimeline = tab === "flow" ? () => void loadTimelinePanel() : undefined;
+        return (
+          <button
+            id={`archive-tab-${tab}`}
+            aria-controls="archive-tabpanel"
+            aria-selected={isActive}
+            className={isActive ? "active" : ""}
+            key={tab}
+            role="tab"
+            tabIndex={isActive ? 0 : -1}
+            type="button"
+            onFocus={warmTimeline}
+            onPointerEnter={warmTimeline}
+            onClick={() => onChange(tab)}
+          >
+            {archiveTabLabel(tab, experienceMode)}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function ArchiveTabContent({
+  experienceMode,
+  session,
+  tab,
+}: {
+  experienceMode: ExperienceMode;
+  session: GameSession;
+  tab: ArchiveTab;
+}) {
+  switch (tab) {
+    case "log":
+      return <DialogueHistory session={session} experienceMode={experienceMode} />;
+    case "archive":
+      return <ResearchArchive session={session} experienceMode={experienceMode} />;
+    case "flow":
+      return (
+        <Suspense fallback={<TimelineFallback />}>
+          <RebirthTimelinePanel
+            meta={session.rebirth}
+            state={session.state}
+            onFork={session.forkTimelineWithSound}
+            onResume={session.resumeTimelineWithSound}
+            onSimulate={session.simulateTimeline}
+          />
+        </Suspense>
+      );
+    case "office":
+      return (
+        <OfficeHubPanel
+          meta={session.rebirth}
+          state={session.state}
+          onInspect={session.inspectOfficeWithSound}
+        />
+      );
+  }
+}
+
+function archiveSubtitle(session: GameSession, experienceMode: ExperienceMode): string {
+  if (experienceMode === "romance") return `${session.scene.label} · 剧情模式`;
+  return `${session.scene.label} · 第 ${session.rebirth.cycle} 周目`;
+}
+
 export function ArchiveDrawer({
   session,
   onClose,
@@ -126,6 +252,8 @@ export function ArchiveDrawer({
   onClose: () => void;
 }) {
   const [tab, setTab] = useState<ArchiveTab>("log");
+  const experienceMode = session.rebirth.experienceMode;
+  const archiveTabs = archiveTabsFor(experienceMode);
   const dialogRef = useRef<HTMLElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -177,9 +305,11 @@ export function ArchiveDrawer({
 
   const handleTabKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-    const currentIndex = ARCHIVE_TABS.indexOf(tab);
+    const currentIndex = archiveTabs.indexOf(tab);
     const delta = event.key === "ArrowRight" ? 1 : -1;
-    const nextTab = ARCHIVE_TABS[(currentIndex + delta + ARCHIVE_TABS.length) % ARCHIVE_TABS.length];
+    const nextTab = archiveTabs[
+      (currentIndex + delta + archiveTabs.length) % archiveTabs.length
+    ];
     event.preventDefault();
     setTab(nextTab);
     document.getElementById(`archive-tab-${nextTab}`)?.focus();
@@ -198,30 +328,17 @@ export function ArchiveDrawer({
       >
         <header className="archive-drawer-head">
           <div>
-            <span>{session.scene.label} · 第 {session.rebirth.cycle} 周目</span>
+            <span>{archiveSubtitle(session, experienceMode)}</span>
             <strong id="archive-dialog-title">{session.scene.theme.title}</strong>
           </div>
           <button ref={closeRef} type="button" onClick={onClose} aria-label="关闭档案">×</button>
         </header>
-        <div className="archive-tabs" role="tablist" onKeyDown={handleTabKeyDown}>
-          <button id="archive-tab-log" aria-controls="archive-tabpanel" aria-selected={tab === "log"} className={tab === "log" ? "active" : ""} role="tab" tabIndex={tab === "log" ? 0 : -1} type="button" onClick={() => setTab("log")}>本话记录</button>
-          <button id="archive-tab-archive" aria-controls="archive-tabpanel" aria-selected={tab === "archive"} className={tab === "archive" ? "active" : ""} role="tab" tabIndex={tab === "archive" ? 0 : -1} type="button" onClick={() => setTab("archive")}>研究档案</button>
-          <button
-            id="archive-tab-flow"
-            aria-controls="archive-tabpanel"
-            aria-selected={tab === "flow"}
-            className={tab === "flow" ? "active" : ""}
-            role="tab"
-            tabIndex={tab === "flow" ? 0 : -1}
-            type="button"
-            onFocus={() => void loadTimelinePanel()}
-            onPointerEnter={() => void loadTimelinePanel()}
-            onClick={() => setTab("flow")}
-          >
-            因果回溯
-          </button>
-          <button id="archive-tab-office" aria-controls="archive-tabpanel" aria-selected={tab === "office"} className={tab === "office" ? "active" : ""} role="tab" tabIndex={tab === "office" ? 0 : -1} type="button" onClick={() => setTab("office")}>研究室</button>
-        </div>
+        <ArchiveTabList
+          activeTab={tab}
+          experienceMode={experienceMode}
+          onChange={setTab}
+          onKeyDown={handleTabKeyDown}
+        />
         <div
           aria-labelledby={`archive-tab-${tab}`}
           className="archive-scroll"
@@ -229,26 +346,11 @@ export function ArchiveDrawer({
           role="tabpanel"
           tabIndex={0}
         >
-          {tab === "log" ? <DialogueHistory session={session} /> : null}
-          {tab === "archive" ? <ResearchArchive session={session} /> : null}
-          {tab === "flow" ? (
-            <Suspense fallback={<TimelineFallback />}>
-              <RebirthTimelinePanel
-                meta={session.rebirth}
-                state={session.state}
-                onFork={session.forkTimelineWithSound}
-                onResume={session.resumeTimelineWithSound}
-                onSimulate={session.simulateTimeline}
-              />
-            </Suspense>
-          ) : null}
-          {tab === "office" ? (
-            <OfficeHubPanel
-              meta={session.rebirth}
-              state={session.state}
-              onInspect={session.inspectOfficeWithSound}
-            />
-          ) : null}
+          <ArchiveTabContent
+            experienceMode={experienceMode}
+            session={session}
+            tab={tab}
+          />
         </div>
       </aside>
     </div>

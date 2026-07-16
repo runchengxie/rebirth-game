@@ -11,9 +11,11 @@
 主要入口：
 
 - `src/main.tsx`：前端入口、存档恢复和全局样式加载顺序
-- `src/App.tsx`：顶层模式路由、懒加载、跳过导航和错误恢复边界
+- `src/App.tsx`：主菜单、顶层模式路由、懒加载、跳过导航和错误恢复边界
+- `src/components/StartMenu.tsx`：继续游戏、新游戏体验选择、挑战中心和创作入口
 - `src/app/useGameSessionMachine.ts`：默认剧情的 reducer hook、持久化和界面适配
 - `src/game/sessionMachine.ts`：单周目与跨周目状态的原子行动 reducer
+- `src/game/experienceMode.ts`：剧情模式与职业模式的界面策略和结算适配
 - `src/app/useGameController.ts`：音频、主题、设置和旧兼容类型
 - `src/app/ImmersiveGameScreen.tsx`：主游戏的单视口页面，档案抽屉按需加载
 - `src/components/ArchiveDrawer.tsx`：档案、研究室、焦点限制和时间线入口
@@ -32,7 +34,9 @@
 
 - 正式年份为 2023、2024、2025，每年 12 话。
 - `demo` 只通过 `?year=demo` 深链访问，不出现在年份选择器。
-- 页面提供年度剧情、独立投委会、每日挑战和内容工坊四种模式。
+- 无参数访问先进入主菜单。年度剧情、投委会、每日挑战和内容工坊从主菜单进入，旧年份和原型深链仍直接打开年度剧情。
+- 年度剧情分为剧情模式与职业模式。剧情模式隐藏调查、日程、研究承诺和职业指标，由系统采用稳健研究承诺并缓和隐藏的疲劳与生活惩罚。职业模式保留完整投研与回溯压力。
+- 新游戏使用 `?mode=story&play=romance&new=1` 或 `?mode=story&play=career&new=1`。`play` 只决定新存档体验，已有存档以 `RebirthMetaState.experienceMode` 为准。
 - 月度结算依据研究方案、多维评分和编写好的业务事实。运行时不读取真实月度涨跌幅。
 - `src/data/gameData.ts` 中的 `themeReturn` 当前固定为 0，行业轮动和风格因子为空。
 - 游戏按年份保存 `GameState` 和跨周目元状态。关键月会保存回溯锚点，重新开始会暂停当前时间线并创建新路线。
@@ -66,7 +70,9 @@
 - 数值结算和旗标：`src/game/engine.ts`
 - 剧情推进、回看和初始状态：`src/game/runtime.ts`
 - 原子游戏行动：`src/game/sessionMachine.ts`
+- 年度剧情体验策略：`src/game/experienceMode.ts`
 - 顶层模式路由和恢复界面：`src/App.tsx`
+- 主菜单和入口信息架构：`src/components/StartMenu.tsx`、`src/game/platformModes.ts` 和 `src/start-menu.css`
 - 主页面展示：`src/app/ImmersiveGameScreen.tsx`
 - 主页面覆盖样式：`src/immersive.css`
 - 稳定性和跳过导航样式：`src/stability.css`
@@ -92,26 +98,26 @@ uv sync --only-dev
 
 ## 提交前检查
 
-前端静态完整检查：
+完整本地检查：
 
 ```bash
 npm run check
 ```
 
-浏览器回归首次准备和运行：
+`npm run check` 会通过 `scripts/check.py` 依次运行 Python、前端和 Chromium 浏览器回归。首次运行浏览器测试前需要下载 Chromium：
 
 ```bash
 npm run e2e:prepare
 npm run test:e2e
 ```
 
-Python 与前端联合检查：
+也可以直接运行同一检查入口：
 
 ```bash
 uv run python scripts/check.py
 ```
 
-联合检查使用 ty 作为阻塞 Python 类型检查。`--all` 仅作为旧命令的兼容参数保留。
+联合检查使用 ty 作为阻塞 Python 类型检查。`--all` 仅作为旧命令的兼容参数保留。需要缩小范围时可以使用 `--python`、`--frontend` 或 `--e2e`。
 
 需要逐项排查时运行：
 
@@ -132,7 +138,7 @@ npm run validate:bundle
 npm run test:e2e
 ```
 
-拉取请求和 `main` 更新都会运行静态质量任务。静态检查通过后，独立 Chromium 任务执行关键用户旅程与 axe 严重问题检查。GitHub Pages 发布依赖两类任务同时通过。
+代码质量和浏览器回归只在本地运行。GitHub Actions 不再承担测试 CI，`.github/workflows/pages.yml` 只在 `main` 更新或手动触发时安装依赖，通过 `npm run build:pages` 执行 Vite 打包并发布 GitHub Pages。
 
 ## 测试要求
 
@@ -144,7 +150,7 @@ npm run test:e2e
 - 年份内容和 JSON 校验：`src/game/content/content.test.ts`
 - 社区内容包格式和安全边界：`src/game/communityContent.test.ts`
 - 正式年份与示范线路：`src/data/gameData.test.ts`
-- 用户旅程、焦点、模式持久化和无障碍：`scripts/e2e/platform.spec.js`
+- 主菜单、用户旅程、体验模式、焦点、深色对比度和无障碍：`scripts/e2e/platform.spec.js`
 - Python 数据生成：`scripts/test_build_data.py`
 - 静态数据校验：`scripts/test_validate_data.py`
 - 文档风格：`scripts/test_docs_style.py`

@@ -2,7 +2,13 @@
 
 import { buildMonthScene } from "./content";
 import { CONTENT_REVISION } from "./narrativeSemantics";
-import type { BranchMetaContext, GameDataYear, GameState, MonthScene } from "../types";
+import type {
+  BranchMetaContext,
+  ExperienceMode,
+  GameDataYear,
+  GameState,
+  MonthScene,
+} from "../types";
 
 function firstNodeId(
   year: string,
@@ -13,11 +19,14 @@ function firstNodeId(
   return buildMonthScene(monthIndex, year, state, branchMeta).nodes[0]?.id ?? "";
 }
 
-export function createInitialState(year: string): GameState {
+export function createInitialState(
+  year: string,
+  experienceMode: ExperienceMode = "career",
+): GameState {
   return {
     year,
     monthIndex: 0,
-    focusId: "deep_research",
+    focusId: experienceMode === "romance" ? "team_collab" : "deep_research",
     selectedId: null,
     sceneNodeIndex: 0,
     sceneNodeId: firstNodeId(year, 0),
@@ -128,7 +137,9 @@ export function nextMonth(
   state: GameState,
   branchMeta?: BranchMetaContext,
 ): GameState {
-  if (state.finished) return createInitialState(state.year);
+  if (state.finished) {
+    return createInitialState(state.year, branchMeta?.experienceMode ?? "career");
+  }
   if (!state.locked) return state;
   const monthIndex = Math.min(state.monthIndex + 1, 11);
   const next: GameState = {
@@ -139,7 +150,7 @@ export function nextMonth(
     sceneNodeId: "",
     contentRevision: CONTENT_REVISION,
     locked: false,
-    focusId: "deep_research",
+    focusId: branchMeta?.experienceMode === "romance" ? "team_collab" : "deep_research",
     milestone: null,
   };
   return {

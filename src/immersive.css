@@ -142,6 +142,16 @@ body,
   box-shadow: 0 8px 24px rgba(38, 24, 48, 0.08);
 }
 
+.immersive-app .status-band.romance-status {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.immersive-app .romance-status .stat strong {
+  font-size: clamp(13px, 1.35vw, 18px);
+  line-height: 1.25;
+  white-space: normal;
+}
+
 .immersive-app .stat {
   padding: 8px 12px;
 }
@@ -439,6 +449,34 @@ body,
   font-size: 14px;
 }
 
+.romance-assist-note {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--pink) 34%, var(--line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--pink-soft) 78%, var(--surface-strong));
+  color: var(--ink);
+}
+
+.romance-assist-note span {
+  color: var(--pink);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.romance-assist-note strong {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.romance-assist-note small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
 .immersive-briefs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -518,11 +556,19 @@ body,
   gap: 8px;
 }
 
+.immersive-decision-panel.experience-romance .options {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .immersive-decision-panel .option {
   min-height: 118px;
   grid-template-rows: auto auto 1fr;
   gap: 6px;
   padding: 10px;
+}
+
+.immersive-decision-panel.experience-romance .option {
+  min-height: 104px;
 }
 
 .immersive-decision-panel .option-kicker {
@@ -768,6 +814,14 @@ body,
   font-size: 13px;
 }
 
+.experience-romance .analysis-note {
+  color: var(--muted);
+}
+
+.romance-ending-summary dd {
+  max-width: 64%;
+}
+
 .archive-relations article i {
   position: absolute;
   left: 0;
@@ -900,6 +954,10 @@ body,
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .immersive-decision-panel.experience-romance .options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .immersive-decision-panel .option {
     min-height: 108px;
     padding: 8px;
@@ -939,6 +997,10 @@ body,
   }
 
   .immersive-decision-panel .options {
+    grid-template-columns: 1fr;
+  }
+
+  .immersive-decision-panel.experience-romance .options {
     grid-template-columns: 1fr;
   }
 }

@@ -3,16 +3,19 @@ import type { GameState, ResearchDecision, RoundResult } from "../types";
 import { createInitialState } from "./runtime";
 import {
   LEGACY_REBIRTH_META_KEY_PREFIX,
+  LEGACY_REBIRTH_META_V3_KEY_PREFIX,
   REBIRTH_META_KEY_PREFIX,
   completeRebirthCycle,
   createRebirthMeta,
   currentInvestigation,
   decisionOptionsForRebirth,
+  endingIdFor,
   investigationNodeViews,
   performInvestigation,
   persistRebirthMeta,
   prepareDecisionForRebirth,
   readRebirthMeta,
+  restoreRebirthMeta,
   type RebirthMetaState,
 } from "./rebirth";
 
@@ -136,6 +139,21 @@ describe("重生元状态", () => {
     expect(meta.completedCycles).toHaveLength(1);
   });
 
+  it("剧情模式的结局档案按人物选择命名，不会落入职业疲劳结局", () => {
+    const state = {
+      ...finishWithParachutedResult(),
+      fatigue: 100,
+      relations: {
+        ...finishWithParachutedResult().relations,
+        lin_ruoning: 90,
+      },
+      flags: { lin_route_committed: true, route_burnout: true },
+    };
+
+    expect(endingIdFor(state, "romance")).toBe("romance_lin_committed");
+    expect(endingIdFor(state, "career")).toBe("burnout");
+  });
+
   it("四月用因果缺口解锁事后正确审计和专属方案", () => {
     let state = stateAtMonth(3);
     let meta: RebirthMetaState = {
@@ -255,12 +273,34 @@ describe("重生元状态", () => {
     }));
 
     const restored = readRebirthMeta(storage, "2025");
-    expect(restored.version).toBe(3);
+    expect(restored.version).toBe(4);
+    expect(restored.experienceMode).toBe("career");
     expect(restored.investigations["2025-01"]?.completedNodeIds)
       .toEqual(["public_materials"]);
   });
 
-  it("持久化使用 v3 键并保留跨周目状态", () => {
+  it("读取 v3 存档时迁移为职业模式，也允许新存档明确保留剧情模式", () => {
+    const storage = new MemoryStorage();
+    storage.setItem(`${LEGACY_REBIRTH_META_V3_KEY_PREFIX}2025`, JSON.stringify({
+      ...createRebirthMeta("2025"),
+      version: 3,
+      experienceMode: undefined,
+      cycle: 3,
+    }));
+
+    const migrated = readRebirthMeta(storage, "2025");
+    const romance = restoreRebirthMeta("2025", {
+      ...createRebirthMeta("2025", "romance"),
+      cycle: 2,
+    });
+
+    expect(migrated.version).toBe(4);
+    expect(migrated.experienceMode).toBe("career");
+    expect(migrated.cycle).toBe(3);
+    expect(romance.experienceMode).toBe("romance");
+  });
+
+  it("持久化使用 v4 键并保留跨周目状态", () => {
     const storage = new MemoryStorage();
     const saved = completeRebirthCycle(
       createRebirthMeta("2025"),

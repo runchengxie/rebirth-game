@@ -1,10 +1,12 @@
 import type {
   CharacterId,
   DecisionMethod,
+  ExperienceMode,
   GameState,
   ResearchDecision,
   RoundResult,
 } from "../types";
+import { isExperienceMode } from "./experienceMode";
 import { decisionMethod } from "./narrativeSemantics";
 import { investigationDecisionBonus } from "./rebirthDecisionBonus";
 import {
@@ -19,7 +21,8 @@ import {
   type RebirthTimelineState,
 } from "./rebirthTimelineState";
 
-export const REBIRTH_META_KEY_PREFIX = "rebirthMeta:v3:";
+export const REBIRTH_META_KEY_PREFIX = "rebirthMeta:v4:";
+export const LEGACY_REBIRTH_META_V3_KEY_PREFIX = "rebirthMeta:v3:";
 export const LEGACY_REBIRTH_META_V2_KEY_PREFIX = "rebirthMeta:v2:";
 export const LEGACY_REBIRTH_META_KEY_PREFIX = "rebirthMeta:v1:";
 
@@ -64,8 +67,9 @@ export interface CycleRecord {
 }
 
 export interface RebirthMetaState {
-  version: 3;
+  version: 4;
   year: string;
+  experienceMode: ExperienceMode;
   cycle: number;
   memoryKeys: MemoryKeyId[];
   shortcuts: ResearchShortcutId[];
@@ -227,10 +231,14 @@ function initialProgress(monthKey: string): InvestigationProgress | null {
   };
 }
 
-export function createRebirthMeta(year: string): RebirthMetaState {
+export function createRebirthMeta(
+  year: string,
+  experienceMode: ExperienceMode = "career",
+): RebirthMetaState {
   return {
-    version: 3,
+    version: 4,
     year,
+    experienceMode,
     cycle: 1,
     memoryKeys: [],
     shortcuts: [],
@@ -281,11 +289,18 @@ function restoreInvestigations(parsed: Record<string, unknown>): Record<string, 
   return restored;
 }
 
-export function restoreRebirthMeta(year: string, parsed: unknown): RebirthMetaState {
-  const fresh = createRebirthMeta(year);
+export function restoreRebirthMeta(
+  year: string,
+  parsed: unknown,
+  fallbackExperienceMode: ExperienceMode = "career",
+): RebirthMetaState {
+  const fresh = createRebirthMeta(year, fallbackExperienceMode);
   if (!isObject(parsed) || parsed.year !== year) return fresh;
   return {
     ...fresh,
+    experienceMode: isExperienceMode(parsed.experienceMode)
+      ? parsed.experienceMode
+      : fallbackExperienceMode,
     cycle: typeof parsed.cycle === "number" && parsed.cycle >= 1
       ? Math.floor(parsed.cycle)
       : 1,
@@ -330,6 +345,7 @@ export function restoreRebirthMeta(year: string, parsed: unknown): RebirthMetaSt
 export function readRebirthMeta(storage: StorageLike, year: string): RebirthMetaState {
   for (const prefix of [
     REBIRTH_META_KEY_PREFIX,
+    LEGACY_REBIRTH_META_V3_KEY_PREFIX,
     LEGACY_REBIRTH_META_V2_KEY_PREFIX,
     LEGACY_REBIRTH_META_KEY_PREFIX,
   ]) {
@@ -588,7 +604,25 @@ function averageReasoning(history: RoundResult[]): number {
   return Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length);
 }
 
-export function endingIdFor(state: GameState): string {
+export function endingIdFor(
+  state: GameState,
+  experienceMode: ExperienceMode = "career",
+): string {
+  if (experienceMode === "romance") {
+    const ids = {
+      lin: "lin_ruoning",
+      chen: "chen_xinghe",
+      zhou: "zhou_mingzhao",
+    } as const;
+    const leads: Array<keyof typeof ids> = ["lin", "chen", "zhou"];
+    leads.sort((left, right) =>
+      state.relations[ids[right]] - state.relations[ids[left]]);
+    const lead = leads[0];
+    if (state.flags[`${lead}_route_committed`]) return `romance_${lead}_committed`;
+    if (state.flags[`${lead}_route_slow_burn`]) return `romance_${lead}_slow_burn`;
+    if (state.flags[`${lead}_route_regret`]) return `romance_${lead}_regret`;
+    return `romance_${lead}_open`;
+  }
   if (state.flags.rebirth_truth_route) return "truth_audit";
   if (state.fatigue >= 85 || state.flags.route_burnout) return "burnout";
   if (state.history.some((result) => result.isParachuted)) return "parachuted";
@@ -668,7 +702,7 @@ export function completeRebirthCycle(
   const contradictions = earnedContradictions(meta, state)
     .filter((id) => !meta.contradictions.includes(id));
   const unlocked = unlockLabels(keys, shortcuts, contradictions);
-  const endingId = endingIdFor(state);
+  const endingId = endingIdFor(state, meta.experienceMode);
   return {
     ...meta,
     cycle: meta.cycle + 1,
@@ -753,8 +787,13 @@ export function memorySourceNote(meta: RebirthMetaState): string {
 export function branchMetaContext(meta: RebirthMetaState): {
   cycle: number;
   memoryKeys: string[];
+  experienceMode: ExperienceMode;
 } {
-  return { cycle: meta.cycle, memoryKeys: meta.memoryKeys };
+  return {
+    cycle: meta.cycle,
+    memoryKeys: meta.memoryKeys,
+    experienceMode: meta.experienceMode,
+  };
 }
 
 export function investigationMethodBonus(

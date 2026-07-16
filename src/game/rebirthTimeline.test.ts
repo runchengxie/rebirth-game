@@ -242,7 +242,8 @@ describe("互动影游式回溯时间线", () => {
       officeDiscoveries: [],
     });
 
-    expect(restored.version).toBe(3);
+    expect(restored.version).toBe(4);
+    expect(restored.experienceMode).toBe("career");
     expect(restored.timeline.branches).toEqual([]);
     const initialized = ensureTimelineInitialized(restored, stateAtMonth(6));
     expect(initialized.timeline.anchors[0]?.monthIndex).toBe(6);

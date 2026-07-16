@@ -29,7 +29,9 @@ for (const [, script] of inlineScripts) new Function(script);
 
 const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
 for (const dependency of [
+  "@axe-core/playwright",
   "@drincs/pixi-vn",
+  "@playwright/test",
   "@vitejs/plugin-react",
   "typescript",
   "vite",
@@ -45,16 +47,20 @@ for (const dependency of [
 
 for (const script of [
   "build",
+  "build:pages",
   "check",
   "dev",
   "dump:content",
   "lint",
   "lint:ci",
+  "e2e:prepare",
+  "test:e2e",
   "test:run",
   "typecheck",
   "validate:brand",
   "validate:bundle",
   "validate:frontend",
+  "validate:stability",
 ]) {
   if (!packageJson.scripts?.[script]) fail(`package.json 缺少脚本：${script}`);
 }
@@ -91,6 +97,7 @@ for (const file of [
   "src/rebirth.css",
   "src/rebirth-v2.css",
   "src/research-ux.css",
+  "src/start-menu.css",
   "src/platform.css",
   "src/timeline.css",
   "src/components/PixiStage.tsx",
@@ -98,7 +105,8 @@ for (const file of [
   "src/components/CloudSyncPanel.tsx",
   "src/components/EndingPanel.tsx",
   "src/components/InvestigationPanel.tsx",
-  "src/components/ModeSwitcher.tsx",
+  "src/components/BackToMenu.tsx",
+  "src/components/StartMenu.tsx",
   "src/components/RebirthTimelinePanel.tsx",
   "src/components/ResearchCommitmentPanel.tsx",
   "src/components/SaveTransferPanel.tsx",
@@ -126,12 +134,15 @@ for (const file of [
   "src/game/decisionFactory.ts",
   "src/game/engine.ts",
   "src/game/engine.test.ts",
+  "src/game/experienceMode.test.ts",
+  "src/game/experienceMode.ts",
   "src/game/linRoute2025.ts",
   "src/game/linRoute2025.test.ts",
   "src/game/narrativeMachine.ts",
   "src/game/narrativeSemantics.ts",
   "src/game/narrativeSemantics.test.ts",
   "src/game/platformModes.ts",
+  "src/game/platformModes.test.ts",
   "src/game/rebirth.ts",
   "src/game/rebirth.test.ts",
   "src/game/rebirthBranches.ts",
@@ -155,7 +166,9 @@ for (const file of [
   "src/game/saveState.test.ts",
   "src/game/sceneBuilders.ts",
   "src/game/sessionEnvelope.ts",
+  "src/game/sessionEnvelope.test.ts",
   "src/game/sessionMachine.ts",
+  "src/game/sessionMachine.test.ts",
   "src/game/supportingRoutes2025.ts",
   "src/game/supportingRoutes2025.test.ts",
   "src/game/storyArcs.ts",
@@ -185,10 +198,38 @@ for (const asset of rasterAssets) {
 requireText("src/App.tsx", [
   "ImmersiveGameScreen",
   "useGameSessionMachine",
-  "ModeSwitcher",
+  "StartMenu",
+  "BackToMenu",
+  "appDestinationFromSearch",
   "CommitteeMode",
   "DailyChallengeMode",
   "ContentStudioMode",
+]);
+requireText("src/components/StartMenu.tsx", [
+  "continueGameUrl",
+  "newGameUrl",
+  "platformModeUrl",
+  "开始新游戏",
+  "挑战中心",
+  "内容工坊",
+]);
+requireText("src/components/BackToMenu.tsx", ["appDestinationUrl", "主菜单"]);
+requireText("src/start-menu.css", [
+  ".app-shell.mode-menu",
+  ".start-menu-card",
+  ".back-to-menu",
+  "var(--platform-text)",
+]);
+requireText("src/game/experienceMode.ts", [
+  "ExperienceMode",
+  "romance",
+  "career",
+]);
+requireText("src/game/platformModes.ts", [
+  "AppDestination",
+  "appDestinationFromSearch",
+  "newGameUrl",
+  "continueGameUrl",
 ]);
 const immersiveScreen = requireText("src/app/ImmersiveGameScreen.tsx", [
   "DebatePanel",
@@ -340,4 +381,4 @@ for (const year of years) {
   }
 }
 
-console.log(`前端结构校验通过。模式：年度剧情、投委会、每日挑战、内容工坊。静态数据年份：${years.join("、")}。`);
+console.log(`前端结构校验通过。入口：主菜单、年度剧情、投委会、每日挑战、内容工坊。静态数据年份：${years.join("、")}。`);

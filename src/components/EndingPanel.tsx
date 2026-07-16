@@ -1,6 +1,12 @@
 import { CHARACTERS, AFFINITY_GATE, AFFINITY_TRUE, MENTOR_TEACHINGS } from "../game/content";
 import { bestRoute, formatNav, isBestPartner } from "../game/engine";
-import type { CharacterId, CharacterProfile, GameState, MentorId } from "../types";
+import type {
+  CharacterId,
+  CharacterProfile,
+  ExperienceMode,
+  GameState,
+  MentorId,
+} from "../types";
 
 type EndingCopy = { title: string; copy: string };
 type EndingContext = {
@@ -9,6 +15,7 @@ type EndingContext = {
   leadId: CharacterId;
   leadRelation: number;
   partner: boolean;
+  experienceMode: ExperienceMode;
 };
 type EndingResolver = (context: EndingContext) => EndingCopy | null;
 
@@ -96,9 +103,12 @@ function highestRelationEnding(state: GameState, endings: SpecialEnding[]): Spec
     state.relations[right.leadId] - state.relations[left.leadId])[0] ?? null;
 }
 
-function special2025Ending(state: GameState): SpecialEnding | null {
+function special2025Ending(
+  state: GameState,
+  experienceMode: ExperienceMode,
+): SpecialEnding | null {
   if (state.year !== "2025") return null;
-  if (state.flags.rebirth_truth_route) {
+  if (experienceMode === "career" && state.flags.rebirth_truth_route) {
     return {
       leadId: "zhou_mingzhao",
       title: "真相结局·未来也要接受审计",
@@ -114,16 +124,38 @@ function special2025Ending(state: GameState): SpecialEnding | null {
   return highestRelationEnding(state, candidates);
 }
 
-function partnerEnding({ partner }: EndingContext): EndingCopy | null {
-  if (!partner) return null;
+function partnerEnding({ partner, experienceMode }: EndingContext): EndingCopy | null {
+  if (experienceMode === "romance" || !partner) return null;
   return {
     title: "最佳搭档线：框架与数据的好拍档",
     copy: "你没和谁谈恋爱。你和赵承宇是投研部里最合拍的一对好搭档——一个把假设钉进框架，一个把框架接进数据和回测。平时互相兜底、出手一起扛，这一年组合里回撤最可控、落地最稳的几笔，都写着你们俩的名字。",
   };
 }
 
-function relationshipEnding({ state, lead, leadRelation }: EndingContext): EndingCopy | null {
-  if (state.year === "2025" && lead.id !== "zhao_chengyu") return null;
+function relationshipEnding({
+  state,
+  lead,
+  leadRelation,
+  experienceMode,
+}: EndingContext): EndingCopy | null {
+  if (experienceMode === "career" && state.year === "2025" && lead.id !== "zhao_chengyu") {
+    return null;
+  }
+  if (experienceMode === "romance") {
+    if (leadRelation >= AFFINITY_TRUE) {
+      return {
+        title: `心动结局·${lead.name}把以后也留给了你`,
+        copy: `你没有用一份完美结论换取${lead.name}的认可。你一次次听懂她没有说完的话，也认真回应了彼此的边界。十二个月以后，她愿意把“下一次见面”写成没有截止日期的约定。`,
+      };
+    }
+    if (leadRelation >= AFFINITY_GATE) {
+      return {
+        title: `温柔结局·和${lead.name}继续靠近`,
+        copy: `这一年没有替你们写下仓促的句号。你和${lead.name}已经学会坦白心动，也愿意给关系留下慢慢发生的余地。`,
+      };
+    }
+    return null;
+  }
   const trueEnding =
     leadRelation >= AFFINITY_TRUE && state.researchCredibility >= 80 && state.teamTrust >= 70;
   if (trueEnding) {
@@ -144,7 +176,8 @@ function relationshipEnding({ state, lead, leadRelation }: EndingContext): Endin
   };
 }
 
-function careerEnding({ state, lead }: EndingContext): EndingCopy | null {
+function careerEnding({ state, lead, experienceMode }: EndingContext): EndingCopy | null {
+  if (experienceMode === "romance") return null;
   if (state.researchCredibility >= 80 && state.teamTrust >= 70) {
     return {
       title: `真结局：${lead.name}认可的研究员`,
@@ -160,7 +193,19 @@ function careerEnding({ state, lead }: EndingContext): EndingCopy | null {
   return null;
 }
 
-function routeEnding({ state, lead, leadRelation }: EndingContext): EndingCopy | null {
+function routeEnding({
+  state,
+  lead,
+  leadRelation,
+  experienceMode,
+}: EndingContext): EndingCopy | null {
+  if (experienceMode === "romance") {
+    if (!state.flags.route_relation || leadRelation < AFFINITY_GATE) return null;
+    return {
+      title: `心动支线·被${lead.name}记住的人`,
+      copy: "你没有把每一次靠近都变成一道考题。那些认真听过的话和没有越过的边界，最终替你说出了答案。",
+    };
+  }
   if (state.flags.route_research && state.researchCredibility >= 70) {
     return {
       title: "研究宗师线：深度即壁垒",
@@ -188,7 +233,13 @@ function routeEnding({ state, lead, leadRelation }: EndingContext): EndingCopy |
   return null;
 }
 
-function fallbackEnding({ state }: EndingContext): EndingCopy | null {
+function fallbackEnding({ state, lead, experienceMode }: EndingContext): EndingCopy | null {
+  if (experienceMode === "romance") {
+    return {
+      title: "未完结局·尚未说出口的心动",
+      copy: `你和${lead.name}还没有走到明确的答案，但这一年留下的并不是失败。下一次，你可以更诚实地回应，也可以更耐心地听完。`,
+    };
+  }
   if (state.fatigue >= 85) {
     return {
       title: "疲劳结局：深夜复盘线",
@@ -220,18 +271,47 @@ function resolveEnding(context: EndingContext): EndingCopy {
   return DEFAULT_ENDING;
 }
 
-export function EndingPanel({ state }: { state: GameState }) {
+const MENTOR_IDS: MentorId[] = ["lin_ruoning", "chen_xinghe", "zhou_mingzhao"];
+
+function bestMentorRoute(state: GameState): MentorId {
+  return [...MENTOR_IDS].sort((left, right) =>
+    state.relations[right] - state.relations[left])[0];
+}
+
+function relationshipStage(relation: number): string {
+  if (relation >= AFFINITY_TRUE) return "彼此已经确认了心意";
+  if (relation >= AFFINITY_GATE) return "愿意继续认真靠近";
+  if (relation >= 35) return "有些话只差一个合适时机";
+  return "故事还留着下一次选择";
+}
+
+export function EndingPanel({
+  state,
+  experienceMode = "career",
+}: {
+  state: GameState;
+  experienceMode?: ExperienceMode;
+}) {
   if (!state.finished || state.history.length === 0) return null;
 
-  const specialEnding = special2025Ending(state);
-  const partner = !specialEnding && isBestPartner(state);
-  const leadId = specialEnding?.leadId ?? (partner ? "zhao_chengyu" : bestRoute(state));
+  const specialEnding = special2025Ending(state, experienceMode);
+  const partner = experienceMode === "career" && !specialEnding && isBestPartner(state);
+  const leadId = specialEnding?.leadId
+    ?? (experienceMode === "romance"
+      ? bestMentorRoute(state)
+      : partner ? "zhao_chengyu" : bestRoute(state));
   const lead = CHARACTERS[leadId];
   const leadRelation = state.relations[leadId];
-  const { title, copy } = specialEnding ?? resolveEnding({ state, lead, leadId, leadRelation, partner });
+  const { title, copy } = specialEnding ?? resolveEnding({
+    state,
+    lead,
+    leadId,
+    leadRelation,
+    partner,
+    experienceMode,
+  });
 
-  const mentorIds: MentorId[] = ["lin_ruoning", "chen_xinghe", "zhou_mingzhao"];
-  const ledger = mentorIds.map((id) => {
+  const ledger = MENTOR_IDS.map((id) => {
     const collected = state.knowledgeCards.filter((card) => card.mentorId === id);
     const total = Object.keys(MENTOR_TEACHINGS[id]).length;
     return { id, name: CHARACTERS[id].name, collected, total };
@@ -244,7 +324,22 @@ export function EndingPanel({ state }: { state: GameState }) {
         <h2>{title}</h2>
         <p>{copy}</p>
       </div>
-      <dl>
+      {experienceMode === "romance" ? (
+        <dl className="romance-ending-summary">
+          <div>
+            <dt>最靠近的人</dt>
+            <dd>{lead.name}</dd>
+          </div>
+          <div>
+            <dt>你们的距离</dt>
+            <dd>{relationshipStage(leadRelation)}</dd>
+          </div>
+          <div>
+            <dt>共同走过</dt>
+            <dd>{state.history.length} 个被记住的选择</dd>
+          </div>
+        </dl>
+      ) : <dl>
         <div>
           <dt>研究可信度</dt>
           <dd>{state.researchCredibility}/100</dd>
@@ -285,7 +380,7 @@ export function EndingPanel({ state }: { state: GameState }) {
             ))}
           </dd>
         </div>
-      </dl>
+      </dl>}
     </section>
   );
 }

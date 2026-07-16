@@ -8,11 +8,17 @@ import {
   useThemeControl,
 } from "./app/useGameController";
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
-import { ModeSwitcher } from "./components/ModeSwitcher";
+import { BackToMenu } from "./components/BackToMenu";
 import {
-  platformModeFromSearch,
+  appDestinationFromSearch,
+  type AppDestination,
   type PlatformMode,
 } from "./game/platformModes";
+import "./start-menu.css";
+
+const StartMenu = lazy(() =>
+  import("./components/StartMenu").then((module) => ({ default: module.StartMenu })),
+);
 
 const Chapter1Spike = lazy(() =>
   import("./spike/pixivn/Chapter1Spike").then((module) => ({
@@ -111,12 +117,19 @@ function ModeContent({ mode }: { mode: PlatformMode }) {
   return <StoryMode />;
 }
 
+function DestinationContent({ destination }: { destination: AppDestination }) {
+  if (destination === "menu") return <StartMenu />;
+  return <ModeContent mode={destination} />;
+}
+
 export default function App() {
-  const [mode] = useState(() => platformModeFromSearch(window.location.search));
+  const [destination] = useState(
+    () => appDestinationFromSearch(window.location.search),
+  );
   return (
     <div
-      className={`app-shell mode-${mode}`}
-      data-platform-mode={mode}
+      className={`app-shell mode-${destination}`}
+      data-platform-mode={destination}
       onKeyDown={(event) => {
         if (event.key !== "Enter" && event.key !== " ") return;
         const target = event.target;
@@ -135,7 +148,7 @@ export default function App() {
       >
         跳到主要内容
       </a>
-      <ModeSwitcher activeMode={mode} />
+      {destination === "menu" ? null : <BackToMenu />}
       <div className="app-main-focus-target" id="main-content" tabIndex={-1}>
         <AppErrorBoundary>
           <Suspense
@@ -146,12 +159,12 @@ export default function App() {
                 className="platform-screen platform-loading"
                 role="status"
               >
-                <strong>正在加载研究模式</strong>
+                <strong>正在加载研究平台</strong>
                 <p>浏览器在整理档案、会议室和人类制造的各种流程。</p>
               </main>
             )}
           >
-            <ModeContent mode={mode} />
+            <DestinationContent destination={destination} />
           </Suspense>
         </AppErrorBoundary>
       </div>

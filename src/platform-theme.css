@@ -40,27 +40,6 @@
   --platform-shadow: 0 24px 64px rgba(0, 0, 0, 0.42);
 }
 
-.app-shell:not(.mode-story) .platform-mode-switcher {
-  width: min(880px, calc(100vw - 24px));
-  margin: 10px auto 0;
-  color: var(--platform-text);
-  background: color-mix(in srgb, var(--platform-panel-strong) 94%, transparent);
-}
-
-.app-shell:not(.mode-story) .platform-mode-switcher > strong,
-.app-shell:not(.mode-story) .platform-mode-switcher small {
-  color: var(--platform-muted);
-}
-
-.app-shell:not(.mode-story) .platform-mode-switcher button {
-  color: var(--platform-text);
-}
-
-.app-shell:not(.mode-story) .platform-mode-switcher button.active {
-  color: var(--platform-accent);
-  background: var(--platform-accent-soft);
-}
-
 .studio-preview {
   max-height: none;
   overflow: visible;

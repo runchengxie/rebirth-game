@@ -7,5 +7,7 @@ __pycache__/
 node_modules/
 dist/
 dist-package/
+playwright-report/
+test-results/
 .hermes/
 .workbuddy/

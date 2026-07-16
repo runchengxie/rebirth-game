@@ -6,8 +6,8 @@
   padding: 0.7rem 1rem;
   border: 1px solid currentColor;
   border-radius: 0.75rem;
-  background: var(--panel, #ffffff);
-  color: var(--text, #171923);
+  background: var(--surface-strong, #ffffff);
+  color: var(--ink, #171923);
   font-weight: 700;
   transform: translateY(-180%);
   transition: transform 140ms ease;
@@ -33,7 +33,8 @@
   padding: clamp(1.25rem, 4vw, 2.5rem);
   border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
   border-radius: 1.25rem;
-  background: var(--panel, #ffffff);
+  color: var(--ink, #171923);
+  background: var(--surface-strong, #ffffff);
   box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 14%);
 }
 

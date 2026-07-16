@@ -2,6 +2,10 @@ const { test, expect } = require("@playwright/test");
 const AxeBuilder = require("@axe-core/playwright").default;
 
 async function waitForPageReady(page, path) {
+  if (path === "/") {
+    await expect(page.getByRole("heading", { name: "心动 K 线" })).toBeVisible();
+    return;
+  }
   if (path.includes("mode=committee")) {
     await expect(page.getByRole("heading", { name: "投委会答辩室" })).toBeVisible();
     return;
@@ -43,6 +47,16 @@ async function answerCommittee(page) {
   }
 }
 
+async function advanceToDecision(page) {
+  for (let index = 0; index < 10; index += 1) {
+    if (await page.locator(".immersive-decision-panel").count()) return;
+    const advance = page.locator(".primary-action");
+    await expect(advance).toBeEnabled();
+    await advance.click();
+  }
+  await expect(page.locator(".immersive-decision-panel")).toBeVisible();
+}
+
 async function expectNoSeriousAccessibilityViolations(page) {
   const result = await new AxeBuilder({ page })
     .disableRules(["color-contrast"])
@@ -60,12 +74,16 @@ async function expectNoSeriousAccessibilityViolations(page) {
 async function contrastRatio(page, foregroundSelector, backgroundSelector) {
   return page.evaluate(({ foregroundSelector: foreground, backgroundSelector: background }) => {
     function parseColor(value) {
+      if (value === "transparent") {
+        return { red: 0, green: 0, blue: 0, alpha: 0 };
+      }
       const channels = value.match(/[\d.]+/g)?.map(Number) ?? [];
       if (channels.length < 3) throw new Error(`无法解析颜色：${value}`);
+      const scale = value.startsWith("color(srgb") ? 255 : 1;
       return {
-        red: channels[0],
-        green: channels[1],
-        blue: channels[2],
+        red: channels[0] * scale,
+        green: channels[1] * scale,
+        blue: channels[2] * scale,
         alpha: channels[3] ?? 1,
       };
     }
@@ -114,6 +132,13 @@ async function contrastRatio(page, foregroundSelector, backgroundSelector) {
   }, { foregroundSelector, backgroundSelector });
 }
 
+async function expectReadableContrast(page, samples) {
+  for (const [label, foregroundSelector, backgroundSelector] of samples) {
+    const ratio = await contrastRatio(page, foregroundSelector, backgroundSelector);
+    expect(ratio, `${label} 的文字对比度为 ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
+  }
+}
+
 async function expectScrollablePage(page, path) {
   await openClean(page, path);
   const metrics = await page.evaluate(() => ({
@@ -126,6 +151,31 @@ async function expectScrollablePage(page, path) {
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
 }
+
+test("主菜单把两种年度体验与独立玩法分开", async ({ page }) => {
+  await openClean(page, "/");
+
+  const romance = page.getByRole("link", { name: /剧情模式/ });
+  const career = page.getByRole("link", { name: /职业模式/ });
+  await expect(romance).toHaveAttribute("href", /mode=story.*play=romance.*new=1/);
+  await expect(career).toHaveAttribute("href", /mode=story.*play=career.*new=1/);
+  await expect(page.getByText("当前浏览器还没有本地进度")).toBeVisible();
+  await expect(page.getByRole("link", { name: "继续游戏" })).toHaveCount(0);
+  await expect(page.locator('a[href*="mode=committee"]')).toBeVisible();
+  await expect(page.getByRole("link", { name: /每日挑战/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /内容工坊/ })).toBeVisible();
+});
+
+test("剧情模式只让玩家处理人物回应", async ({ page }) => {
+  await openClean(page, "/?mode=story&play=romance&new=1&staticStage=1");
+
+  await advanceToDecision(page);
+
+  await expect(page.locator(".romance-assist-note")).toBeVisible();
+  await expect(page.locator(".stakeholder-pressure")).toHaveCount(0);
+  await expect(page.locator(".research-commitment")).toHaveCount(0);
+  await expect(page.locator(".investigation-panel")).toHaveCount(0);
+});
 
 test("键盘可以跳过导航，并在档案弹窗关闭后恢复焦点", async ({ page }) => {
   await openClean(page, "/?staticStage=1");
@@ -146,15 +196,16 @@ test("键盘可以跳过导航，并在档案弹窗关闭后恢复焦点", async
   await expect(archiveButton).toBeFocused();
 });
 
-test("年度剧情的研究平台栏不会遮挡操作按钮", async ({ page }) => {
+test("年度剧情的主菜单入口不会遮挡操作按钮", async ({ page }) => {
   await page.setViewportSize({ width: 1365, height: 768 });
   await openClean(page, "/?staticStage=1");
 
   const actionBox = await page.locator(".interaction-actions").boundingBox();
-  const dockBox = await page.locator(".platform-mode-switcher").boundingBox();
+  const menuBox = await page.locator(".back-to-menu-bar").boundingBox();
   expect(actionBox).not.toBeNull();
-  expect(dockBox).not.toBeNull();
-  expect(actionBox.y + actionBox.height).toBeLessThanOrEqual(dockBox.y - 3);
+  expect(menuBox).not.toBeNull();
+  expect(menuBox.y + menuBox.height).toBeLessThanOrEqual(actionBox.y - 3);
+  await expect(page.getByRole("link", { name: "主菜单" })).toBeVisible();
   await expect(page.getByRole("button", { name: /继续/ })).toBeVisible();
 });
 
@@ -199,7 +250,9 @@ test("内容工坊保存的案例会进入投委会案例库", async ({ page }) 
 
   await page.getByRole("button", { name: "保存到案例库" }).click();
   await expect(page.getByText(/内容包已保存到本地案例库/)).toBeVisible();
-  await page.getByRole("button", { name: /投委会/ }).click();
+  await page.getByRole("link", { name: "主菜单" }).click();
+  await expect(page.getByRole("heading", { name: "心动 K 线" })).toBeVisible();
+  await page.locator('a[href*="mode=committee"]').click();
 
   await expect(page).toHaveURL(/mode=committee/);
   await expect(page.getByRole("button", { name: /利润增长，现金流下降/ })).toBeVisible();
@@ -222,6 +275,55 @@ test("窄屏平台模式没有横向裁切", async ({ page }) => {
   }
 });
 
+test("深色年度剧情的压力卡和研究承诺文字保持清晰", async ({ page }) => {
+  await openDark(page, "/?staticStage=1");
+  await advanceToDecision(page);
+  await expect(page.locator(".stakeholder-pressure")).toBeVisible();
+  await expect(page.locator(".research-commitment")).toBeVisible();
+
+  await expectReadableContrast(page, [
+    ["压力来源", ".stakeholder-pressure header span", ".stakeholder-pressure"],
+    ["压力标题", ".stakeholder-pressure header strong", ".stakeholder-pressure"],
+    ["压力正文", ".stakeholder-pressure p", ".stakeholder-pressure"],
+    ["压力取舍", ".stakeholder-pressure small", ".stakeholder-pressure"],
+    ["研究承诺栏目标", ".research-commitment-heading span", ".research-commitment"],
+    ["研究承诺说明", ".research-commitment-heading p", ".research-commitment"],
+    ["置信度选项", ".commitment-choice-grid button strong", ".commitment-choice-grid button"],
+    ["置信度解释", ".commitment-choice-grid button span", ".commitment-choice-grid button"],
+    ["反例选择", ".commitment-falsifier select", ".commitment-falsifier select"],
+    ["自检标签", ".commitment-review-checks label strong", ".commitment-review-checks label"],
+    ["自检说明", ".commitment-review-checks label small", ".commitment-review-checks label"],
+  ]);
+});
+
+test("深色投委会的研究承诺表单保持清晰", async ({ page }) => {
+  await openDark(page, "/?mode=committee");
+  await expect(page.locator(".research-commitment")).toBeVisible();
+
+  await expectReadableContrast(page, [
+    ["投委会承诺栏目标", ".research-commitment-heading span", ".research-commitment"],
+    ["投委会承诺说明", ".research-commitment-heading p", ".research-commitment"],
+    ["投委会置信度", ".commitment-choice-grid button strong", ".commitment-choice-grid button"],
+    ["投委会置信度解释", ".commitment-choice-grid button span", ".commitment-choice-grid button"],
+    ["投委会反例选择", ".commitment-falsifier select", ".commitment-falsifier select"],
+    ["投委会自检说明", ".commitment-review-checks label small", ".commitment-review-checks label"],
+  ]);
+});
+
+test("深色每日挑战的研究承诺表单保持清晰", async ({ page }) => {
+  await openDark(page, "/?mode=daily");
+  await expect(page.locator(".research-commitment")).toBeVisible();
+
+  await expectReadableContrast(page, [
+    ["每日挑战承诺栏目标", ".research-commitment-heading span", ".research-commitment"],
+    ["每日挑战承诺说明", ".research-commitment-heading p", ".research-commitment"],
+    ["每日挑战置信度", ".commitment-choice-grid button strong", ".commitment-choice-grid button"],
+    ["每日挑战置信度解释", ".commitment-choice-grid button span", ".commitment-choice-grid button"],
+    ["每日挑战反例选择", ".commitment-falsifier select", ".commitment-falsifier select"],
+    ["每日挑战自检说明", ".commitment-review-checks label small", ".commitment-review-checks label"],
+  ]);
+});
+
 test("深色模式关键平台文字和设置说明保持可读对比度", async ({ page }) => {
   await openDark(page, "/?mode=committee");
   expect(await contrastRatio(page, ".case-brief > p", ".committee-workspace")).toBeGreaterThanOrEqual(4.5);
@@ -235,6 +337,8 @@ test("深色模式关键平台文字和设置说明保持可读对比度", async
   await openDark(page, "/?staticStage=1");
   await page.getByRole("button", { name: "打开设置" }).click();
   await page.getByText("存档与跨设备转移", { exact: true }).click();
+  await expect(page.locator(".share-code-field textarea")).toBeVisible();
+  expect(await contrastRatio(page, ".share-code-field textarea", ".share-code-field textarea")).toBeGreaterThanOrEqual(4.5);
   await page.getByText("加密云同步", { exact: true }).click();
   await expect(page.locator(".cloud-sync-warning")).toBeVisible();
   expect(await contrastRatio(page, ".cloud-sync-warning", ".cloud-sync-body")).toBeGreaterThanOrEqual(4.5);

@@ -1,6 +1,6 @@
 import { GAME_DATA } from "../data/gameData";
 import { CHARACTERS } from "../game/content";
-import type { GameState, MentorId } from "../types";
+import type { ExperienceMode, GameState, MentorId } from "../types";
 
 function linStage(state: GameState): string {
   if (state.flags.lin_route_committed) return "关系确认";
@@ -78,14 +78,34 @@ function metricValue(
 }
 
 export function StatusBar({
+  experienceMode = "career",
   state,
   showExactMetrics = false,
 }: {
+  experienceMode?: ExperienceMode;
   state: GameState;
   showExactMetrics?: boolean;
 }) {
   const data = GAME_DATA[state.year];
   const total = data.scenes.length;
+  if (experienceMode === "romance") {
+    return (
+      <section className="status-band romance-status" aria-label="剧情状态">
+        <div className="stat">
+          <span>当前话数</span>
+          <strong>{state.monthIndex + 1}/{total}</strong>
+        </div>
+        <div className="stat">
+          <span>心动焦点</span>
+          <strong>{relationshipSummary(state)}</strong>
+        </div>
+        <div className="stat">
+          <span>相处节奏</span>
+          <strong>{balanceLabel(state.lifeBalance)}</strong>
+        </div>
+      </section>
+    );
+  }
   return (
     <section className="status-band" aria-label="角色状态">
       <div className="stat">

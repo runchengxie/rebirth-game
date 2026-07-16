@@ -11,6 +11,7 @@ import {
   pickKnowledgeCard,
 } from "./content";
 import { branchFlagsForMonth } from "./branching";
+import { ROMANCE_FOCUS } from "./experienceMode";
 import { decisionMethod, decisionOutcomeAlignment, decisionQuality } from "./narrativeSemantics";
 import type {
   BranchMetaContext,
@@ -466,7 +467,9 @@ export function makeDecision(
   if (state.locked || state.finished) return state;
 
   const story = storyForMonth(state.monthIndex, state.year);
-  const focus = focusById(state.focusId);
+  const focus = branchMeta?.experienceMode === "romance"
+    ? ROMANCE_FOCUS
+    : focusById(state.focusId);
   const outcome = buildOutcome(decision, story, focus);
   const metrics = nextMetrics(state, decision, focus);
   const relations = nextRelations(state, decision, story, focus);

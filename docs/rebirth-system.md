@@ -2,6 +2,8 @@
 
 本文档说明 2025 主线使用的跨周目系统。系统把未来记忆、关键月份调查、研究室痕迹、已读记录和互动影游式回溯连接起来。2023、2024 和 `demo` 继续沿用原流程。
 
+年度剧情的新游戏会把 `experienceMode` 写入跨周目状态。职业模式展示本页说明的调查、研究室和因果回溯操作。剧情模式在主流程中隐藏职业系统并由会话层协助研究承诺，底层仍保留兼容关系分支和存档迁移所需的状态。
+
 ## 核心循环
 
 关键月份会在研究选择前提供有限时间块。玩家可以调查公开材料、财务模型、产业访谈、量化信号、风险边界、档案记录或身体状态。
@@ -140,10 +142,12 @@ rebirthGameState:v2:<year>
 跨周目状态保存在：
 
 ```text
-rebirthMeta:v3:<year>
+rebirthMeta:v4:<year>
 ```
 
-系统按顺序尝试读取 `rebirthMeta:v3`、`rebirthMeta:v2` 和 `rebirthMeta:v1`。旧 v2 存档会迁移为空时间线，并从当前进度开始记录。旧 v1 的一月调查会先迁移到按月份保存的调查结构。
+v4 增加 `experienceMode`，取值为 `romance` 或 `career`。体验模式在创建新游戏时确定，重新开始、跨入下一周目、恢复暂停分支和从关键月分叉都会沿用该值。
+
+系统按顺序尝试读取 `rebirthMeta:v4`、`rebirthMeta:v3`、`rebirthMeta:v2` 和 `rebirthMeta:v1`。旧 v3 存档缺少体验字段时迁移为职业模式。旧 v2 存档会迁移为空时间线，并从当前进度开始记录。旧 v1 的一月调查会先迁移到按月份保存的调查结构。
 
 快照只保存在关键月份月初。每条分支保存自己的分支头、调查状态、事件、锚点引用和结局。反事实推演单独保存，最多保留最近 32 条结果。
 
@@ -153,7 +157,8 @@ rebirthMeta:v3:<year>
 
 ## 代码位置
 
-- `src/game/rebirth.ts`：元状态、存档迁移、调查结算和周目奖励。
+- `src/game/rebirth.ts`：v4 元状态、体验模式迁移、调查结算和周目奖励。
+- `src/game/experienceMode.ts`：体验策略和剧情模式辅助研究承诺。
 - `src/game/rebirthTimelineState.ts`：时间线类型、恢复和存储限制。
 - `src/game/rebirthTimeline.ts`：锚点、事件、分叉、暂停、恢复和周目衔接。
 - `src/game/rebirthTimelineInsights.ts`：时间线视图、因果注释和反事实推演。

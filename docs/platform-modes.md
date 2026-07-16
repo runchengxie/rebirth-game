@@ -1,19 +1,35 @@
 # 研究平台模式与扩展契约
 
-本文说明年度剧情之外的独立投委会、每日挑战、社区内容工坊、叙事状态机和加密云同步。它们共用研究承诺、研究方案与业务事实模型，避免每个模式维护一套互不兼容的评分语言。
+本文说明主菜单、年度剧情体验、独立投委会、每日挑战、社区内容工坊、叙事状态机和加密云同步。它们共用研究承诺、研究方案与业务事实模型，避免每个模式维护一套互不兼容的评分语言。
 
 ## 模式入口
 
-页面底部提供四个模式入口：
+无查询参数访问显示主菜单。主菜单把继续游戏、年度剧情新游戏、挑战中心和创作入口分组，不在每个玩法底部常驻四项模式栏。
 
-| 模式 | URL | 用途 |
+| 目标 | URL | 用途 |
 |---|---|---|
-| 年度剧情 | 默认或 `?mode=story` | 2025 十二话、角色路线、重生调查与时间线 |
+| 主菜单 | 默认 | 继续本地进度、开始新游戏或选择独立玩法 |
+| 年度剧情 | `?mode=story` | 恢复当前存档的十二话剧情与人物路线 |
 | 投委会 | `?mode=committee` | 选择案例并完成五轮独立答辩 |
 | 每日挑战 | `?mode=daily` | 按本地日期生成所有玩家相同的案例与约束 |
 | 内容工坊 | `?mode=studio` | 创建、验证、导入、导出和本地安装社区案例包 |
 
-三个平台模式通过动态导入加载。年度剧情首屏只包含模式导航和云同步所需的轻量样式，不下载内容工坊和完整答辩界面。
+三个独立平台模式通过动态导入加载。主菜单和年度剧情不下载内容工坊与完整答辩界面。进入任一玩法后，返回主菜单入口由轻量应用外壳提供。
+
+年份、Pixi'VN 原型和舞台参数是已有深链。含有 `year`、`pixivn`、`pixi` 或 `staticStage` 时继续直接进入年度剧情，旧书签不会被主菜单截断。
+
+## 年度剧情体验
+
+年度剧情内部使用独立的 `ExperienceMode`，不把玩法难度塞进 `PlatformMode`：
+
+| 体验 | 新游戏 URL | 主界面规则 |
+|---|---|---|
+| 剧情模式 | `?mode=story&play=romance&new=1` | 隐藏职业指标、调查、研究线索、日程和研究承诺，突出对白与人物关系 |
+| 职业模式 | `?mode=story&play=career&new=1` | 保留完整调查、研究承诺、评分、职业结局和因果回溯 |
+
+`play` 提供新存档的体验默认值。`new=1` 要求会话层跳过已有进度并创建新状态，创建完成后从 URL 移除。继续游戏读取 session envelope 或 `rebirthMeta:v4` 中的 `experienceMode`，旧 v3 存档没有该字段时迁移为职业模式。
+
+剧情模式的简化发生在两个边界。React 策略控制可见界面，`sessionMachine.ts` 在结算前自动补充稳健研究承诺并缓和隐藏的疲劳与生活平衡惩罚。职业模式直接使用玩家填写的研究承诺。两种体验继续使用同一剧情数据、关系旗标和结算引擎。
 
 ## 默认剧情状态机
 
@@ -32,6 +48,8 @@
 - 执行反事实推演。
 
 所有行动通过一个 reducer 同时返回 `GameState` 与 `RebirthMetaState`，再统一写入旧版兼容存档和原子 session envelope。界面组件不再分别拼接两套状态更新。
+
+`RebirthMetaState.experienceMode` 在新游戏创建后保持稳定。重新开始、进入下一周目和恢复时间线都会沿用当前体验，避免一份路线在中途更换隐藏规则。
 
 `src/game/narrativeMachine.ts` 把当前节点解释为以下显式阶段：
 
@@ -199,6 +217,10 @@
 
 ## 主要代码位置
 
+- `src/components/StartMenu.tsx`：继续、新游戏、挑战中心和创作入口。
+- `src/components/BackToMenu.tsx`：玩法页面返回主菜单入口。
+- `src/game/platformModes.ts`：主菜单目标、兼容深链与 URL 生成。
+- `src/game/experienceMode.ts`：剧情模式和职业模式策略。
 - `src/game/sessionMachine.ts`：年度剧情原子状态转换。
 - `src/app/useGameSessionMachine.ts`：React reducer、存档与音频适配。
 - `src/game/narrativeMachine.ts`：显式叙事阶段。
@@ -210,6 +232,6 @@
 - `src/modes/ContentStudioMode.tsx`：可视化内容编辑器。
 - `src/game/cloudSync.ts`：客户端加密和 GitHub Gist API。
 - `src/components/CloudSyncPanel.tsx`：云同步设置与操作。
-- `src/game/platformModes.ts`：模式 URL 和导航。
-- `src/platform-shell.css`：年度剧情需要的轻量导航与云同步样式。
+- `src/start-menu.css`：主菜单响应式样式。
+- `src/platform-shell.css`：玩法返回入口与云同步所需的轻量样式。
 - `src/platform.css`：随平台模式按需加载的完整界面与程序化场景。

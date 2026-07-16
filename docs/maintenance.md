@@ -26,11 +26,11 @@ npm run preview
 
 1. 先确认改动属于界面、运行时、结算引擎、剧情内容、独立模式还是数据工具。
 2. 修改源码或数据后，补充对应测试。
-3. 运行前端静态检查和需要的浏览器回归。
-4. 运行 Python 检查。
+3. 运行一次完整本地检查。
+4. 根据失败分组逐项排查。
 5. 核对 README、`AGENTS.md` 和相关设计文档是否仍然准确。
 6. 需要离线分享包时运行 `scripts/package.ps1`。
-7. 推送后确认拉取请求检查和 GitHub Pages 发布状态。
+7. 推送后确认 GitHub Pages 构建和发布状态。
 
 ## 剧情内容维护
 
@@ -136,13 +136,15 @@ export REBIRTH_INSTRUMENTS_FILE=/path/to/a_share_instruments_latest.parquet
 
 ## 测试与检查
 
-### 前端静态检查
+### 完整本地检查
 
 ```bash
 npm run check
 ```
 
-该命令包含：
+这是提交前的单一入口。它通过 `scripts/check.py` 依次运行 Python、前端、构建和浏览器四组阻塞检查。
+
+Python 分组包括 Ruff 规则与格式、编译、ty、Pytest 和静态数据校验。前端与构建分组包括：
 
 - `npm run lint:ci`
 - `npm run typecheck`
@@ -155,17 +157,17 @@ npm run check
 
 `npm run validate:bundle` 读取 `dist/assets`，检查首屏入口、异步档案、回溯面板和时间线样式的体积预算。它必须在生产构建之后运行。
 
-`npm run validate:stability` 检查错误边界、跳过导航、档案焦点规则、社区内容限制、浏览器测试文件和 CI 发布门槛是否仍然存在。
+`npm run validate:stability` 检查错误边界、主菜单、跳过导航、档案焦点规则、社区内容限制、本地质量入口、浏览器测试文件和 Pages-only 工作流是否仍然存在。
 
 ### 浏览器回归
 
-首次运行需要临时安装固定版本的 Playwright、axe 和 Chromium：
+`npm ci` 会从开发依赖安装固定版本的 Playwright 与 axe。首次运行或浏览器版本变化后，用以下命令准备 Chromium：
 
 ```bash
 npm run e2e:prepare
 ```
 
-随后运行：
+单独重跑浏览器用例：
 
 ```bash
 npm run test:e2e
@@ -173,35 +175,41 @@ npm run test:e2e
 
 浏览器测试位于 `scripts/e2e/`，配置位于 `scripts/playwright.config.js`。测试运行器会启动 Vite 开发服务器，并检查：
 
+- 主菜单、新游戏体验和兼容深链
 - 年度剧情跳过导航和档案焦点恢复
+- 剧情模式与职业模式的界面策略
 - 投委会完整答辩和历史保存
 - 每日挑战首次记录和练习模式
 - 内容工坊与投委会案例库联动
 - 模式加载失败恢复界面
-- 四种模式的严重和致命 axe 问题
+- 主菜单与四种玩法的严重和致命 axe 问题
 
-自动 axe 检查不包含配色对比度。人工审计范围见 `docs/stability-and-accessibility.md`。
+通用 axe 扫描不包含配色对比度。关键深色界面另有显式对比度回归，人工审计范围见 `docs/stability-and-accessibility.md`。
 
-### 联合检查
+完整检查会自动执行 `e2e:prepare`。已安装的浏览器不会重复下载。
+
+### 分组排查
 
 ```bash
 uv run python scripts/check.py
 ```
 
-默认执行全部阻塞检查，其中包含 Ruff、格式化、编译、ty、Pytest、静态数据校验和前端静态完整检查。可用参数：
+不带参数时执行全部阻塞检查。需要缩小失败范围时使用：
 
 ```bash
 uv run python scripts/check.py --python
 uv run python scripts/check.py --frontend
+uv run python scripts/check.py --e2e
 ```
 
-`--all` 作为兼容参数保留，完整检查现已默认执行。浏览器二进制不会由 Python 联合检查自动安装或运行，需要单独执行 `npm run test:e2e`。
+`--all` 作为兼容参数保留，完整检查现已默认执行。多个分组参数可以组合。
 
 ### 测试分工
 
 - `scripts/test_build_data.py`：市场复盘生成器的辅助函数、参数、输出结构和文件写入
 - `scripts/test_validate_data.py`：静态股票数据的结构、资金计算、路径检查和 JavaScript 数据包
 - `scripts/test_docs_style.py`：说明文档的中文标点和常见表达约定
+- `scripts/test_check.py`：本地质量入口、固定浏览器依赖和 Pages-only 工作流契约
 - `src/game/content/content.test.ts`：三个正式年份的内容校验和加载器
 - `src/game/communityContent.test.ts`：社区内容包资源、格式和唯一性边界
 - `src/game/runtime.test.ts`：状态初始化、节点推进和跨月流程
@@ -213,32 +221,25 @@ uv run python scripts/check.py --frontend
 
 Vitest 通过 `vitest.config.ts` 排除 `scripts/e2e/`，避免与 Playwright 重复收集测试。
 
-## 自动化与发布
+## 本地质量与发布
 
-`.github/workflows/pages.yml` 在拉取请求和 `main` 更新时运行。
+代码质量和浏览器回归只在本地运行。`.github/workflows/pages.yml` 不响应拉取请求，只在 `main` 更新或手动触发时发布。
 
-静态质量任务执行：
+Pages 任务执行：
 
 1. 安装 Node.js 22 和锁定依赖。
-2. 运行 lint、类型检查和 Vitest。
-3. 运行前端、稳定性和品牌契约校验。
-4. 运行生产构建和包体预算。
+2. 运行 `npm run build:pages`，只执行 Vite 打包。
+3. 上传 `dist/` Pages 产物。
+4. 部署 GitHub Pages。
 
-静态质量通过后，浏览器任务执行：
-
-1. 临时安装固定版本的 Playwright 和 axe。
-2. 安装 Chromium 及系统依赖。
-3. 运行浏览器旅程与自动无障碍检查。
-4. 失败时上传截图、视频、trace 和 HTML 报告，保留七天。
-
-`main` 只有在静态质量和浏览器任务同时通过后才发布 GitHub Pages。单元测试失败时保存 `vitest.log`，保留三天。
+Actions 不运行 TypeScript 检查、lint、单元测试、Python 检查、契约校验、包体预算或 Playwright。维护者应在推送前运行 `npm run check`。本地 Playwright 失败诊断写入 `test-results/`。
 
 发布后检查：
 
 - 首页可以打开
 - `dist/assets/` 资源请求成功
 - 2023、2024、2025 年份可以切换
-- 四种模式可以通过底部导航进入
+- 主菜单可以进入两种年度剧情体验、投委会、每日挑战和内容工坊
 - 浅色和暗色主题可以切换
 - WebGL 不可用时能看到静态舞台
 - 完成一次研究选择后可以继续剧情

@@ -6,8 +6,9 @@ import {
   createRebirthMeta,
   persistRebirthMeta,
   readRebirthMeta,
-  type RebirthMetaState,
+  restoreRebirthMeta,
 } from "../game/rebirth";
+import { experienceModeFromSearch } from "../game/experienceMode";
 import { isSceneNodeRead } from "../game/rebirthFlow";
 import { ensureTimelineInitialized } from "../game/rebirthTimeline";
 import type { TimelineSimulationProfileId } from "../game/rebirthTimelineState";
@@ -18,7 +19,11 @@ import {
   currentSceneNode,
   sceneForMonth,
 } from "../game/runtime";
-import { persistStoredState, readStoredState } from "../game/saveState";
+import {
+  persistStoredState,
+  readStoredState,
+  restoreStoredState,
+} from "../game/saveState";
 import { readSessionEnvelope, writeSessionEnvelope } from "../game/sessionEnvelope";
 import {
   gameSessionReducer,
@@ -26,6 +31,7 @@ import {
 } from "../game/sessionMachine";
 import { narrativeFrameFor } from "../game/narrativeMachine";
 import type { ResearchDecision } from "../types";
+import type { ResearchCommitment } from "../game/researchCommitment";
 import type { GameAudio } from "./useGameController";
 import type { OfficePropId } from "../game/rebirthOffice";
 
@@ -40,27 +46,55 @@ function yearFromUrl(): string | null {
   return year && year in GAME_DATA ? year : null;
 }
 
-function isRebirthMeta(value: unknown, year: string): value is RebirthMetaState {
-  if (typeof value !== "object" || value === null) return false;
-  const candidate = value as Partial<RebirthMetaState>;
-  return candidate.version === 3
-    && candidate.year === year
-    && typeof candidate.cycle === "number"
-    && Array.isArray(candidate.memoryKeys);
+function newRunRequested(): boolean {
+  return new URLSearchParams(window.location.search).get("new") === "1";
 }
 
-function readSnapshot(year: string): GameSessionSnapshot {
+function consumeNewRunRequest(): void {
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has("new")) return;
+  url.searchParams.delete("new");
+  window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+}
+
+function readSnapshot(year: string, forceNew = false): GameSessionSnapshot {
+  const requestedExperience = experienceModeFromSearch(window.location.search) ?? "career";
+  if (forceNew) {
+    const state = createInitialState(year, requestedExperience);
+    const rebirth = ensureTimelineInitialized(
+      createRebirthMeta(year, requestedExperience),
+      state,
+    );
+    return { state, rebirth };
+  }
+
   const envelope = readSessionEnvelope(localStorage, year);
-  const state = envelope?.state ?? readStoredState(localStorage, year) ?? createInitialState(year);
-  const storedMeta = envelope && isRebirthMeta(envelope.rebirth, year)
-    ? envelope.rebirth
-    : readRebirthMeta(localStorage, year);
-  const rebirth = ensureTimelineInitialized(storedMeta ?? createRebirthMeta(year), state);
+  const storedState = envelope
+    ? readStoredStateFromEnvelope(year, envelope.state)
+    : null;
+  const legacyState = storedState ? null : readStoredState(localStorage, year);
+  const state = storedState
+    ?? legacyState
+    ?? createInitialState(year, requestedExperience);
+  const hasStoredState = Boolean(storedState ?? legacyState);
+  const storedMeta = envelope
+    ? restoreRebirthMeta(year, envelope.rebirth, requestedExperience)
+    : hasStoredState
+      ? readRebirthMeta(localStorage, year)
+      : createRebirthMeta(year, requestedExperience);
+  const rebirth = ensureTimelineInitialized(storedMeta, state);
   return { state, rebirth };
 }
 
+function readStoredStateFromEnvelope(year: string, value: unknown) {
+  return restoreStoredState(year, value);
+}
+
 function initialSnapshot(): GameSessionSnapshot {
-  return readSnapshot(yearFromUrl() ?? bestInitialYear());
+  const forceNew = newRunRequested();
+  const snapshot = readSnapshot(yearFromUrl() ?? bestInitialYear(), forceNew);
+  if (forceNew) consumeNewRunRequest();
+  return snapshot;
 }
 
 function persistSnapshot(snapshot: GameSessionSnapshot): void {
@@ -153,9 +187,12 @@ export function useGameSessionMachine(audio: GameAudio) {
     dispatch({ type: "investigate", nodeId });
   }, [audio]);
 
-  const makeDecisionWithSound = useCallback((decision: ResearchDecision) => {
+  const makeDecisionWithSound = useCallback((
+    decision: ResearchDecision,
+    commitment?: ResearchCommitment,
+  ) => {
     audio.playChoice();
-    dispatch({ type: "make-decision", decision });
+    dispatch({ type: "make-decision", decision, commitment });
   }, [audio]);
 
   const forkTimelineWithSound = useCallback((anchorId: string) => {

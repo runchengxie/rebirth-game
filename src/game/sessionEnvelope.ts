@@ -1,4 +1,5 @@
 import type { GameState } from "../types";
+import { REBIRTH_META_KEY_PREFIX } from "./rebirth";
 
 const SESSION_FORMAT = "rebirth-research-session";
 const SESSION_VERSION = 1;
@@ -77,7 +78,7 @@ export function restoreSessionEnvelopeForUrl(
     if (!envelope) return false;
 
     storage.setItem(`rebirthGameState:v2:${year}`, JSON.stringify(envelope.state));
-    storage.setItem(`rebirthMeta:v3:${year}`, JSON.stringify(envelope.rebirth));
+    storage.setItem(`${REBIRTH_META_KEY_PREFIX}${year}`, JSON.stringify(envelope.rebirth));
     return true;
   } catch {
     return false;

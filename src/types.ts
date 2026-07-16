@@ -1,5 +1,7 @@
 export type CharacterId = "lin_ruoning" | "chen_xinghe" | "zhou_mingzhao" | "zhao_chengyu";
 
+export type ExperienceMode = "romance" | "career";
+
 // 导师（可攻略/教学线）身份：排除同级友人同事赵承宇。
 // 导师专属表（MENTOR_TEACHINGS / GRADE_REVIEWS 等）用这个，避免强加赵承宇进图鉴。
 export type MentorId = Exclude<CharacterId, "zhao_chengyu">;
@@ -230,6 +232,7 @@ export type BranchMetricKey =
 export interface BranchMetaContext {
   cycle: number;
   memoryKeys: string[];
+  experienceMode?: ExperienceMode;
 }
 
 export type BranchCondition =

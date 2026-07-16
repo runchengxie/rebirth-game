@@ -44,7 +44,7 @@
 - `research-commitment.md` 记录研究承诺、投委会自检、组织压力、存档转移和本地游玩数据。
 - `platform-modes.md` 记录平台模式、内容包契约、客户端云同步与扩展边界。
 - `ui-system.md` 记录页面滚动所有权、主题变量、模式导航、设置和云同步视觉规则。
-- `stability-and-accessibility.md` 记录浏览器回归、焦点管理、错误恢复、内容包限制与 CI 发布门槛。
+- `stability-and-accessibility.md` 记录浏览器回归、焦点管理、错误恢复、内容包限制、本地质量与 Pages 发布边界。
 - `rebirth-system.md` 记录调查与跨周目系统的当前行为和存储边界。
 - `2025-source-ledger.md` 记录现实事件来源和叙事改编边界。
 - `ux.md` 记录主界面的操作规则和呈现约束。

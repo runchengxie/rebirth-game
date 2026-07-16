@@ -15,23 +15,43 @@ function requireText(path, expected) {
   }
 }
 
+function forbidText(path, forbidden) {
+  const text = fs.readFileSync(path, "utf8");
+  for (const item of forbidden) {
+    if (text.includes(item)) fail(`${path} 不应包含旧契约：${item}`);
+  }
+}
+
 for (const file of [
   "src/components/AppErrorBoundary.tsx",
+  "src/components/BackToMenu.tsx",
+  "src/components/StartMenu.tsx",
+  "src/start-menu.css",
   "src/stability.css",
   "src/platform-polish.css",
   "src/platform-theme.css",
   "src/settings-polish.css",
   "src/game/communityContent.test.ts",
   "scripts/playwright.config.js",
+  "scripts/check.py",
   "scripts/e2e/platform.spec.js",
+  "scripts/test_check.py",
   "vitest.config.ts",
   "docs/stability-and-accessibility.md",
   "docs/ui-system.md",
 ]) requireFile(file);
 
 const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
-for (const script of ["e2e:prepare", "test:e2e", "validate:stability"]) {
+for (const script of ["check", "e2e:prepare", "test:e2e", "validate:stability"]) {
   if (!packageJson.scripts?.[script]) fail(`package.json 缺少脚本：${script}`);
+}
+for (const [dependency, version] of [
+  ["@playwright/test", "1.55.0"],
+  ["@axe-core/playwright", "4.10.2"],
+]) {
+  if (packageJson.devDependencies?.[dependency] !== version) {
+    fail(`package.json 需要固定本地测试依赖：${dependency}@${version}`);
+  }
 }
 
 requireText("src/App.tsx", [
@@ -39,7 +59,10 @@ requireText("src/App.tsx", [
   "skip-link",
   'id="main-content"',
   'aria-busy="true"',
-  "mode-${mode}",
+  "mode-${destination}",
+  "StartMenu",
+  "BackToMenu",
+  "appDestinationFromSearch",
   "platform-polish.css",
   "platform-theme.css",
 ]);
@@ -66,7 +89,6 @@ requireText("src/components/CloudSyncPanel.tsx", [
 requireText("src/platform-shell.css", [
   ".app-shell.mode-story",
   "grid-template-areas",
-  ".mode-story .platform-mode-switcher",
   "--platform-disabled-text",
   "overflow: hidden",
 ]);
@@ -80,9 +102,18 @@ requireText("src/platform-polish.css", [
 ]);
 requireText("src/platform-theme.css", [
   ':root[data-theme="dark"]',
-  ".app-shell:not(.mode-story) .platform-mode-switcher",
+  "--platform-panel-strong",
+  "--platform-text",
+  "--platform-input",
   ".studio-preview",
   "overflow: visible",
+]);
+requireText("src/start-menu.css", [
+  ".app-shell.mode-menu",
+  ".start-menu-card",
+  ".back-to-menu",
+  "var(--platform-text)",
+  "var(--platform-panel-strong)",
 ]);
 requireText("src/game/communityContent.ts", [
   "COMMUNITY_PACK_MAX_BYTES",
@@ -95,19 +126,40 @@ requireText("scripts/e2e/platform.spec.js", [
   "AxeBuilder",
   "waitForPageReady",
   "answerCommittee",
+  "主菜单把两种年度体验与独立玩法分开",
+  "剧情模式只让玩家处理人物回应",
   "档案弹窗关闭后恢复焦点",
-  "研究平台栏不会遮挡操作按钮",
+  "主菜单入口不会遮挡操作按钮",
   "都可以滚动到底部",
   "深色模式关键平台文字",
   "内容工坊保存的案例会进入投委会案例库",
   "模式代码加载失败时显示恢复界面",
 ]);
+requireText("scripts/check.py", [
+  "PYTHON_CHECKS",
+  "FRONTEND_CHECKS",
+  "BROWSER_CHECKS",
+  'Check("validate_stability", ("npm", "run", "validate:stability"))',
+  'Check("validate_bundle", ("npm", "run", "validate:bundle"))',
+  '("npm", "run", "test:e2e")',
+]);
 requireText(".github/workflows/pages.yml", [
-  "e2e:",
-  "Browser journeys and accessibility",
-  "playwright-diagnostics",
-  "needs: [quality, e2e]",
+  "name: Deploy Pages",
+  "branches: [main]",
+  "workflow_dispatch:",
+  "npm run build:pages",
+  "actions/deploy-pages@v4",
+  "needs: build",
+]);
+forbidText(".github/workflows/pages.yml", [
+  "pull_request:",
+  "  quality:",
+  "  e2e:",
+  "npm run check",
+  "npm run typecheck",
+  "npm run test:e2e",
+  "tsc -b",
 ]);
 requireText("vitest.config.ts", ['"scripts/e2e/**"']);
 
-console.log("稳定性契约校验通过。浏览器回归、滚动边界、深色对比度、焦点恢复和内容包限制已接入。");
+console.log("稳定性契约校验通过。本地质量入口、浏览器回归、深色对比度、焦点恢复和 Pages 发布已接入。");

@@ -7,79 +7,6 @@
   --platform-danger: #9d4f4f;
 }
 
-body {
-  padding-bottom: 78px;
-}
-
-.platform-mode-switcher {
-  position: fixed;
-  z-index: 1200;
-  left: 50%;
-  bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: min(760px, calc(100vw - 24px));
-  padding: 8px 10px;
-  border: 1px solid var(--platform-border);
-  border-radius: 18px;
-  background: color-mix(in srgb, var(--platform-panel) 94%, transparent);
-  box-shadow: 0 16px 42px rgba(18, 24, 32, 0.22);
-  backdrop-filter: blur(18px);
-  transform: translateX(-50%);
-}
-
-.platform-mode-switcher > strong {
-  padding: 0 8px;
-  white-space: nowrap;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  color: var(--muted, #666);
-}
-
-.platform-mode-switcher > div {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
-  width: 100%;
-}
-
-.platform-mode-switcher button {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  padding: 8px 10px;
-  border: 0;
-  border-radius: 12px;
-  color: var(--ink, #24222a);
-  background: transparent;
-  cursor: pointer;
-}
-
-.platform-mode-switcher button:hover,
-.platform-mode-switcher button.active {
-  background: var(--platform-accent-soft);
-}
-
-.platform-mode-switcher button.active {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--platform-accent) 35%, transparent);
-}
-
-.platform-mode-switcher span {
-  overflow: hidden;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.platform-mode-switcher small {
-  overflow: hidden;
-  color: var(--muted, #666);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .platform-screen {
   min-height: 100vh;
   padding: 32px clamp(16px, 4vw, 56px) 110px;
@@ -814,27 +741,6 @@ body {
 }
 
 @media (max-width: 780px) {
-  body { padding-bottom: 96px; }
-
-  .platform-mode-switcher {
-    align-items: stretch;
-    bottom: 8px;
-  }
-
-  .platform-mode-switcher > strong {
-    display: none;
-  }
-
-  .platform-mode-switcher small {
-    display: none;
-  }
-
-  .platform-mode-switcher button {
-    align-items: center;
-    padding-inline: 4px;
-    font-size: 12px;
-  }
-
   .platform-screen {
     padding-inline: 12px;
   }

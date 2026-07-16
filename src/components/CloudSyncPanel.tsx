@@ -2,6 +2,10 @@ import { useState } from "react";
 import type { GameState } from "../types";
 import { pullCloudSave, pushCloudSave } from "../game/cloudSync";
 import { readSessionEnvelope, writeSessionEnvelope } from "../game/sessionEnvelope";
+import {
+  LEGACY_REBIRTH_META_V3_KEY_PREFIX,
+  REBIRTH_META_KEY_PREFIX,
+} from "../game/rebirth";
 
 interface CloudSaveBundle {
   format: "rebirth-research-save";
@@ -37,7 +41,9 @@ function isCloudSaveBundle(value: unknown): value is CloudSaveBundle {
 function currentSaveText(year: string): string {
   const envelope = readSessionEnvelope(localStorage, year);
   const state = envelope?.state ?? parseJson(localStorage.getItem(`rebirthGameState:v2:${year}`));
-  const rebirth = envelope?.rebirth ?? parseJson(localStorage.getItem(`rebirthMeta:v3:${year}`));
+  const rebirth = envelope?.rebirth
+    ?? parseJson(localStorage.getItem(`${REBIRTH_META_KEY_PREFIX}${year}`))
+    ?? parseJson(localStorage.getItem(`${LEGACY_REBIRTH_META_V3_KEY_PREFIX}${year}`));
   if (!isRecord(state) || state.year !== year || rebirth === null) {
     throw new Error("当前年份还没有可同步的有效存档。");
   }
@@ -58,7 +64,7 @@ function applyCloudSave(raw: string): CloudSaveBundle {
   const parsed: unknown = JSON.parse(raw);
   if (!isCloudSaveBundle(parsed)) throw new Error("解密后的云端内容不是有效存档。");
   localStorage.setItem(`rebirthGameState:v2:${parsed.year}`, JSON.stringify(parsed.state));
-  localStorage.setItem(`rebirthMeta:v3:${parsed.year}`, JSON.stringify(parsed.rebirth));
+  localStorage.setItem(`${REBIRTH_META_KEY_PREFIX}${parsed.year}`, JSON.stringify(parsed.rebirth));
   writeSessionEnvelope(localStorage, parsed.state, parsed.rebirth);
   if (parsed.theme) localStorage.setItem("rebirthGameTheme", parsed.theme);
   localStorage.setItem("rebirthShowExactMetrics", parsed.showExactMetrics ? "1" : "0");

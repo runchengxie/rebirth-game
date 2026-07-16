@@ -6,15 +6,30 @@ from __future__ import annotations
 import argparse
 import subprocess
 from pathlib import Path
+from typing import NamedTuple
 
 ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_TIMEOUT_SECONDS = 300
+BROWSER_TIMEOUT_SECONDS = 900
+
+
+class Check(NamedTuple):
+    label: str
+    command: tuple[str, ...]
+    timeout: int = DEFAULT_TIMEOUT_SECONDS
 
 
 def _uv_run(*args: str) -> list[str]:
     return ["uv", "run", *args]
 
 
-def run(cmd: list[str], *, label: str, allow_failure: bool = False) -> bool:
+def run(
+    cmd: list[str],
+    *,
+    label: str,
+    timeout: int = DEFAULT_TIMEOUT_SECONDS,
+    allow_failure: bool = False,
+) -> bool:
     """运行一条检查命令并打印精简结果。
 
     allow_failure=True 时即使失败也返回 True（非阻塞检查）。
@@ -26,14 +41,14 @@ def run(cmd: list[str], *, label: str, allow_failure: bool = False) -> bool:
             cwd=ROOT,
             capture_output=True,
             text=True,
-            timeout=300,
+            timeout=timeout,
             check=False,
         )
     except FileNotFoundError:
         print(f"  失败 {header}，未找到命令")
         return False
     except subprocess.TimeoutExpired:
-        print(f"  失败 {header}，运行超过 300 秒")
+        print(f"  失败 {header}，运行超过 {timeout} 秒")
         return False
 
     if result.returncode == 0:
@@ -60,40 +75,54 @@ def run(cmd: list[str], *, label: str, allow_failure: bool = False) -> bool:
     return False
 
 
-def check_python() -> bool:
-    print("── Python ──")
-    ok = True
-    ok &= run(_uv_run("ruff", "check", "."), label="ruff check")
-    ok &= run(_uv_run("ruff", "format", "--check", "."), label="ruff format")
-    ok &= run(
-        _uv_run("python", "-m", "compileall", "scripts"),
-        label="compileall",
-    )
-    ok &= run(
-        _uv_run("ty", "check", "scripts"),
-        label="ty",
-    )
-    ok &= run(
-        _uv_run("pytest", "scripts/", "-v"),
-        label="pytest",
-    )
-    ok &= run(
-        _uv_run("python", "scripts/validate_data.py"),
-        label="validate_data",
-    )
+PYTHON_CHECKS = (
+    Check("ruff check", tuple(_uv_run("ruff", "check", "."))),
+    Check("ruff format", tuple(_uv_run("ruff", "format", "--check", "."))),
+    Check("compileall", tuple(_uv_run("python", "-m", "compileall", "scripts"))),
+    Check("ty", tuple(_uv_run("ty", "check", "scripts"))),
+    Check("pytest", tuple(_uv_run("pytest", "scripts/", "-v"))),
+    Check("validate_data", tuple(_uv_run("python", "scripts/validate_data.py"))),
+)
 
+FRONTEND_CHECKS = (
+    Check("ESLint", ("npm", "run", "lint:ci")),
+    Check("TypeScript", ("npm", "run", "typecheck")),
+    Check("Vitest", ("npm", "run", "test:run")),
+    Check("validate_frontend", ("npm", "run", "validate:frontend")),
+    Check("validate_stability", ("npm", "run", "validate:stability")),
+    Check("validate_brand", ("npm", "run", "validate:brand")),
+    Check("build", ("npm", "run", "build")),
+    Check("validate_bundle", ("npm", "run", "validate:bundle")),
+)
+
+BROWSER_CHECKS = (
+    Check("Playwright Chromium", ("npm", "run", "e2e:prepare"), BROWSER_TIMEOUT_SECONDS),
+    Check("Playwright journeys", ("npm", "run", "test:e2e"), BROWSER_TIMEOUT_SECONDS),
+)
+
+
+def run_checks(title: str, checks: tuple[Check, ...]) -> bool:
+    print(f"── {title} ──")
+    ok = True
+    for check in checks:
+        ok &= run(
+            list(check.command),
+            label=check.label,
+            timeout=check.timeout,
+        )
     return ok
+
+
+def check_python() -> bool:
+    return run_checks("Python", PYTHON_CHECKS)
 
 
 def check_frontend() -> bool:
-    print("── 前端 ──")
-    ok = True
-    ok &= run(["node", "scripts/validate_frontend.js"], label="validate_frontend")
-    ok &= run(["npm", "run", "lint:ci"], label="ESLint")
-    ok &= run(["npm", "run", "typecheck"], label="TypeScript")
-    ok &= run(["npm", "run", "test:run"], label="Vitest")
-    ok &= run(["npm", "run", "build"], label="build")
-    return ok
+    return run_checks("前端", FRONTEND_CHECKS)
+
+
+def check_browser() -> bool:
+    return run_checks("浏览器", BROWSER_CHECKS)
 
 
 def parse_args() -> argparse.Namespace:
@@ -101,6 +130,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--all", action="store_true", help="兼容参数，完整检查现已默认执行")
     parser.add_argument("--python", action="store_true", help="只运行 Python 检查")
     parser.add_argument("--frontend", action="store_true", help="只运行前端检查")
+    parser.add_argument("--e2e", action="store_true", help="只运行浏览器准备和端到端检查")
     return parser.parse_args()
 
 
@@ -108,15 +138,19 @@ def main() -> None:
     args = parse_args()
     run_python = args.python
     run_frontend = args.frontend
-    if not run_python and not run_frontend:
+    run_browser = args.e2e
+    if args.all or not (run_python or run_frontend or run_browser):
         run_python = True
         run_frontend = True
+        run_browser = True
 
     ok = True
     if run_python:
         ok &= check_python()
     if run_frontend:
         ok &= check_frontend()
+    if run_browser:
+        ok &= check_browser()
 
     if ok:
         print("\n全部阻塞检查通过。")

@@ -206,9 +206,12 @@ requireText("src/App.tsx", [
   "ContentStudioMode",
 ]);
 requireText("src/components/StartMenu.tsx", [
+  "../../assets/key-art.webp",
   "continueGameUrl",
+  'fetchPriority="high"',
   "newGameUrl",
   "platformModeUrl",
+  "start-menu-hero-art",
   "开始新游戏",
   "挑战中心",
   "内容工坊",
@@ -217,7 +220,9 @@ requireText("src/components/BackToMenu.tsx", ["appDestinationUrl", "主菜单"])
 requireText("src/start-menu.css", [
   ".app-shell.mode-menu",
   ".start-menu-card",
+  ".start-menu-hero-art",
   ".back-to-menu",
+  "object-fit: cover",
   "var(--platform-text)",
 ]);
 requireText("src/game/experienceMode.ts", [

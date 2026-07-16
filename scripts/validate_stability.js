@@ -111,7 +111,9 @@ requireText("src/platform-theme.css", [
 requireText("src/start-menu.css", [
   ".app-shell.mode-menu",
   ".start-menu-card",
+  ".start-menu-hero-art",
   ".back-to-menu",
+  "object-fit: cover",
   "var(--platform-text)",
   "var(--platform-panel-strong)",
 ]);
@@ -127,6 +129,7 @@ requireText("scripts/e2e/platform.spec.js", [
   "waitForPageReady",
   "answerCommittee",
   "主菜单把两种年度体验与独立玩法分开",
+  "主菜单封面在桌面与窄屏保持清晰层级",
   "剧情模式只让玩家处理人物回应",
   "档案弹窗关闭后恢复焦点",
   "主菜单入口不会遮挡操作按钮",

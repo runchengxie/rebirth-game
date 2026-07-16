@@ -166,6 +166,38 @@ test("主菜单把两种年度体验与独立玩法分开", async ({ page }) => 
   await expect(page.getByRole("link", { name: /内容工坊/ })).toBeVisible();
 });
 
+test("主菜单封面在桌面与窄屏保持清晰层级", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openClean(page, "/");
+
+  const art = page.locator(".start-menu-hero-art");
+  const image = art.locator("img");
+  const copy = page.locator(".start-menu-hero-copy");
+  await expect(image).toBeVisible();
+  await expect.poll(() => image.evaluate((element) => element.naturalWidth))
+    .toBeGreaterThan(0);
+
+  const desktopArtBox = await art.boundingBox();
+  const desktopCopyBox = await copy.boundingBox();
+  expect(desktopArtBox).not.toBeNull();
+  expect(desktopCopyBox).not.toBeNull();
+  expect(desktopArtBox.x).toBeGreaterThanOrEqual(
+    desktopCopyBox.x + desktopCopyBox.width - 1,
+  );
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const mobileArtBox = await art.boundingBox();
+  const mobileCopyBox = await copy.boundingBox();
+  expect(mobileArtBox).not.toBeNull();
+  expect(mobileCopyBox).not.toBeNull();
+  expect(mobileArtBox.y + mobileArtBox.height).toBeLessThanOrEqual(
+    mobileCopyBox.y + 1,
+  );
+  const horizontalOverflow = await page.evaluate(() =>
+    document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(horizontalOverflow).toBeLessThanOrEqual(1);
+});
+
 test("剧情模式只让玩家处理人物回应", async ({ page }) => {
   await openClean(page, "/?mode=story&play=romance&new=1&staticStage=1");
 

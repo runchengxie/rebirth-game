@@ -4,6 +4,7 @@ import {
   newGameUrl,
   platformModeUrl,
 } from "../game/platformModes";
+import keyArt from "../../assets/key-art.webp";
 
 interface MenuCardProps {
   eyebrow: string;
@@ -46,31 +47,45 @@ export function StartMenu() {
   return (
     <main className="start-menu" aria-labelledby="start-menu-title">
       <header className="start-menu-hero">
-        <div className="start-menu-kicker">
-          <span>重生投研部</span>
-          <small>RESEARCH · ROMANCE · REBIRTH</small>
-        </div>
-        <h1 id="start-menu-title">心动 K 线</h1>
-        <p>
-          十二个月，一次重来。选择你想体验的故事浓度，或直接走进会议室接受市场拷问。
-        </p>
-        {continueHref ? (
-          <a className="start-menu-continue" href={continueHref}>
-            <span>
-              <small>读取浏览器中的最新进度</small>
-              <strong>继续游戏</strong>
-            </span>
-            <b aria-hidden="true">继续 →</b>
-          </a>
-        ) : (
-          <div className="start-menu-continue is-empty" role="status">
-            <span>
-              <small>当前浏览器还没有本地进度</small>
-              <strong>请在下方选择新游戏模式</strong>
-            </span>
-            <b aria-hidden="true">NEW</b>
+        <div className="start-menu-hero-copy">
+          <div className="start-menu-kicker">
+            <span>重生投研部</span>
+            <small>RESEARCH · ROMANCE · REBIRTH</small>
           </div>
-        )}
+          <h1 id="start-menu-title">心动 K 线</h1>
+          <p>
+            十二个月，一次重来。选择你想体验的故事浓度，或直接走进会议室接受市场拷问。
+          </p>
+          {continueHref ? (
+            <a className="start-menu-continue" href={continueHref}>
+              <span>
+                <small>读取浏览器中的最新进度</small>
+                <strong>继续游戏</strong>
+              </span>
+              <b aria-hidden="true">继续 →</b>
+            </a>
+          ) : (
+            <div className="start-menu-continue is-empty" role="status">
+              <span>
+                <small>当前浏览器还没有本地进度</small>
+                <strong>请在下方选择新游戏模式</strong>
+              </span>
+              <b aria-hidden="true">NEW</b>
+            </div>
+          )}
+        </div>
+        <div className="start-menu-hero-art" aria-hidden="true">
+          <img
+            alt=""
+            decoding="async"
+            draggable={false}
+            fetchPriority="high"
+            height="810"
+            loading="eager"
+            src={keyArt}
+            width="1440"
+          />
+        </div>
       </header>
 
       <section className="start-menu-section" aria-labelledby="new-game-heading">

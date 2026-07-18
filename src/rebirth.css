@@ -56,6 +56,23 @@
   background: var(--surface-strong);
 }
 
+.rebirth-unlocks > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.rebirth-locked-nodes summary {
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.rebirth-locked-nodes[open] {
+  gap: 10px;
+}
+
 .rebirth-unlocks ul,
 .rebirth-clues ul,
 .rebirth-archive-group ul,

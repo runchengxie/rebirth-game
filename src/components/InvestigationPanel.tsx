@@ -7,8 +7,51 @@ import {
   isInvestigationActive,
   memorySourceNote,
   type InvestigationNodeId,
+  type InvestigationNodeView,
   type RebirthMetaState,
 } from "../game/rebirth";
+
+function InvestigationNode({
+  node,
+  onInvestigate,
+}: {
+  node: InvestigationNodeView;
+  onInvestigate: (nodeId: InvestigationNodeId) => void;
+}) {
+  const disabled = node.completed || Boolean(node.lockedReason);
+  return (
+    <button
+      className={`rebirth-node ${node.completed ? "completed" : ""}`}
+      disabled={disabled}
+      title={node.lockedReason ?? undefined}
+      type="button"
+      onClick={() => onInvestigate(node.id)}
+    >
+      <span>{node.completed ? node.reliabilityLabel : `${node.cost} 时间`}</span>
+      <strong>{node.label}</strong>
+      <p>{node.summary}</p>
+      {node.shortcutLabel ? <small>捷径生效：{node.shortcutLabel}</small> : null}
+      {node.lockedReason ? <small>{node.lockedReason}</small> : null}
+      {node.completed ? <small>线索：{node.clue}</small> : null}
+    </button>
+  );
+}
+
+function InvestigationNodes({
+  nodes,
+  onInvestigate,
+}: {
+  nodes: InvestigationNodeView[];
+  onInvestigate: (nodeId: InvestigationNodeId) => void;
+}) {
+  return (
+    <div className="rebirth-node-grid">
+      {nodes.map((node) => (
+        <InvestigationNode key={node.id} node={node} onInvestigate={onInvestigate} />
+      ))}
+    </div>
+  );
+}
 
 export function InvestigationPanel({
   meta,
@@ -25,6 +68,8 @@ export function InvestigationPanel({
   if (!investigation || !chapter) return null;
   const remaining = Math.max(0, investigation.timeBudget - investigation.timeSpent);
   const nodes = investigationNodeViews(meta, state);
+  const availableNodes = nodes.filter((node) => !node.lockedReason);
+  const lockedNodes = nodes.filter((node) => Boolean(node.lockedReason));
   const clues = investigationClues(meta, state);
 
   return (
@@ -48,28 +93,18 @@ export function InvestigationPanel({
         </div>
       ) : null}
 
-      <div className="rebirth-node-grid">
-        {nodes.map((node) => {
-          const disabled = node.completed || Boolean(node.lockedReason);
-          return (
-            <button
-              className={`rebirth-node ${node.completed ? "completed" : ""}`}
-              disabled={disabled}
-              key={node.id}
-              title={node.lockedReason ?? undefined}
-              type="button"
-              onClick={() => onInvestigate(node.id)}
-            >
-              <span>{node.completed ? node.reliabilityLabel : `${node.cost} 时间`}</span>
-              <strong>{node.label}</strong>
-              <p>{node.summary}</p>
-              {node.shortcutLabel ? <small>捷径生效：{node.shortcutLabel}</small> : null}
-              {node.lockedReason ? <small>{node.lockedReason}</small> : null}
-              {node.completed ? <small>线索：{node.clue}</small> : null}
-            </button>
-          );
-        })}
+      <div className="rebirth-unlocks" role="note">
+        <span>当前可执行</span>
+        <p>先处理眼前能验证的线索。需要前置条件或记忆钥匙的节点已暂时收起。</p>
       </div>
+      <InvestigationNodes nodes={availableNodes} onInvestigate={onInvestigate} />
+
+      {lockedNodes.length > 0 ? (
+        <details className="rebirth-unlocks rebirth-locked-nodes">
+          <summary>查看待解锁节点（{lockedNodes.length}）</summary>
+          <InvestigationNodes nodes={lockedNodes} onInvestigate={onInvestigate} />
+        </details>
+      ) : null}
 
       <div className="rebirth-clues">
         <span>当前证据板</span>

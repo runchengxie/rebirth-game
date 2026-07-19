@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { FOCUS_ACTIONS } from "../game/content";
 import { focusPresentation } from "../game/focusContext";
 import type { FocusAction, GameState, MarketTheme } from "../types";
@@ -51,6 +52,16 @@ export function FocusSelector({
   const additionalActions = guidedOpening
     ? FOCUS_ACTIONS.filter((focus) => !primaryActions.includes(focus))
     : [];
+
+  useEffect(() => {
+    const applyRecommendation = (event: Event) => {
+      const focusId = (event as CustomEvent<{ focusId?: string }>).detail?.focusId;
+      if (state.locked || !focusId || !FOCUS_ACTIONS.some((focus) => focus.id === focusId)) return;
+      onSelect(focusId);
+    };
+    window.addEventListener("rebirth:recommended-focus", applyRecommendation);
+    return () => window.removeEventListener("rebirth:recommended-focus", applyRecommendation);
+  }, [onSelect, state.locked]);
 
   return (
     <section className="focus-choice-section" aria-label="本话日程">

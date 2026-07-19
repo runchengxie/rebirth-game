@@ -1,7 +1,7 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import { GAME_YEARS } from "../data/gameData";
 import { CHARACTERS } from "../game/content";
-import type { CharacterProfile, SceneNode } from "../types";
+import type { CharacterProfile, ExperienceMode, SceneNode } from "../types";
 import { DebatePanel } from "../components/DebatePanel";
 import { DecisionCard } from "../components/DecisionCard";
 import { EndingPanel } from "../components/EndingPanel";
@@ -11,30 +11,24 @@ import { ResearchCommitmentPanel } from "../components/ResearchCommitmentPanel";
 import { SaveTransferPanel } from "../components/SaveTransferPanel";
 import { StatusBar } from "../components/StatusBar";
 import { StoryRecapPanel } from "../components/StoryRecapPanel";
-import {
-  completedReviewCount,
-  createDefaultResearchCommitment,
-} from "../game/researchCommitment";
+import { completedReviewCount, createDefaultResearchCommitment } from "../game/researchCommitment";
 import { experiencePolicy } from "../game/experienceMode";
+import { glossaryTermsIn, type GlossaryTerm } from "../game/careerGuidance";
 import { isDebateNode } from "../game/narrativeMachine";
 import { recordPlaytestEvent } from "../game/playtestTelemetry";
 import { writeSessionEnvelope } from "../game/sessionEnvelope";
 import { stakeholderPressureFor } from "../game/stakeholderPressure";
 import { buildSceneView } from "./useGameController";
-import type {
-  GameAudio,
-  SettingsMenu,
-  ThemeControl,
-} from "./useGameController";
+import type { GameAudio, SettingsMenu, ThemeControl } from "./useGameController";
 import type { MachineGameSession as GameSession } from "./useGameSessionMachine";
 
 const PixiStage = lazy(() =>
-  import("../components/PixiStage").then((module) => ({ default: module.PixiStage })),
+  import("../components/PixiStage").then((module) => ({
+    default: module.PixiStage,
+  })),
 );
 const loadArchiveDrawer = () => import("../components/ArchiveDrawer");
-const ArchiveDrawer = lazy(() =>
-  loadArchiveDrawer().then((module) => ({ default: module.ArchiveDrawer })),
-);
+const ArchiveDrawer = lazy(() => loadArchiveDrawer().then((module) => ({ default: module.ArchiveDrawer })));
 
 interface ImmersiveGameScreenProps {
   audio: GameAudio;
@@ -59,6 +53,93 @@ function relationshipSignal(value: number): string {
   if (value >= 60) return "关系明显深化";
   if (value >= 40) return "专业默契形成";
   return "仍在互相观察";
+}
+
+const OPENING_PLAIN_LANGUAGE_LEADS: Record<string, string> = {
+  "2025p-lin-2": "技术突破只是起点，真正要判断的是谁先赚到钱，以及什么时候能从业绩里看出来。",
+  "2025p-chen-1": "眼下的上涨主要来自追涨，公司的实际经营还没有证明这个故事。",
+  "2025p-chen-2": "买盘还在，但市场承接正在变薄，这个交易信号更容易突然失效。",
+  "2025p-zhou-1": "好消息可能是真的，也可能早已被价格提前算进去了。",
+  "2025p-chen-3": "她会盯资金是否撤退、交易是否过度拥挤，以及原来的信号是否开始失效。",
+  "2025p-zhou-3": "判断错了，需要知道究竟是前提错、漏了变量，还是市场反馈改变了结果。",
+};
+
+function plainLanguageLeadFor(sceneNodeId: string): string | null {
+  return OPENING_PLAIN_LANGUAGE_LEADS[sceneNodeId] ?? null;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function GlossaryText({ text, terms }: { text: string; terms: GlossaryTerm[] }) {
+  if (terms.length === 0) return text;
+  const aliases = terms.flatMap((term) => [term.label, ...term.aliases]).sort((left, right) => right.length - left.length);
+  const pattern = new RegExp(`(${aliases.map(escapeRegExp).join("|")})`, "gi");
+  const termByAlias = new Map<string, GlossaryTerm>();
+  for (const term of terms) {
+    for (const alias of [term.label, ...term.aliases]) {
+      termByAlias.set(alias.toLocaleLowerCase("zh-CN"), term);
+    }
+  }
+  return text.split(pattern).map((part, index): ReactNode => {
+    const term = termByAlias.get(part.toLocaleLowerCase("zh-CN"));
+    if (!term) return part;
+    return (
+      <abbr className="career-term" key={`${term.id}-${index}`} title={term.explanation}>
+        {part}
+      </abbr>
+    );
+  });
+}
+
+function DialogueCopy({ experienceMode, prompt, sceneNodeId, text }: { experienceMode: ExperienceMode; prompt: string; sceneNodeId: string; text: string }) {
+  const terms = glossaryTermsIn(text);
+  const plainLanguageLead = plainLanguageLeadFor(sceneNodeId);
+
+  return (
+    <div className="immersive-dialogue-copy">
+      {plainLanguageLead ? (
+        <aside className="focus-onboarding dialogue-plain-summary" role="note">
+          <span>先抓住重点</span>
+          <strong>{plainLanguageLead}</strong>
+          <p>下面保留角色的专业表达；暂时不懂术语，也不影响继续剧情。</p>
+        </aside>
+      ) : null}
+      <p style={{ whiteSpace: "pre-line" }}>
+        <GlossaryText text={text} terms={terms} />
+      </p>
+      {terms.length > 0 ? (
+        <details
+          className="debate-glossary dialogue-glossary"
+          onToggle={(event) => {
+            if (event.currentTarget.open) {
+              recordPlaytestEvent("dialogue_glossary_expand", {
+                experienceMode,
+                sceneNodeId,
+                termCount: terms.length,
+              });
+            }
+          }}
+        >
+          <summary>本段术语（{terms.length}）</summary>
+          <dl>
+            {terms.map((term) => (
+              <div key={term.id}>
+                <dt>{term.label}</dt>
+                <dd>
+                  {term.explanation}
+                  <br />
+                  <small>本话作用：{term.relevance}</small>
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </details>
+      ) : null}
+      <small>{prompt}</small>
+    </div>
+  );
 }
 
 function StaticStage({ color }: { color: string }) {
@@ -86,11 +167,7 @@ export function StageArt({
   } else {
     artwork = (
       <Suspense fallback={<StaticStage color={activeCharacter.color} />}>
-        <PixiStage
-          activeCharacter={activeCharacter}
-          activePose={activePose}
-          backgroundId={sceneBackground}
-        />
+        <PixiStage activeCharacter={activeCharacter} activePose={activePose} backgroundId={sceneBackground} />
       </Suspense>
     );
   }
@@ -134,11 +211,7 @@ function DecisionPanel({ session }: { session: GameSession }) {
           <strong>{view.resultText}</strong>
           <p>{view.resultDetail}</p>
         </div>
-        <StoryRecapPanel
-          experienceMode={session.rebirth.experienceMode}
-          result={result}
-          state={session.state}
-        />
+        <StoryRecapPanel experienceMode={session.rebirth.experienceMode} result={result} state={session.state} />
       </div>
     );
   }
@@ -154,10 +227,7 @@ function DecisionPanel({ session }: { session: GameSession }) {
       falsifier: policy.showResearchCommitment ? commitment.falsifier : "assisted",
       reviewChecks: policy.showResearchCommitment ? completedReviewCount(commitment) : 3,
     });
-    session.makeDecisionWithSound(
-      decision,
-      policy.showResearchCommitment ? commitment : undefined,
-    );
+    session.makeDecisionWithSound(decision, policy.showResearchCommitment ? commitment : undefined);
   };
 
   return (
@@ -184,13 +254,7 @@ function DecisionPanel({ session }: { session: GameSession }) {
         </aside>
       ) : null}
       {policy.showResearchBriefs ? <ResearchBriefs node={decisionNode} /> : null}
-      {policy.showInvestigation ? (
-        <InvestigationPanel
-          meta={session.rebirth}
-          state={session.state}
-          onInvestigate={session.investigateWithSound}
-        />
-      ) : null}
+      {policy.showInvestigation ? <InvestigationPanel meta={session.rebirth} state={session.state} onInvestigate={session.investigateWithSound} /> : null}
       {policy.showSchedule ? (
         <FocusSelector
           monthIndex={session.state.monthIndex}
@@ -207,19 +271,10 @@ function DecisionPanel({ session }: { session: GameSession }) {
           }}
         />
       ) : null}
-      {policy.showResearchCommitment ? (
-        <ResearchCommitmentPanel commitment={commitment} onChange={setCommitment} />
-      ) : null}
+      {policy.showResearchCommitment ? <ResearchCommitmentPanel commitment={commitment} onChange={setCommitment} /> : null}
       <div className="options">
         {view.topDecisions.map((decision, index) => (
-          <DecisionCard
-            decision={decision}
-            index={index}
-            key={decision.id}
-            experienceMode={session.rebirth.experienceMode}
-            state={session.state}
-            onChoose={submitDecision}
-          />
+          <DecisionCard decision={decision} index={index} key={decision.id} experienceMode={session.rebirth.experienceMode} state={session.state} onChoose={submitDecision} />
         ))}
       </div>
     </div>
@@ -239,16 +294,7 @@ interface SettingsPopoverProps extends Omit<ImmersiveGameScreenProps, "usePixiSt
   onToggleExactMetrics: () => void;
 }
 
-function SettingsPopover({
-  audio,
-  session,
-  settingsOpen,
-  settingsRef,
-  setSettingsOpen,
-  themeControl,
-  showExactMetrics,
-  onToggleExactMetrics,
-}: SettingsPopoverProps) {
+function SettingsPopover({ audio, session, settingsOpen, settingsRef, setSettingsOpen, themeControl, showExactMetrics, onToggleExactMetrics }: SettingsPopoverProps) {
   const policy = experiencePolicy(session.rebirth.experienceMode);
   return (
     <div className="immersive-settings" ref={settingsRef}>
@@ -297,9 +343,10 @@ function SettingsPopover({
             <button
               type="button"
               onClick={() => {
-                const message = policy.id === "romance"
-                  ? "重新开始会覆盖当前剧情进度，但不会改变本存档的体验模式。确定继续吗？"
-                  : "重新开始会覆盖当前年份的本周目存档，但保留已经获得的记忆钥匙和研究捷径。确定继续吗？";
+                const message =
+                  policy.id === "romance"
+                    ? "重新开始会覆盖当前剧情进度，但不会改变本存档的体验模式。确定继续吗？"
+                    : "重新开始会覆盖当前年份的本周目存档，但保留已经获得的记忆钥匙和研究捷径。确定继续吗？";
                 if (window.confirm(message)) session.restart();
               }}
             >
@@ -307,9 +354,7 @@ function SettingsPopover({
             </button>
           </div>
           <small className="metric-mode-note">
-            {policy.id === "romance"
-              ? "剧情模式会协助处理职业细节，当前存档的体验模式在新游戏时确定。"
-              : "叙事指标隐藏精确关系与职业数值。精确指标用于攻略、调试和复盘。"}
+            {policy.id === "romance" ? "剧情模式会协助处理职业细节，当前存档的体验模式在新游戏时确定。" : "叙事指标隐藏精确关系与职业数值。精确指标用于攻略、调试和复盘。"}
           </small>
           <SaveTransferPanel year={session.state.year} />
         </div>
@@ -324,12 +369,14 @@ export function ImmersiveGameScreen(props: ImmersiveGameScreenProps) {
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [showExactMetrics, setShowExactMetrics] = useState(readExactMetricPreference);
   const policy = experiencePolicy(session.rebirth.experienceMode);
-  const isDebate = isDebateNode(session.sceneNode)
-    && Boolean(session.scene.theme.competingHypotheses);
+  const isDebate = isDebateNode(session.sceneNode) && Boolean(session.scene.theme.competingHypotheses);
   const headerCopy = useMemo(() => {
     if (session.state.finished) return { name: "年度复盘", role: `${session.state.year} 年研究结局` };
     if (isDebate) return { name: "观点交锋", role: "同一事实，三种框架" };
-    return { name: view.speakerName, role: `${view.speakerRole} · ${view.activeCharacter.tag}` };
+    return {
+      name: view.speakerName,
+      role: `${view.speakerRole} · ${view.activeCharacter.tag}`,
+    };
   }, [isDebate, session.state.finished, session.state.year, view.activeCharacter.tag, view.speakerName, view.speakerRole]);
 
   useEffect(() => {
@@ -349,12 +396,7 @@ export function ImmersiveGameScreen(props: ImmersiveGameScreenProps) {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target;
-      if (
-        target instanceof HTMLButtonElement
-        || target instanceof HTMLInputElement
-        || target instanceof HTMLSelectElement
-        || target instanceof HTMLTextAreaElement
-      ) return;
+      if (target instanceof HTMLElement && target.closest("button, input, select, textarea, summary, a, [role='button']")) return;
       if (event.key === "Escape" && archiveOpen) {
         event.preventDefault();
         setArchiveOpen(false);
@@ -392,30 +434,18 @@ export function ImmersiveGameScreen(props: ImmersiveGameScreenProps) {
         <div className="immersive-brand">
           <span>重生投研部</span>
           <strong>{session.scene.theme.title}</strong>
-          <small>{policy.id === "romance"
-            ? `${session.scene.label} · ${policy.label} · 剧情 ${view.sceneProgress}`
-            : `${session.scene.label} · ${policy.label} · 第 ${session.rebirth.cycle} 周目 · 剧情 ${view.sceneProgress}`}</small>
+          <small>
+            {policy.id === "romance"
+              ? `${session.scene.label} · ${policy.label} · 剧情 ${view.sceneProgress}`
+              : `${session.scene.label} · ${policy.label} · 第 ${session.rebirth.cycle} 周目 · 剧情 ${view.sceneProgress}`}
+          </small>
         </div>
-        <SettingsPopover
-          {...props}
-          showExactMetrics={showExactMetrics}
-          onToggleExactMetrics={toggleExactMetrics}
-        />
+        <SettingsPopover {...props} showExactMetrics={showExactMetrics} onToggleExactMetrics={toggleExactMetrics} />
       </header>
-      <StatusBar
-        experienceMode={session.rebirth.experienceMode}
-        state={session.state}
-        showExactMetrics={showExactMetrics}
-      />
+      <StatusBar experienceMode={session.rebirth.experienceMode} state={session.state} showExactMetrics={showExactMetrics} />
       <section className="immersive-workspace" aria-label="剧情舞台与操作区">
         <div className="immersive-stage" aria-hidden="true">
-          <StageArt
-            activeCharacter={view.activeCharacter}
-            activePose={view.scenePose}
-            sceneBackground={view.sceneBackground}
-            showDebate={isDebate}
-            usePixiStage={usePixiStage}
-          />
+          <StageArt activeCharacter={view.activeCharacter} activePose={view.scenePose} sceneBackground={view.sceneBackground} showDebate={isDebate} usePixiStage={usePixiStage} />
         </div>
         <div className="immersive-stage-meta">
           {isDebate ? (
@@ -433,46 +463,26 @@ export function ImmersiveGameScreen(props: ImmersiveGameScreenProps) {
           <span>{view.sceneMood}</span>
         </div>
         <section className={`interaction-panel ${session.state.finished ? "ending-mode" : view.isDecision ? "decision-mode" : "dialogue-mode"}`}>
-          <div
-            aria-label={isDebate ? "观点内容" : view.isDecision ? "选择内容" : "对白内容"}
-            className="interaction-scroll"
-            tabIndex={0}
-          >
+          <div aria-label={isDebate ? "观点内容" : view.isDecision ? "选择内容" : "对白内容"} className="interaction-scroll" tabIndex={0}>
             <div className="speaker-row">
               <span className="speaker-name">{headerCopy.name}</span>
               <span className="speaker-role">{headerCopy.role}</span>
             </div>
             {session.state.finished ? (
-              <EndingPanel
-                experienceMode={session.rebirth.experienceMode}
-                state={session.state}
-              />
+              <EndingPanel experienceMode={session.rebirth.experienceMode} state={session.state} />
             ) : isDebate ? (
               <DebatePanel hypotheses={session.scene.theme.competingHypotheses} />
             ) : view.isDecision ? (
               <DecisionPanel session={session} />
             ) : (
-              <div className="immersive-dialogue-copy">
-                <p style={{ whiteSpace: "pre-line" }}>{view.dialogue}</p>
-                <small>{view.prompt}</small>
-              </div>
+              <DialogueCopy experienceMode={session.rebirth.experienceMode} prompt={view.prompt} sceneNodeId={session.sceneNode.id} text={view.dialogue} />
             )}
           </div>
           <footer className="interaction-actions">
-            <button
-              className="secondary-action"
-              disabled={!session.canGoBack}
-              type="button"
-              onClick={session.goBack}
-            >
+            <button className="secondary-action" disabled={!session.canGoBack} type="button" onClick={session.goBack}>
               ← 上一句
             </button>
-            <button
-              className="secondary-action"
-              disabled={!session.canSkipRead}
-              type="button"
-              onClick={session.skipReadScene}
-            >
+            <button className="secondary-action" disabled={!session.canSkipRead} type="button" onClick={session.skipReadScene}>
               跳过已读
             </button>
             <button
@@ -484,27 +494,24 @@ export function ImmersiveGameScreen(props: ImmersiveGameScreenProps) {
             >
               {policy.id === "romance" ? "剧情回顾" : "档案与研究室"}
             </button>
-            <button
-              className="primary-action"
-              disabled={!session.sceneCanAdvance}
-              type="button"
-              onClick={session.advanceCurrentScene}
-            >
+            <button className="primary-action" disabled={!session.sceneCanAdvance} type="button" onClick={session.advanceCurrentScene}>
               {view.advanceLabel}
             </button>
           </footer>
         </section>
       </section>
       {archiveOpen ? (
-        <Suspense fallback={(
-          <div className="archive-backdrop" role="status">
-            <aside className="archive-drawer">
-              <div className="archive-scroll">
-                <p className="archive-empty">正在打开档案。纸很多，浏览器正在翻。</p>
-              </div>
-            </aside>
-          </div>
-        )}>
+        <Suspense
+          fallback={
+            <div className="archive-backdrop" role="status">
+              <aside className="archive-drawer">
+                <div className="archive-scroll">
+                  <p className="archive-empty">正在打开档案。纸很多，浏览器正在翻。</p>
+                </div>
+              </aside>
+            </div>
+          }
+        >
           <ArchiveDrawer session={session} onClose={() => setArchiveOpen(false)} />
         </Suspense>
       ) : null}

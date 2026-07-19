@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CHARACTERS } from "../game/content";
 import {
   decisionPresentation,
@@ -97,7 +97,18 @@ export function DecisionCard({
   onChoose: (decision: ResearchDecision) => void;
 }) {
   const [confirming, setConfirming] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const mountedAt = useRef(performance.now());
+
+  useEffect(() => {
+    const closeOtherPreviews = (event: Event) => {
+      const decisionId = (event as CustomEvent<{ decisionId?: string }>).detail?.decisionId;
+      if (decisionId && decisionId !== decision.id) setConfirming(false);
+    };
+    window.addEventListener("rebirth:decision-preview", closeOtherPreviews);
+    return () => window.removeEventListener("rebirth:decision-preview", closeOtherPreviews);
+  }, [decision.id]);
+
   if (experienceMode === "romance") {
     return (
       <RomanceDecision
@@ -116,6 +127,10 @@ export function DecisionCard({
   const recommendationMatched = state.focusId === presentation.recommendedFocusId;
 
   const preview = () => {
+    if (confirming) return;
+    window.dispatchEvent(new CustomEvent("rebirth:decision-preview", {
+      detail: { decisionId: decision.id },
+    }));
     setConfirming(true);
     recordPlaytestEvent("decision_preview", {
       year: state.year,
@@ -140,6 +155,8 @@ export function DecisionCard({
   };
 
   const confirm = () => {
+    if (submitting) return;
+    setSubmitting(true);
     recordPlaytestEvent("decision_confirm", {
       year: state.year,
       month: state.monthIndex + 1,
@@ -153,7 +170,7 @@ export function DecisionCard({
 
   return (
     <article className={`option career-option method-${presentation.tone} ${confirming ? "is-confirming" : ""}`}>
-      <button className="career-option-main" disabled={state.locked} type="button" onClick={preview}>
+      <button className="career-option-main" disabled={state.locked || submitting} type="button" onClick={preview}>
         <div className="option-kicker">
           <span style={{ borderColor: CATEGORY_COLORS[decision.category] || "#aaa" }}>选项 {optionLetter}</span>
           <span>{presentation.icon} {presentation.methodLabel}</span>
@@ -231,7 +248,7 @@ export function DecisionCard({
             </div>
           </dl>
           {!recommendationMatched ? (
-            <button className="secondary-action" type="button" onClick={applyRecommendedFocus}>
+            <button className="secondary-action" disabled={submitting} type="button" onClick={applyRecommendedFocus}>
               采用推荐日程
             </button>
           ) : (
@@ -240,6 +257,7 @@ export function DecisionCard({
           <div className="decision-confirmation-actions">
             <button
               className="secondary-action"
+              disabled={submitting}
               type="button"
               onClick={() => {
                 setConfirming(false);
@@ -252,8 +270,8 @@ export function DecisionCard({
             >
               返回比较
             </button>
-            <button className="primary-action" type="button" onClick={confirm}>
-              确认提交本月判断
+            <button className="primary-action" disabled={submitting} type="button" onClick={confirm}>
+              {submitting ? "正在提交" : "确认提交本月判断"}
             </button>
           </div>
         </section>

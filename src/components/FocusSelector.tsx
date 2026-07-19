@@ -12,7 +12,7 @@ function FocusCard({
 }: {
   focus: FocusAction;
   state: GameState;
-  theme: MarketTheme;
+  theme: Pick<MarketTheme, "title">;
   monthIndex: number;
   onSelect: (focusId: string) => void;
 }) {
@@ -44,7 +44,7 @@ export function FocusSelector({
   monthIndex?: number;
   onSelect: (focusId: string) => void;
 }) {
-  const activeTheme = theme ?? { title: "本月研究" };
+  const activeTheme: Pick<MarketTheme, "title"> = theme ?? { title: "本月研究" };
   const guidedOpening = monthIndex === 0 && state.history.length === 0;
   const primaryActions = guidedOpening
     ? FOCUS_ACTIONS.filter((focus) => focus.id === "deep_research" || focus.id === "self_care")

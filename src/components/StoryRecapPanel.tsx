@@ -5,7 +5,9 @@ import { gradeReviewText, postMortem } from "../game/engine";
 import { recordPlaytestEvent } from "../game/playtestTelemetry";
 import type { DecisionScore, ExperienceMode, GameState, RoundResult } from "../types";
 
-const SCORE_LABELS: Array<{ key: keyof DecisionScore; label: string }> = [
+type ScoreMetricKey = Exclude<keyof DecisionScore, "grade">;
+
+const SCORE_LABELS: Array<{ key: ScoreMetricKey; label: string }> = [
   { key: "evidenceScore", label: "证据" },
   { key: "clarityScore", label: "清晰" },
   { key: "riskAwarenessScore", label: "风险" },

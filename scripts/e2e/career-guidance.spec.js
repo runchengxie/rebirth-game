@@ -52,18 +52,19 @@ test("职业方案先解释代价并确认，再生成一次结算", async ({ pa
   await option.locator(".career-option-main").click();
   await expect(option.locator(".decision-confirmation")).toBeVisible();
   await expect(page.locator(".decision-result")).toHaveCount(0);
-  await expect(page.locator(".primary-action").last()).toBeDisabled();
+  await expect(page.locator(".interaction-actions .primary-action")).toBeDisabled();
 
   await option.getByRole("button", { name: "确认提交本月判断" }).click();
   await expect(page.locator(".decision-result")).toBeVisible();
   await expect(page.locator(".career-causal-recap article")).toHaveCount(3);
   await expect(page.locator(".career-full-recap")).not.toHaveAttribute("open", "");
 
-  const eventTypes = await page.evaluate(() => {
+  await expect.poll(async () => page.evaluate(() => {
     const events = JSON.parse(localStorage.getItem("rebirthPlaytest:v1") || "[]");
     return events.map((event) => event.type);
-  });
-  expect(eventTypes).toContain("decision_preview");
-  expect(eventTypes).toContain("decision_confirm");
-  expect(eventTypes).toContain("first_month_complete");
+  })).toEqual(expect.arrayContaining([
+    "decision_preview",
+    "decision_confirm",
+    "first_month_complete",
+  ]));
 });

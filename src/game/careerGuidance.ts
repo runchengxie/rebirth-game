@@ -365,6 +365,13 @@ export function decisionPresentation(
   };
 }
 
+function glossaryAliasIndex(source: string, alias: string): number {
+  const normalized = alias.toLocaleLowerCase("zh-CN");
+  if (!/^[a-z0-9]+$/.test(normalized)) return source.indexOf(normalized);
+  const match = new RegExp(`(^|[^a-z0-9])${normalized}(?=$|[^a-z0-9])`).exec(source);
+  return match ? match.index + match[1].length : -1;
+}
+
 export function glossaryTermsIn(
   ...texts: Array<string | undefined>
 ): GlossaryTerm[] {
@@ -374,7 +381,7 @@ export function glossaryTermsIn(
   const matches: Array<{ index: number; term: GlossaryTerm }> = [];
   for (const term of CAREER_GLOSSARY) {
     const positions = [term.label, ...term.aliases]
-      .map((alias) => source.indexOf(alias.toLocaleLowerCase("zh-CN")))
+      .map((alias) => glossaryAliasIndex(source, alias))
       .filter((index) => index >= 0);
     if (positions.length > 0) {
       matches.push({ index: Math.min(...positions), term });

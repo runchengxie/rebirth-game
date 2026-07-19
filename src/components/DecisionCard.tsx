@@ -98,10 +98,11 @@ export function DecisionCard({
 }) {
   const [confirming, setConfirming] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const mountedAt = useRef(performance.now());
+  const mountedAt = useRef<number | null>(null);
   const submittingRef = useRef(false);
 
   useEffect(() => {
+    mountedAt.current = performance.now();
     const closeOtherPreviews = (event: Event) => {
       const decisionId = (event as CustomEvent<{ decisionId?: string }>).detail?.decisionId;
       if (decisionId && decisionId !== decision.id) setConfirming(false);
@@ -129,6 +130,7 @@ export function DecisionCard({
 
   const preview = () => {
     if (confirming) return;
+    const now = performance.now();
     window.dispatchEvent(new CustomEvent("rebirth:decision-preview", {
       detail: { decisionId: decision.id },
     }));
@@ -137,7 +139,7 @@ export function DecisionCard({
       year: state.year,
       month: state.monthIndex + 1,
       decisionId: decision.id,
-      elapsedMs: Math.round(performance.now() - mountedAt.current),
+      elapsedMs: Math.round(now - (mountedAt.current ?? now)),
       currentFocusId: state.focusId,
       recommendedFocusId: presentation.recommendedFocusId,
     });

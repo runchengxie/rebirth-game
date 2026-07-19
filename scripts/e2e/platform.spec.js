@@ -292,6 +292,7 @@ test("研究室物件集中在档案抽屉，不覆盖剧情主舞台", async ({
   await expect(page.locator(".office-memory-layer")).toHaveCount(0);
   await advanceToDecision(page);
   await page.locator(".immersive-decision-panel .option").first().click();
+  await page.getByRole("button", { name: "确认提交本月判断" }).click();
   await page.getByRole("button", { name: "档案与研究室" }).click();
   await page.getByRole("tab", { name: "研究室" }).click();
   const overview = page.locator(".office-room-overview");

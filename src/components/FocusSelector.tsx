@@ -63,6 +63,14 @@ export function FocusSelector({
     return () => window.removeEventListener("rebirth:recommended-focus", applyRecommendation);
   }, [onSelect, state.locked]);
 
+  useEffect(() => {
+    if (!guidedOpening) return;
+    const timeoutId = window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("rebirth:apply-steady-commitment"));
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [guidedOpening]);
+
   return (
     <section className="focus-choice-section" aria-label="本话日程">
       {guidedOpening ? (

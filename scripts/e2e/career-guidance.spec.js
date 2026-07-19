@@ -16,7 +16,7 @@ async function openCareerDecision(page) {
   await expect(page.locator(".immersive-decision-panel")).toBeVisible();
 }
 
-test("第一话把目标、调查和日程收敛到可理解范围", async ({ page }) => {
+test("第一话把目标、调查、日程和研究承诺收敛到可理解范围", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await openCareerDecision(page);
 
@@ -32,6 +32,11 @@ test("第一话把目标、调查和日程收敛到可理解范围", async ({ pa
   await expect(page.locator(".focus-onboarding")).toBeVisible();
   await expect(page.locator(".focus-choice-section > .focus-grid .focus-card")).toHaveCount(2);
   await expect(page.locator(".focus-additional")).not.toHaveAttribute("open", "");
+
+  const commitment = page.locator(".research-commitment");
+  await expect(commitment.getByRole("button", { name: "稳健模板已采用" }))
+    .toHaveAttribute("aria-pressed", "true");
+  await expect(commitment.locator(".research-commitment-manual")).not.toHaveAttribute("open", "");
 
   const overflow = await page.evaluate(() =>
     document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -54,10 +59,16 @@ test("职业方案先解释代价并确认，再生成一次结算", async ({ pa
   await expect(page.locator(".decision-result")).toHaveCount(0);
   await expect(page.locator(".interaction-actions .primary-action")).toBeDisabled();
 
-  await option.getByRole("button", { name: "确认提交本月判断" }).click();
+  const confirm = option.getByRole("button", { name: "确认提交本月判断" });
+  await confirm.dblclick();
   await expect(page.locator(".decision-result")).toBeVisible();
   await expect(page.locator(".career-causal-recap article")).toHaveCount(3);
-  await expect(page.locator(".career-full-recap")).not.toHaveAttribute("open", "");
+
+  const fullRecap = page.locator(".career-full-recap");
+  await expect(fullRecap).not.toHaveAttribute("open", "");
+  await fullRecap.locator("summary").click();
+  await expect(fullRecap.locator(".career-score-breakdown")).toBeVisible();
+  await expect(fullRecap.locator(".career-score-breakdown .score-total")).toContainText("总分");
 
   await expect.poll(async () => page.evaluate(() => {
     const events = JSON.parse(localStorage.getItem("rebirthPlaytest:v1") || "[]");
@@ -66,5 +77,12 @@ test("职业方案先解释代价并确认，再生成一次结算", async ({ pa
     "decision_preview",
     "decision_confirm",
     "first_month_complete",
+    "score_breakdown_expand",
   ]));
+
+  const decisionSubmits = await page.evaluate(() => {
+    const events = JSON.parse(localStorage.getItem("rebirthPlaytest:v1") || "[]");
+    return events.filter((event) => event.type === "decision_submit").length;
+  });
+  expect(decisionSubmits).toBe(1);
 });

@@ -1,12 +1,4 @@
 import { lazy, Suspense, useState } from "react";
-import { ImmersiveGameScreen } from "./app/ImmersiveGameScreen";
-import { useGameSessionMachine } from "./app/useGameSessionMachine";
-import {
-  canUsePixiStage,
-  useGameAudio,
-  useSettingsMenu,
-  useThemeControl,
-} from "./app/useGameController";
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
 import { BackToMenu } from "./components/BackToMenu";
 import {
@@ -20,10 +12,8 @@ const StartMenu = lazy(() =>
   import("./components/StartMenu").then((module) => ({ default: module.StartMenu })),
 );
 
-const Chapter1Spike = lazy(() =>
-  import("./spike/pixivn/Chapter1Spike").then((module) => ({
-    default: module.Chapter1Spike,
-  })),
+const StoryMode = lazy(() =>
+  import("./app/StoryMode").then((module) => ({ default: module.StoryMode })),
 );
 
 async function loadPlatformChrome(): Promise<void> {
@@ -67,47 +57,6 @@ function focusMainContent(): void {
   if (!target) return;
   window.history.replaceState({}, "", `${window.location.pathname}${window.location.search}#main-content`);
   window.requestAnimationFrame(() => target.focus());
-}
-
-function StoryMode() {
-  const audio = useGameAudio();
-  const session = useGameSessionMachine(audio);
-  const settings = useSettingsMenu();
-  const themeControl = useThemeControl();
-  const [usePixiStage] = useState(canUsePixiStage);
-  const [usePixivnSpike] = useState(
-    () => new URLSearchParams(window.location.search).get("pixivn") === "1",
-  );
-
-  if (usePixivnSpike) {
-    return (
-      <Suspense
-        fallback={(
-          <main className="platform-screen platform-loading" role="status">
-            <strong>正在加载 Pixi'VN 第一话原型</strong>
-          </main>
-        )}
-      >
-        <Chapter1Spike
-          state={session.state}
-          onDecision={session.makeDecisionWithSound}
-          onFocus={session.selectFocusWithSound}
-        />
-      </Suspense>
-    );
-  }
-
-  return (
-    <ImmersiveGameScreen
-      audio={audio}
-      session={session}
-      settingsOpen={settings.settingsOpen}
-      settingsRef={settings.settingsRef}
-      setSettingsOpen={settings.setSettingsOpen}
-      themeControl={themeControl}
-      usePixiStage={usePixiStage}
-    />
-  );
 }
 
 function ModeContent({ mode }: { mode: PlatformMode }) {

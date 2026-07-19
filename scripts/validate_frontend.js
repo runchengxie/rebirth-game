@@ -90,6 +90,7 @@ for (const file of [
   "src/app/GameScreen.tsx",
   "src/app/ImmersiveGameScreen.tsx",
   "src/app/ImmersiveGameScreen.test.tsx",
+  "src/app/StoryMode.tsx",
   "src/app/useGameController.ts",
   "src/app/useGameSessionMachine.ts",
   "src/types.ts",
@@ -203,14 +204,19 @@ for (const asset of rasterAssets) {
 }
 
 requireText("src/App.tsx", [
-  "ImmersiveGameScreen",
-  "useGameSessionMachine",
+  "StoryMode",
   "StartMenu",
   "BackToMenu",
   "appDestinationFromSearch",
   "CommitteeMode",
   "DailyChallengeMode",
   "ContentStudioMode",
+]);
+requireText("src/app/StoryMode.tsx", [
+  "ImmersiveGameScreen",
+  "useGameSessionMachine",
+  "Chapter1Spike",
+  "useGameAudio",
 ]);
 requireText("src/components/StartMenu.tsx", [
   "../../assets/key-art.webp",

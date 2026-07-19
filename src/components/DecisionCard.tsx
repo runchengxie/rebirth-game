@@ -40,7 +40,7 @@ function GlossaryText({ text, terms }: { text: string; terms: GlossaryTerm[] }) 
     const term = termByAlias.get(part.toLocaleLowerCase("zh-CN"));
     if (!term) return part;
     return (
-      <abbr className="career-term" key={`${term.id}-${index}`} tabIndex={0} title={term.explanation}>
+      <abbr className="career-term" key={`${term.id}-${index}`} title={term.explanation}>
         {part}
       </abbr>
     );

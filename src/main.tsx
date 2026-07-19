@@ -6,6 +6,7 @@ import "./immersive.css";
 import "./rebirth.css";
 import "./rebirth-v2.css";
 import "./research-ux.css";
+import "./career-guidance.css";
 import "./platform-shell.css";
 import "./settings-polish.css";
 import "./stability.css";

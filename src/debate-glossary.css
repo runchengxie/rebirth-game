@@ -4,6 +4,15 @@
   background: var(--surface-strong);
 }
 
+.dialogue-plain-summary,
+.dialogue-glossary {
+  margin-top: 10px;
+}
+
+.dialogue-plain-summary {
+  margin-bottom: 10px;
+}
+
 .debate-glossary > summary {
   cursor: pointer;
   padding: 8px 10px;
@@ -40,4 +49,12 @@
   color: var(--muted);
   font-size: 0.74rem;
   line-height: 1.45;
+}
+
+.dialogue-glossary dd small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  line-height: 1.4;
 }

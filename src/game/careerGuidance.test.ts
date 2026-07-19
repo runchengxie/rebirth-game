@@ -92,15 +92,35 @@ describe("职业模式理解层", () => {
     expect(presentation.recommendedFocusId).toBe("deep_research");
   });
 
-  it("只返回当前方案实际出现的术语", () => {
+  it("按首次出现顺序返回当前内容实际出现的术语", () => {
     const terms = glossaryTermsIn(DECISION.label, DECISION.description);
 
     expect(terms.map((term) => term.id)).toEqual([
-      "factor-crowding",
       "unit-economics",
+      "factor-crowding",
       "sensitivity-analysis",
     ]);
     expect(glossaryTermsIn("普通业务描述")).toEqual([]);
+  });
+
+  it("覆盖第一话的交易术语并解释它在本话中的作用", () => {
+    const terms = glossaryTermsIn(
+      "Barra 归因显示动量因子主导，订单簿和盘口厚度变弱，Alpha 衰减加快。",
+      "风险偏好、流动性和安全边际都要检查，也别漏掉反身性。",
+    );
+
+    expect(terms.map((term) => term.id)).toEqual([
+      "barra",
+      "momentum-factor",
+      "order-book",
+      "market-depth",
+      "alpha-decay",
+      "risk-appetite",
+      "liquidity",
+      "margin-of-safety",
+      "reflexivity",
+    ]);
+    expect(terms.every((term) => term.relevance.length > 0)).toBe(true);
   });
 
   it("结算先解释优势、风险和状态后果", () => {

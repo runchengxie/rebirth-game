@@ -61,6 +61,13 @@ jobs:
       - name: Build
         run: npm run build:pages
 
+      # 项目不存在时创建（已存在会报错，忽略即可），避免依赖本地 wrangler 登录。
+      - name: Ensure Pages project exists
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler@4 pages project create rebirth-research --production-branch main || echo "Pages project already exists, continuing."
+
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:

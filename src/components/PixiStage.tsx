@@ -1,8 +1,5 @@
 import { useEffect, useRef } from "react";
 import { Application, Assets, Container, Graphics, Sprite, type Texture, type Ticker } from "pixi.js";
-import bgBriefingRoom from "../../assets/vn/backgrounds/briefing-room.webp";
-import bgNightCafe from "../../assets/vn/backgrounds/night-cafe.webp";
-import bgResearchRoom from "../../assets/vn/backgrounds/research-room.webp";
 import meiNeutralSprite from "../../assets/vn/characters/mei-neutral.webp";
 import meiSeriousSprite from "../../assets/vn/characters/mei-serious.webp";
 import meiSoftSprite from "../../assets/vn/characters/mei-soft.webp";
@@ -15,11 +12,14 @@ import rinaThinkingSprite from "../../assets/vn/characters/rina-thinking.webp";
 import zhaoNeutralSprite from "../../assets/vn/characters/zhao-neutral.webp";
 import zhaoReliefSprite from "../../assets/vn/characters/zhao-relief.webp";
 import zhaoThinkingSprite from "../../assets/vn/characters/zhao-thinking.webp";
+import { STAGE_SCENES, stageSceneImageUrl, type SceneWeather, type StageSceneId } from "../game/scenes";
 import type { CharacterId, CharacterProfile } from "../types";
 
 interface PixiStageProps {
   activeCharacter: CharacterProfile;
-  backgroundId?: string;
+  backgroundId?: StageSceneId;
+  // 路线图 R3.6：下一节点的背景，在当前场景播放时提前解码成纹理。
+  prefetchBackgroundId?: StageSceneId | null;
   activePose?: string;
 }
 
@@ -33,33 +33,25 @@ interface Sparkle {
 interface StageFx {
   bgFade: number;      // 0..1：背景交叉淡入进度
   charFade: number;    // 0..1：当前立绘淡入进度
-  lastBgId: string;
+  lastBgId: StageSceneId | "";
   lastCharId: CharacterId | null;
   breathePhase: number;
 }
 
-// 每个背景一套天气粒子参数：夜晚咖啡馆星光最盛，研究室是缓慢的浮尘，
-// 会议室几乎干净。visibleCount 控制粒子数，speed/alpha 控制气质。
-interface WeatherStyle {
-  visibleCount: number;
-  speedScale: number;
-  alphaScale: number;
+// 天气粒子与灯光参数由场景注册表提供（路线图 R3.2/R3.3）：
+// 夜晚咖啡馆星光最盛，研究室是缓慢的浮尘，会议简报室几乎干净。
+const DEFAULT_WEATHER: SceneWeather = { visibleCount: 14, speedScale: 0.5, alphaScale: 0.6 };
+
+function weatherFor(bgId: StageSceneId | ""): SceneWeather {
+  return bgId ? STAGE_SCENES[bgId].weather : DEFAULT_WEATHER;
 }
-
-const WEATHER_BY_BACKGROUND: Record<string, WeatherStyle> = {
-  "night-cafe": { visibleCount: 26, speedScale: 1, alphaScale: 1 },
-  "research-room": { visibleCount: 14, speedScale: 0.45, alphaScale: 0.6 },
-  "briefing-room": { visibleCount: 6, speedScale: 0.35, alphaScale: 0.4 },
-};
-
-const DEFAULT_WEATHER: WeatherStyle = { visibleCount: 14, speedScale: 0.5, alphaScale: 0.6 };
 
 interface StageScene {
   app: Application;
   host: HTMLDivElement;
   background: Sprite;
   prevBackground: Sprite;
-  backgroundTextures: Record<string, Texture>;
+  backgroundTextures: Partial<Record<StageSceneId, Texture>>;
   characterTextures: Partial<Record<CharacterId, Record<string, Texture>>>;
   characterSprites: Partial<Record<CharacterId, Sprite>>;
   baseScales: Partial<Record<CharacterId, number>>;
@@ -71,15 +63,23 @@ interface StageScene {
 
 interface StagePropsSnapshot {
   activeCharacter: CharacterProfile;
-  backgroundId: string;
+  backgroundId: StageSceneId;
   activePose: string;
 }
 
-const backgroundAssets: Record<string, string> = {
-  "research-room": bgResearchRoom,
-  "briefing-room": bgBriefingRoom,
-  "night-cafe": bgNightCafe,
-};
+// 路线图 R3.6：背景纹理按需加载并全局缓存，跨组件挂载复用；
+// 不再在启动时一次加载全部背景。
+const stageTextureCache = new Map<StageSceneId, Promise<Texture>>();
+
+function loadStageTexture(id: StageSceneId): Promise<Texture> {
+  let pending = stageTextureCache.get(id);
+  if (!pending) {
+    pending = stageSceneImageUrl(id).then((url) => Assets.load<Texture>(url));
+    pending.catch(() => stageTextureCache.delete(id));
+    stageTextureCache.set(id, pending);
+  }
+  return pending;
+}
 
 const characterAssets: Partial<Record<CharacterId, Record<string, string>>> = {
   lin_ruoning: {
@@ -178,41 +178,60 @@ function normalizePose(characterId: CharacterId, pose: string): string {
   return aliases[characterId]?.[pose] || defaultPose[characterId] || "neutral";
 }
 
-function layoutCover(sprite: Sprite, texture: Texture, width: number, height: number): void {
+function layoutCover(
+  sprite: Sprite,
+  texture: Texture,
+  width: number,
+  height: number,
+  focus: { x: number; y: number },
+): void {
   const scale = Math.max(width / texture.width, height / texture.height);
   sprite.width = texture.width * scale;
   sprite.height = texture.height * scale;
-  sprite.x = (width - sprite.width) / 2;
-  sprite.y = (height - sprite.height) / 2;
+  sprite.x = (width - sprite.width) * focus.x;
+  sprite.y = (height - sprite.height) * focus.y;
+}
+
+// 目标背景尚未加载完成时先保持当前画面，纹理就绪后 ensureBackground 会重绘。
+function resolveBackgroundId(scene: StageScene, requestedId: StageSceneId): StageSceneId {
+  if (scene.backgroundTextures[requestedId]) return requestedId;
+  return scene.fx.lastBgId || requestedId;
+}
+
+// 背景切换：把旧纹理放到 prevBackground 上，重置交叉淡入进度。
+function beginBackgroundCrossfade(scene: StageScene, resolvedBgId: StageSceneId, backgroundTexture: Texture): void {
+  if (scene.fx.lastBgId === resolvedBgId) return;
+  if (scene.fx.lastBgId && scene.animated) {
+    scene.prevBackground.texture = scene.backgroundTextures[scene.fx.lastBgId] || backgroundTexture;
+    scene.prevBackground.visible = true;
+    scene.fx.bgFade = 0;
+  }
+  scene.fx.lastBgId = resolvedBgId;
 }
 
 function renderScene(scene: StageScene, props: StagePropsSnapshot): void {
   const width = Math.max(1, scene.host.clientWidth);
   const height = Math.max(1, scene.host.clientHeight);
   const tint = routeTint[props.activeCharacter.color];
-  const resolvedBgId = scene.backgroundTextures[props.backgroundId] ? props.backgroundId : "research-room";
+  const resolvedBgId = resolveBackgroundId(scene, props.backgroundId);
   const backgroundTexture = scene.backgroundTextures[resolvedBgId];
+  if (!backgroundTexture) return;
+  const definition = STAGE_SCENES[resolvedBgId];
+  const isCompactViewport = width < 700 || (width < 1024 && height < 560);
+  const focus = isCompactViewport ? definition.focus.mobile : definition.focus.desktop;
 
   scene.app.renderer.resize(width, height);
 
-  // 背景切换：把旧纹理放到 prevBackground 上，重置交叉淡入进度。
-  if (scene.fx.lastBgId !== resolvedBgId) {
-    if (scene.fx.lastBgId && scene.animated) {
-      scene.prevBackground.texture = scene.backgroundTextures[scene.fx.lastBgId] || backgroundTexture;
-      scene.prevBackground.visible = true;
-      scene.fx.bgFade = 0;
-    }
-    scene.fx.lastBgId = resolvedBgId;
-  }
+  beginBackgroundCrossfade(scene, resolvedBgId, backgroundTexture);
   scene.background.texture = backgroundTexture;
-  layoutCover(scene.background, backgroundTexture, width, height);
+  layoutCover(scene.background, backgroundTexture, width, height, focus);
   if (scene.prevBackground.visible) {
-    layoutCover(scene.prevBackground, scene.prevBackground.texture, width, height);
+    layoutCover(scene.prevBackground, scene.prevBackground.texture, width, height, focus);
   }
 
   scene.overlay.clear();
-  scene.overlay.rect(0, 0, width, height).fill({ color: 0x140a1b, alpha: 0.12 });
-  scene.overlay.rect(0, height * 0.6, width, height * 0.4).fill({ color: tint, alpha: 0.14 });
+  scene.overlay.rect(0, 0, width, height).fill({ color: definition.lighting.dimColor, alpha: definition.lighting.dimAlpha });
+  scene.overlay.rect(0, height * 0.6, width, height * 0.4).fill({ color: tint, alpha: definition.lighting.tintAlpha });
 
   // 立绘切换：新角色上台时重置淡入进度。
   if (scene.fx.lastCharId !== props.activeCharacter.id) {
@@ -220,9 +239,8 @@ function renderScene(scene: StageScene, props: StagePropsSnapshot): void {
     scene.fx.lastCharId = props.activeCharacter.id;
   }
 
-  const compactStage = width < 700 || (width < 1024 && height < 560);
-  const targetHeight = Math.min(height * 0.92, compactStage ? width * 1.38 : width * 0.52);
-  const bottom = compactStage ? height - Math.min(26, height * 0.045) : height + Math.min(26, height * 0.05);
+  const targetHeight = Math.min(height * 0.92, isCompactViewport ? width * 1.38 : width * 0.52);
+  const bottom = isCompactViewport ? height - Math.min(26, height * 0.045) : height + Math.min(26, height * 0.05);
   (Object.keys(scene.characterSprites) as CharacterId[]).forEach((characterId) => {
     const sprite = scene.characterSprites[characterId];
     if (!sprite) return;
@@ -243,14 +261,35 @@ function renderScene(scene: StageScene, props: StagePropsSnapshot): void {
     sprite.zIndex = active ? 4 : 0;
   });
 
-  const weather = WEATHER_BY_BACKGROUND[resolvedBgId] ?? DEFAULT_WEATHER;
+  const weather = definition.weather;
   scene.sparkleItems.forEach((item, index) => {
     item.graphic.tint = tint;
     item.graphic.visible = index < weather.visibleCount;
   });
 }
 
-export function PixiStage({ activeCharacter, backgroundId = "research-room", activePose = "neutral" }: PixiStageProps) {
+// 目标背景不在纹理缓存时异步补载，就绪后重绘（挂载期间只会真正加载一次）。
+function ensureBackground(sceneRef: { current: StageScene | null }, propsRef: { current: StagePropsSnapshot }, id: StageSceneId): void {
+  const scene = sceneRef.current;
+  if (!scene || scene.backgroundTextures[id]) return;
+  void loadStageTexture(id)
+    .then((texture) => {
+      const current = sceneRef.current;
+      if (!current) return;
+      current.backgroundTextures[id] = texture;
+      renderScene(current, propsRef.current);
+    })
+    .catch(() => {
+      // 加载失败时保持当前背景，下一次场景切换会重试。
+    });
+}
+
+export function PixiStage({
+  activeCharacter,
+  backgroundId = "research-room",
+  prefetchBackgroundId = null,
+  activePose = "neutral",
+}: PixiStageProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const sceneRef = useRef<StageScene | null>(null);
   const latestPropsRef = useRef<StagePropsSnapshot>({ activeCharacter, backgroundId, activePose });
@@ -258,8 +297,15 @@ export function PixiStage({ activeCharacter, backgroundId = "research-room", act
   useEffect(() => {
     latestPropsRef.current = { activeCharacter, backgroundId, activePose };
     const scene = sceneRef.current;
-    if (scene) renderScene(scene, latestPropsRef.current);
+    if (!scene) return;
+    ensureBackground(sceneRef, latestPropsRef, backgroundId);
+    renderScene(scene, latestPropsRef.current);
   }, [activeCharacter, activePose, backgroundId]);
+
+  // 预取下一节点背景纹理，切换时零等待（路线图 R3.6）。
+  useEffect(() => {
+    if (prefetchBackgroundId) void loadStageTexture(prefetchBackgroundId).catch(() => undefined);
+  }, [prefetchBackgroundId]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -298,11 +344,13 @@ export function PixiStage({ activeCharacter, backgroundId = "research-room", act
 
       hostElement.appendChild(app.canvas);
 
-      let backgroundTextures: Record<string, Texture>;
+      // 只加载当前节点的背景（路线图 R3.6），其余背景按需补载或预取。
+      const initialBgId = latestPropsRef.current.backgroundId;
+      let initialBackground: Texture;
       let characterTextures: Partial<Record<CharacterId, Record<string, Texture>>>;
       try {
-        [backgroundTextures, characterTextures] = await Promise.all([
-          loadTextureMap(backgroundAssets),
+        [initialBackground, characterTextures] = await Promise.all([
+          loadStageTexture(initialBgId),
           loadCharacterTextureMap(),
         ]);
       } catch {
@@ -310,8 +358,11 @@ export function PixiStage({ activeCharacter, backgroundId = "research-room", act
       }
       if (disposed) return;
 
-      const background = new Sprite(backgroundTextures["research-room"]);
-      const prevBackground = new Sprite(backgroundTextures["research-room"]);
+      const backgroundTextures: Partial<Record<StageSceneId, Texture>> = {
+        [initialBgId]: initialBackground,
+      };
+      const background = new Sprite(initialBackground);
+      const prevBackground = new Sprite(initialBackground);
       prevBackground.visible = false;
       const characterSprites = createCharacterSprites(characterTextures);
 
@@ -359,6 +410,8 @@ export function PixiStage({ activeCharacter, backgroundId = "research-room", act
       sceneRef.current = scene;
 
       const draw = () => renderScene(scene, latestPropsRef.current);
+      // boot 期间背景可能已经被剧情推进换掉，补载最新目标背景。
+      ensureBackground(sceneRef, latestPropsRef, latestPropsRef.current.backgroundId);
       draw();
       hostElement.classList.remove("pixi-stage-fallback");
       const resizeObserver = new ResizeObserver(draw);
@@ -368,7 +421,7 @@ export function PixiStage({ activeCharacter, backgroundId = "research-room", act
         const width = Math.max(1, hostElement.clientWidth);
         const height = Math.max(1, hostElement.clientHeight);
         const props = latestPropsRef.current;
-        const weather = WEATHER_BY_BACKGROUND[scene.fx.lastBgId] ?? DEFAULT_WEATHER;
+        const weather = weatherFor(scene.fx.lastBgId);
 
         sparkleItems.forEach((item, index) => {
           if (!item.graphic.visible) return;

@@ -4,6 +4,7 @@ import {
   type ResearchCommitment,
 } from "./researchCommitment";
 import { decisionMethod, decisionQuality } from "./narrativeSemantics";
+import type { ProceduralSceneId } from "./scenes";
 
 export type ExaminerId = "pm" | "fundamental" | "quant" | "risk" | "compliance";
 export type CommitteeDimension = "evidence" | "clarity" | "risk" | "communication" | "integrity";
@@ -13,7 +14,8 @@ export interface CommitteeExaminer {
   name: string;
   role: string;
   initials: string;
-  scene: "committee-room" | "data-wall" | "risk-review" | "compliance-desk";
+  // 路线图 R3.7：答辩场景纳入共享场景注册表的程序化场景编号。
+  scene: ProceduralSceneId;
 }
 
 export interface CommitteeResponse {

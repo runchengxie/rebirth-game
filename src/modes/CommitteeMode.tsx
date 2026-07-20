@@ -16,6 +16,7 @@ import {
   createDefaultResearchCommitment,
   type ResearchCommitment,
 } from "../game/researchCommitment";
+import { PROCEDURAL_SCENES } from "../game/scenes";
 import { ResearchCommitmentPanel } from "../components/ResearchCommitmentPanel";
 
 interface CommitteeHistoryItem {
@@ -258,7 +259,7 @@ export function CommitteeMode() {
           ) : null}
 
           {activeRound ? (
-            <div className={`committee-room scene-${activeRound.examiner.scene}`}>
+            <div className={`committee-room ${PROCEDURAL_SCENES[activeRound.examiner.scene].cssClass}`}>
               <div className="examiner-card">
                 <span>{activeRound.examiner.initials}</span>
                 <div>

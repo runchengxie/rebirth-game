@@ -19,6 +19,7 @@ import { focusById } from "../game/engine";
 import { currentInvestigation, isInvestigationActive } from "../game/rebirth";
 import { isDebateNode } from "../game/narrativeMachine";
 import { recordPlaytestEvent } from "../game/playtestTelemetry";
+import { prefetchStageScene, STAGE_SCENES, stageSceneImageUrl, type StageSceneId } from "../game/scenes";
 import { writeSessionEnvelope } from "../game/sessionEnvelope";
 import { stakeholderPressureFor } from "../game/stakeholderPressure";
 import { buildSceneView } from "./useGameController";
@@ -100,32 +101,97 @@ function DialogueCopy({ experienceMode, prompt, sceneNodeId, text }: { experienc
   );
 }
 
-function StaticStage({ color }: { color: string }) {
-  return <div className={`pixi-stage pixi-stage-fallback immersive-static character-${color}`} aria-hidden="true" />;
+// 路线图 R3.3：静态舞台与观点交锋共用场景注册表按需解析位图 URL，
+// 同一场景全局只解析一次，浏览器缓存负责后续命中。
+function useStageSceneImage(sceneId: StageSceneId): string | null {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    stageSceneImageUrl(sceneId)
+      .then((resolved) => {
+        if (!cancelled) setUrl(resolved);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [sceneId]);
+  return url;
+}
+
+function sceneFocusCss(sceneId: StageSceneId): string {
+  const focus = STAGE_SCENES[sceneId].focus.desktop;
+  return `${focus.x * 100}% ${focus.y * 100}%`;
+}
+
+// 路线图 R3.4：静态舞台跟随当前场景切换背景，不再永远显示研究室。
+function StaticStage({ color, sceneId }: { color: string; sceneId: StageSceneId }) {
+  const url = useStageSceneImage(sceneId);
+  const style = url
+    ? {
+        backgroundImage: `linear-gradient(90deg, rgba(255, 247, 252, 0.8), rgba(255, 247, 252, 0.14)), url("${url}")`,
+        backgroundSize: "cover",
+        backgroundPosition: sceneFocusCss(sceneId),
+      }
+    : undefined;
+  return (
+    <div
+      className={`pixi-stage pixi-stage-fallback immersive-static character-${color}`}
+      data-scene={sceneId}
+      style={style}
+      aria-hidden="true"
+    />
+  );
+}
+
+function DebateStage({ sceneId }: { sceneId: StageSceneId }) {
+  const url = useStageSceneImage(sceneId);
+  const style = url
+    ? {
+        backgroundImage: `linear-gradient(110deg, rgba(25, 13, 34, 0.2), rgba(75, 105, 140, 0.12)), url("${url}")`,
+        backgroundSize: "cover",
+        backgroundPosition: sceneFocusCss(sceneId),
+      }
+    : undefined;
+  return <div className="debate-stage" data-scene={sceneId} style={style} aria-hidden="true" />;
 }
 
 export function StageArt({
   activeCharacter,
   activePose,
   sceneBackground,
+  prefetchBackground = null,
   showDebate,
   usePixiStage,
 }: {
   activeCharacter: CharacterProfile;
   activePose: string;
-  sceneBackground: string;
+  sceneBackground: StageSceneId;
+  prefetchBackground?: StageSceneId | null;
   showDebate: boolean;
   usePixiStage: boolean;
 }) {
+  // 路线图 R3.6：当前场景播放时预取下一节点背景。
+  useEffect(() => {
+    if (prefetchBackground && prefetchBackground !== sceneBackground) {
+      prefetchStageScene(prefetchBackground);
+    }
+  }, [prefetchBackground, sceneBackground]);
+
   let artwork;
   if (showDebate) {
-    artwork = <div className={`debate-stage debate-stage-${sceneBackground}`} aria-hidden="true" />;
+    artwork = <DebateStage sceneId={sceneBackground} />;
   } else if (!usePixiStage) {
-    artwork = <StaticStage color={activeCharacter.color} />;
+    artwork = <StaticStage color={activeCharacter.color} sceneId={sceneBackground} />;
   } else {
     artwork = (
-      <Suspense fallback={<StaticStage color={activeCharacter.color} />}>
-        <PixiStage activeCharacter={activeCharacter} activePose={activePose} backgroundId={sceneBackground} />
+      <Suspense fallback={<StaticStage color={activeCharacter.color} sceneId={sceneBackground} />}>
+        <PixiStage
+          activeCharacter={activeCharacter}
+          activePose={activePose}
+          backgroundId={sceneBackground}
+          prefetchBackgroundId={prefetchBackground}
+        />
       </Suspense>
     );
   }
@@ -776,7 +842,7 @@ export function ImmersiveGameScreen(props: ImmersiveGameScreenProps) {
       <StatusBar experienceMode={session.rebirth.experienceMode} state={session.state} showExactMetrics={showExactMetrics} />
       <section className="immersive-workspace" aria-label="剧情舞台与操作区">
         <div className="immersive-stage" aria-hidden="true">
-          <StageArt activeCharacter={view.activeCharacter} activePose={view.scenePose} sceneBackground={view.sceneBackground} showDebate={isDebate} usePixiStage={usePixiStage} />
+          <StageArt activeCharacter={view.activeCharacter} activePose={view.scenePose} sceneBackground={view.sceneBackground} prefetchBackground={view.nextSceneBackground} showDebate={isDebate} usePixiStage={usePixiStage} />
         </div>
         <div className="immersive-stage-meta">
           {isDebate ? (

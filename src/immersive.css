@@ -183,29 +183,17 @@ body,
   height: 100%;
 }
 
+/* 场景位图由组件从场景注册表按需解析后以行内样式注入（路线图 R3.3/R3.4），
+   这里只保留加载完成前的底色。 */
 .debate-stage {
   position: absolute;
   inset: 0;
-  background: center / cover no-repeat;
-}
-
-.debate-stage-research-room {
-  background-image: linear-gradient(110deg, rgba(25, 13, 34, 0.2), rgba(75, 105, 140, 0.12)), url("../assets/vn/backgrounds/research-room.webp");
-}
-
-.debate-stage-briefing-room {
-  background-image: linear-gradient(110deg, rgba(25, 13, 34, 0.2), rgba(75, 105, 140, 0.12)), url("../assets/vn/backgrounds/briefing-room.webp");
-}
-
-.debate-stage-night-cafe {
-  background-image: linear-gradient(110deg, rgba(25, 13, 34, 0.2), rgba(75, 105, 140, 0.12)), url("../assets/vn/backgrounds/night-cafe.webp");
+  background: rgba(25, 13, 34, 0.16) center / cover no-repeat;
 }
 
 .immersive-static {
   overflow: hidden;
-  background:
-    linear-gradient(90deg, rgba(255, 247, 252, 0.8), rgba(255, 247, 252, 0.14)),
-    url("../assets/vn/backgrounds/research-room.webp") center / cover;
+  background: linear-gradient(90deg, rgba(255, 247, 252, 0.8), rgba(255, 247, 252, 0.14));
 }
 
 .immersive-static::after {

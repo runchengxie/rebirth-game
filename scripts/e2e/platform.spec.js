@@ -326,6 +326,24 @@ test("研究室物件集中在档案抽屉，不覆盖剧情主舞台", async ({
   ]);
 });
 
+// 路线图 R3.4：静态舞台读取场景注册表，跟随节点切换背景。
+test("静态舞台跟随场景切换背景，不再固定研究室", async ({ page }) => {
+  await openClean(page, "/?mode=story&play=career&new=1&staticStage=1");
+
+  const stage = page.locator(".immersive-static");
+  await expect(stage).toHaveAttribute("data-scene", "research-room");
+  await expect
+    .poll(() => stage.evaluate((element) => element.style.backgroundImage))
+    .toContain("research-room");
+
+  // 研究选择节点使用会议简报室背景（按需加载后注入行内样式）。
+  await advanceToDecision(page);
+  await expect(stage).toHaveAttribute("data-scene", "briefing-room");
+  await expect
+    .poll(() => stage.evaluate((element) => element.style.backgroundImage))
+    .toContain("briefing-room");
+});
+
 test("年度剧情的主菜单入口不会遮挡操作按钮", async ({ page }) => {
   await page.setViewportSize({ width: 1365, height: 768 });
   await openClean(page, "/?staticStage=1");

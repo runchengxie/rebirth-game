@@ -1,3 +1,5 @@
+import type { StageSceneId } from "./game/scenes";
+
 export type CharacterId = "lin_ruoning" | "chen_xinghe" | "zhou_mingzhao" | "zhao_chengyu";
 
 export type ExperienceMode = "romance" | "career";
@@ -167,7 +169,8 @@ export interface SceneNode {
   text: string;
   prompt?: string;
   pose?: string;
-  bg?: string;
+  // 路线图 R3.1：背景必须是场景注册表登记过的舞台场景，未登记编号无法通过类型检查。
+  bg?: StageSceneId;
   bgm?: string;
   voice?: string;
   voiceCue?: "silent" | "key";

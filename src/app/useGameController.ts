@@ -45,6 +45,7 @@ import {
 import { simulateTimelineAnchor } from "../game/rebirthTimelineInsights";
 import type { TimelineSimulationProfileId } from "../game/rebirthTimelineState";
 import { persistStoredState, readStoredState as readStoredStateFromStorage } from "../game/saveState";
+import { stageSceneIdFor } from "../game/scenes";
 import type { CharacterId, GameState, ResearchDecision, RoundResult } from "../types";
 
 export function canUsePixiStage(): boolean {
@@ -599,6 +600,7 @@ export function buildSceneView(session: SceneViewSession) {
   const last = state.history[state.history.length - 1];
   const sceneProgress = `${Math.min(state.sceneNodeIndex + 1, scene.nodes.length)}/${scene.nodes.length}`;
   const isLastSceneNode = state.sceneNodeIndex >= scene.nodes.length - 1;
+  const nextSceneNode = scene.nodes[state.sceneNodeIndex + 1];
   const lineCharacterId: CharacterId =
     sceneNode.type === "dialogue" ? sceneNode.characterId : story.characterId;
   const result = resultCopyFor(state, sceneNode, scene, sceneProgress, last);
@@ -615,10 +617,11 @@ export function buildSceneView(session: SceneViewSession) {
     prompt: promptFor(state, sceneNode, story),
     resultDetail: result.resultDetail,
     resultText: result.resultText,
-    sceneBackground:
-      sceneNode.type === "dialogue"
-        ? sceneNode.bg || "research-room"
-        : sceneNode.bg || "briefing-room",
+    sceneBackground: stageSceneIdFor(sceneNode.type, sceneNode.bg),
+    // 路线图 R3.6：暴露下一节点背景，供舞台在当前场景播放时预取。
+    nextSceneBackground: nextSceneNode
+      ? stageSceneIdFor(nextSceneNode.type, nextSceneNode.bg)
+      : null,
     sceneMood: sceneNode.type === "dialogue" ? sceneNode.mood : story.mood,
     scenePose: sceneNode.type === "dialogue" ? sceneNode.pose || "neutral" : "thinking",
     sceneProgress,

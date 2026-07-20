@@ -103,6 +103,8 @@ for (const file of [
   "src/platform.css",
   "src/timeline.css",
   "src/components/PixiStage.tsx",
+  "src/game/scenes.ts",
+  "src/game/scenes.test.ts",
   "src/components/ArchiveDrawer.tsx",
   "src/components/CloudSyncPanel.tsx",
   "src/components/DebatePanel.tsx",
@@ -368,10 +370,45 @@ requireText("src/game/verified2025.ts", [
 ]);
 requireText("src/components/PixiStage.tsx", [
   "pixi.js",
-  "backgroundAssets",
+  "loadStageTexture",
+  "prefetchBackgroundId",
   "characterAssets",
   "zhao_chengyu",
 ]);
+// 路线图 R3：场景注册表是位图与程序化场景的唯一契约，
+// 三张背景必须继续从注册表按需加载，且登记来源与授权信息。
+requireText("src/game/scenes.ts", [
+  "StageSceneId",
+  "ProceduralSceneId",
+  "assets/vn/backgrounds/research-room.webp",
+  "assets/vn/backgrounds/briefing-room.webp",
+  "assets/vn/backgrounds/night-cafe.webp",
+  "stageSceneImageUrl",
+  "prefetchStageScene",
+  "license",
+]);
+const immersiveCss = fs.readFileSync("src/immersive.css", "utf8");
+if (immersiveCss.includes("assets/vn/backgrounds/")) {
+  fail("immersive.css 不应再静态引用场景位图，背景应经场景注册表按需加载");
+}
+
+// 路线图 R3.8：场景注册表登记的尺寸信息必须与磁盘上的真实文件一致。
+const scenesSource = fs.readFileSync("src/game/scenes.ts", "utf8");
+const sceneMetaPattern = /path: "(assets\/vn\/backgrounds\/[a-z-]+\.webp)",\s*width: \d+,\s*height: \d+,\s*sizeKiB: (\d+),/g;
+const registeredScenePaths = new Set();
+for (const match of scenesSource.matchAll(sceneMetaPattern)) {
+  const [, assetPath, sizeKiB] = match;
+  registeredScenePaths.add(assetPath);
+  const actualKiB = fs.statSync(assetPath).size / 1024;
+  if (Math.abs(actualKiB - Number(sizeKiB)) > 1) {
+    fail(`${assetPath} 登记大小 ${sizeKiB} KiB 与实际 ${Math.round(actualKiB)} KiB 不一致，请更新场景注册表`);
+  }
+}
+for (const assetPath of rasterAssets) {
+  if (assetPath.includes("/backgrounds/") && !registeredScenePaths.has(assetPath)) {
+    fail(`${assetPath} 未在场景注册表登记来源与尺寸信息`);
+  }
+}
 requireText("src/audio/sfx.ts", ["speechSynthesis", "SpeechSynthesisUtterance"]);
 requireText("src/data/gameData.ts", [
   '"2023"',

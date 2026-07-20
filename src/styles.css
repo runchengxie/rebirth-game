@@ -379,10 +379,9 @@ button:disabled {
   height: 100%;
 }
 
+/* 位图背景改由场景注册表按需加载（路线图 R3.6），加载完成前只显示渐变底色。 */
 .pixi-stage-fallback {
-  background:
-    linear-gradient(90deg, rgba(255, 247, 252, 0.92), rgba(255, 247, 252, 0.28)),
-    url("../assets/vn/backgrounds/research-room.webp") center / cover;
+  background: linear-gradient(90deg, rgba(255, 247, 252, 0.92), rgba(255, 247, 252, 0.28)) center / cover;
 }
 
 .pixi-stage-fallback::after {

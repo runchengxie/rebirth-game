@@ -1,4 +1,3 @@
-/* eslint-disable no-undef */
 // Dump 2024 content (themes + 12 decision pools) out of content.ts into
 // src/game/content/2024.json, so content2024.ts can become a validated loader
 // (matching the already-extracted 2023 / 2025 layers).

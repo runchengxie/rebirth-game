@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import shutil
 import subprocess
 from pathlib import Path
 from typing import NamedTuple
@@ -11,6 +12,14 @@ from typing import NamedTuple
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_TIMEOUT_SECONDS = 300
 BROWSER_TIMEOUT_SECONDS = 900
+
+
+def _resolve_executable(cmd: list[str]) -> list[str]:
+    """把命令名解析成完整路径，兼容 Windows 上的 npm.cmd / uv.exe。"""
+    resolved = shutil.which(cmd[0])
+    if resolved is None:
+        return cmd
+    return [resolved, *cmd[1:]]
 
 
 class Check(NamedTuple):
@@ -37,10 +46,12 @@ def run(
     header = f"[{label}]"
     try:
         result = subprocess.run(
-            cmd,
+            _resolve_executable(cmd),
             cwd=ROOT,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=timeout,
             check=False,
         )

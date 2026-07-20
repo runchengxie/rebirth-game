@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -18,6 +19,18 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def _commands(checks: tuple[check.Check, ...]) -> set[tuple[str, ...]]:
     return {item.command for item in checks}
+
+
+def _is_executable(path: Path) -> bool:
+    """Windows 文件系统没有可执行位，回退到 git 索引里记录的模式。"""
+    if path.stat().st_mode & 0o111:
+        return True
+    output = subprocess.check_output(
+        ["git", "ls-files", "-s", path.relative_to(ROOT).as_posix()],
+        cwd=ROOT,
+        text=True,
+    )
+    return output.startswith("100755")
 
 
 def test_local_check_inventory_covers_all_quality_layers() -> None:
@@ -79,7 +92,7 @@ def test_package_and_pages_workflow_keep_quality_local() -> None:
     assert dev_dependencies["@axe-core/playwright"] == "4.10.2"
 
     pre_push = ROOT / ".githooks" / "pre-push"
-    assert pre_push.stat().st_mode & 0o111
+    assert _is_executable(pre_push)
     assert "npm run check" in pre_push.read_text(encoding="utf-8")
 
     workflow = (ROOT / ".github/workflows/pages.yml").read_text(encoding="utf-8")

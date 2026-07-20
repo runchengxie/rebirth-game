@@ -425,9 +425,14 @@ export interface RoundResult {
 
   // Market post-mortem (for flavor, not scoring)
   marketTheme: string;
+  // 当月沪深300真实涨跌幅（未收录年份为 0）。行情只当「天气」：驱动净值和
+  // 结算文案，不参与研究过程评分。
   marketReturn: number;
 
   score?: DecisionScore;
+
+  // 「过程 × 结果」四象限复盘：分析对但市场跌 / 蒙对但说不清 等张力叙述。
+  marketReflection?: string;
 
   // ── New narrative-system fields ──
   // Business-fact settlement verdict (not a stock return).

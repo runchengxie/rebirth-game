@@ -1,4 +1,5 @@
 import { CHARACTERS } from "../game/content";
+import { formatNav, formatPct } from "../game/engine";
 import type { RoundResult } from "../types";
 
 export function HistoryPanel({ history }: { history: RoundResult[] }) {
@@ -16,6 +17,8 @@ export function HistoryPanel({ history }: { history: RoundResult[] }) {
               <th>月份</th>
               <th>选择</th>
               <th>主题</th>
+              <th>沪深300</th>
+              <th>净值</th>
               <th>可信度</th>
               <th>团队</th>
               <th>生活</th>
@@ -38,6 +41,14 @@ export function HistoryPanel({ history }: { history: RoundResult[] }) {
                 </td>
                 <td>
                   <span className="meta">{item.marketTheme}</span>
+                </td>
+                <td>
+                  <span className={item.marketReturn >= 0 ? "return-up" : "return-down"}>
+                    {item.marketReturn === 0 ? "--" : formatPct(item.marketReturn)}
+                  </span>
+                </td>
+                <td>
+                  <strong>{formatNav(item.portfolioNavAfter)}</strong>
                 </td>
                 <td>
                   <strong>{item.researchCredibilityAfter}</strong>

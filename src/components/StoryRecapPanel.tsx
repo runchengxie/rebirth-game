@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { careerRecap } from "../game/careerGuidance";
 import { CHARACTERS } from "../game/content";
-import { gradeReviewText, postMortem } from "../game/engine";
+import { formatPct, gradeReviewText, postMortem } from "../game/engine";
 import { recordPlaytestEvent } from "../game/playtestTelemetry";
 import type { DecisionScore, ExperienceMode, GameState, RoundResult } from "../types";
 
@@ -108,6 +108,12 @@ export function StoryRecapPanel({
         <div className="business-verdict">
           <strong>业务事实结算</strong>
           <p>{result.businessVerdict}</p>
+        </div>
+      ) : null}
+      {experienceMode === "career" && result.marketReflection ? (
+        <div className="market-reflection">
+          <strong>行情天气 · 沪深300 {formatPct(result.marketReturn)}</strong>
+          <p>{result.marketReflection}</p>
         </div>
       ) : null}
       {experienceMode === "career" && card ? (

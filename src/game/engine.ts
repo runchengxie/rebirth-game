@@ -11,6 +11,7 @@ import {
   pickKnowledgeCard,
 } from "./content";
 import { branchFlagsForMonth } from "./branching";
+import { marketReturnFor } from "../data/marketReturns";
 import { ROMANCE_FOCUS } from "./experienceMode";
 import { decisionMethod, decisionOutcomeAlignment, decisionQuality } from "./narrativeSemantics";
 import type {
@@ -314,6 +315,57 @@ export function selectFocus(state: GameState, focusId: string): GameState {
   return { ...state, focusId };
 }
 
+// ═══════════════════════════════════════════════════════════
+// Market settlement — real HS300 monthly returns as "weather"
+// ═══════════════════════════════════════════════════════════
+//
+// 真实行情不判卷（过程评分完全独立），只做两件事：
+//   1. 净值天气：推荐跟踪净值 = 敞口 × 当月真实涨跌 + 决策自带 alpha；
+//   2. 结果反馈：客户只看结果，marketImpact 小幅影响 clientFeedback。
+// 「分析对了市场不给面子」和「蒙对了方向但说不清为什么」因此成为
+// 两种真实可玩的月度体验，而不是同一条加分路径。
+
+// 各决策类别的市场敞口：本月研究推荐有多大比例暴露在大盘方向上。
+const CATEGORY_EXPOSURE: Record<DecisionCategory, number> = {
+  deep_research: 0.9,
+  data_deep_dive: 0.7,
+  expert_interview: 0.6,
+  committee_defense: 0.6,
+  roadshow: 0.5,
+  help_colleague: 0.4,
+  self_care: 0.3,
+  risk_alert: 0.2,
+};
+
+// 风控意识在下跌月体现为敞口收缩（仓位纪律、止损、对冲）。单月照样可能亏，
+// 但拉长十二个月，「过程正确」在统计上亏得更少——这是给市场不讲理准备的对冲。
+export function marketExposureOf(decision: ResearchDecision, marketReturn: number): number {
+  const base = CATEGORY_EXPOSURE[decision.category] ?? 0.5;
+  if (marketReturn >= 0) return base;
+  const riskCut = Math.min(20, Math.max(0, decision.riskAwareness)) / 40;
+  return base * (1 - riskCut);
+}
+
+// 「过程 × 结果」四象限复盘：市场大跌/大涨时，严谨与侥幸得到不同的叙述。
+// 这是行情作为剧情素材的部分——不打分，只把张力说出来。
+export function buildMarketReflection(marketReturn: number, score: DecisionScore): string {
+  if (marketReturn === 0) return "";
+  const pct = formatPct(marketReturn);
+  const strongProcess = score.reasoningScore >= 18;
+  const weakProcess = score.reasoningScore <= 8;
+  if (marketReturn <= -0.03) {
+    if (strongProcess) return `本月沪深300 ${pct}。市场没有奖励你的严谨，但推导链还在——单月的价格是噪声，方法才是复利。`;
+    if (weakProcess) return `本月沪深300 ${pct}。判断本就单薄，又赶上市场逆风，净值和信任一起承压。先补方法，再谈方向。`;
+    return `本月沪深300 ${pct}。逆风月，考验的是回撤控制和把话说清楚的能力。`;
+  }
+  if (marketReturn >= 0.03) {
+    if (weakProcess) return `本月沪深300 ${pct}。你蒙对了方向，净值很好看——但同事们都记得你说不清的那几步推导。顺风时的侥幸，是逆风时的账单。`;
+    if (strongProcess) return `本月沪深300 ${pct}。方向与方法这次都站在你这边，这样的月份值得写进研究札记。`;
+    return `本月沪深300 ${pct}。顺风月，人人都是股神——复盘时要分清多少是β，多少是你的α。`;
+  }
+  return `本月沪深300 ${pct}。震荡月，价格没给出方向，业务事实才是唯一的锚。`;
+}
+
 type NextMetrics = Pick<
   GameState,
   | "researchCredibility"
@@ -330,9 +382,15 @@ function nextMetrics(
   state: GameState,
   decision: ResearchDecision,
   focus: FocusAction,
+  marketReturn: number,
 ): NextMetrics {
   const effects = decision.effects;
-  const rawPortfolioNav = Math.max(0.001, state.portfolioNav * (1 + effects.portfolioNav));
+  // 净值 = 敞口 × 当月沪深300真实涨跌 + 决策自带 alpha（原 effects.portfolioNav）。
+  const exposure = marketExposureOf(decision, marketReturn);
+  const monthlyNavReturn = exposure * marketReturn + effects.portfolioNav;
+  // 客户只看结果：涨跌带来的口碑波动，幅度刻意压小，让过程分主导长期曲线。
+  const marketImpact = Math.round(monthlyNavReturn * 30);
+  const rawPortfolioNav = Math.max(0.001, state.portfolioNav * (1 + monthlyNavReturn));
   return {
     researchCredibility: clamp(
       state.researchCredibility +
@@ -343,7 +401,7 @@ function nextMetrics(
     portfolioNav: Math.round(rawPortfolioNav * 10000) / 10000,
     rawPortfolioNav,
     viewAccuracy: clamp(state.viewAccuracy + effects.viewAccuracy),
-    clientFeedback: clamp(state.clientFeedback + effects.clientFeedback),
+    clientFeedback: clamp(state.clientFeedback + effects.clientFeedback + marketImpact),
     teamTrust: clamp(state.teamTrust + effects.teamTrust + focus.teamTrustBonus),
     fatigue: clamp(state.fatigue + effects.fatigue + focus.fatigueDelta),
     lifeBalance: clamp(state.lifeBalance + effects.lifeBalance + focus.lifeBalanceDelta),
@@ -471,7 +529,8 @@ export function makeDecision(
     ? ROMANCE_FOCUS
     : focusById(state.focusId);
   const outcome = buildOutcome(decision, story, focus);
-  const metrics = nextMetrics(state, decision, focus);
+  const marketReturn = marketReturnFor(state.year, state.monthIndex);
+  const metrics = nextMetrics(state, decision, focus, marketReturn);
   const relations = nextRelations(state, decision, story, focus);
   const flags: Record<string, boolean | number> = { ...state.flags };
   const milestone = markAffinityFlags(state, relations, flags);
@@ -486,6 +545,7 @@ export function makeDecision(
   const quality = decisionQuality(decision);
   const method = decisionMethod(decision);
   const businessVerdict = buildBusinessVerdict(story.theme, score, alignment, isParachuted);
+  const marketReflection = buildMarketReflection(marketReturn, score);
 
   return {
     ...state,
@@ -527,8 +587,9 @@ export function makeDecision(
         lifeBalanceAfter: metrics.lifeBalance,
         relationsAfter: { ...relations },
         marketTheme: story.theme.title,
-        marketReturn: 0,
+        marketReturn,
         score,
+        marketReflection,
         businessVerdict,
         method,
         quality,

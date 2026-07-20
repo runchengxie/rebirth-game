@@ -29,15 +29,44 @@ interface Sparkle {
   drift: number;
 }
 
+// 场景转场 / 立绘切换 / 天气粒子的动画状态（tick 每帧推进）。
+interface StageFx {
+  bgFade: number;      // 0..1：背景交叉淡入进度
+  charFade: number;    // 0..1：当前立绘淡入进度
+  lastBgId: string;
+  lastCharId: CharacterId | null;
+  breathePhase: number;
+}
+
+// 每个背景一套天气粒子参数：夜晚咖啡馆星光最盛，研究室是缓慢的浮尘，
+// 会议室几乎干净。visibleCount 控制粒子数，speed/alpha 控制气质。
+interface WeatherStyle {
+  visibleCount: number;
+  speedScale: number;
+  alphaScale: number;
+}
+
+const WEATHER_BY_BACKGROUND: Record<string, WeatherStyle> = {
+  "night-cafe": { visibleCount: 26, speedScale: 1, alphaScale: 1 },
+  "research-room": { visibleCount: 14, speedScale: 0.45, alphaScale: 0.6 },
+  "briefing-room": { visibleCount: 6, speedScale: 0.35, alphaScale: 0.4 },
+};
+
+const DEFAULT_WEATHER: WeatherStyle = { visibleCount: 14, speedScale: 0.5, alphaScale: 0.6 };
+
 interface StageScene {
   app: Application;
   host: HTMLDivElement;
   background: Sprite;
+  prevBackground: Sprite;
   backgroundTextures: Record<string, Texture>;
   characterTextures: Partial<Record<CharacterId, Record<string, Texture>>>;
   characterSprites: Partial<Record<CharacterId, Sprite>>;
+  baseScales: Partial<Record<CharacterId, number>>;
   overlay: Graphics;
   sparkleItems: Sparkle[];
+  fx: StageFx;
+  animated: boolean;
 }
 
 interface StagePropsSnapshot {
@@ -161,15 +190,35 @@ function renderScene(scene: StageScene, props: StagePropsSnapshot): void {
   const width = Math.max(1, scene.host.clientWidth);
   const height = Math.max(1, scene.host.clientHeight);
   const tint = routeTint[props.activeCharacter.color];
-  const backgroundTexture = scene.backgroundTextures[props.backgroundId] || scene.backgroundTextures["research-room"];
+  const resolvedBgId = scene.backgroundTextures[props.backgroundId] ? props.backgroundId : "research-room";
+  const backgroundTexture = scene.backgroundTextures[resolvedBgId];
 
   scene.app.renderer.resize(width, height);
+
+  // 背景切换：把旧纹理放到 prevBackground 上，重置交叉淡入进度。
+  if (scene.fx.lastBgId !== resolvedBgId) {
+    if (scene.fx.lastBgId && scene.animated) {
+      scene.prevBackground.texture = scene.backgroundTextures[scene.fx.lastBgId] || backgroundTexture;
+      scene.prevBackground.visible = true;
+      scene.fx.bgFade = 0;
+    }
+    scene.fx.lastBgId = resolvedBgId;
+  }
   scene.background.texture = backgroundTexture;
   layoutCover(scene.background, backgroundTexture, width, height);
+  if (scene.prevBackground.visible) {
+    layoutCover(scene.prevBackground, scene.prevBackground.texture, width, height);
+  }
 
   scene.overlay.clear();
   scene.overlay.rect(0, 0, width, height).fill({ color: 0x140a1b, alpha: 0.12 });
   scene.overlay.rect(0, height * 0.6, width, height * 0.4).fill({ color: tint, alpha: 0.14 });
+
+  // 立绘切换：新角色上台时重置淡入进度。
+  if (scene.fx.lastCharId !== props.activeCharacter.id) {
+    if (scene.animated) scene.fx.charFade = 0;
+    scene.fx.lastCharId = props.activeCharacter.id;
+  }
 
   const compactStage = width < 700 || (width < 1024 && height < 560);
   const targetHeight = Math.min(height * 0.92, compactStage ? width * 1.38 : width * 0.52);
@@ -183,18 +232,21 @@ function renderScene(scene: StageScene, props: StagePropsSnapshot): void {
     const fallback = defaultPose[characterId] || "neutral";
     sprite.texture = (textures && (textures[pose] || textures[fallback])) || sprite.texture;
     const baseScale = targetHeight / sprite.texture.height;
+    scene.baseScales[characterId] = baseScale;
 
     sprite.visible = active;
     sprite.x = width * 0.5;
     sprite.y = bottom;
     sprite.scale.set(baseScale);
-    sprite.alpha = 1;
+    sprite.alpha = scene.animated && active ? Math.min(1, scene.fx.charFade) : 1;
     sprite.tint = 0xffffff;
     sprite.zIndex = active ? 4 : 0;
   });
 
-  scene.sparkleItems.forEach((item) => {
+  const weather = WEATHER_BY_BACKGROUND[resolvedBgId] ?? DEFAULT_WEATHER;
+  scene.sparkleItems.forEach((item, index) => {
     item.graphic.tint = tint;
+    item.graphic.visible = index < weather.visibleCount;
   });
 }
 
@@ -259,6 +311,8 @@ export function PixiStage({ activeCharacter, backgroundId = "research-room", act
       if (disposed) return;
 
       const background = new Sprite(backgroundTextures["research-room"]);
+      const prevBackground = new Sprite(backgroundTextures["research-room"]);
+      prevBackground.visible = false;
       const characterSprites = createCharacterSprites(characterTextures);
 
       Object.values(characterSprites).forEach((sprite) => {
@@ -268,6 +322,7 @@ export function PixiStage({ activeCharacter, backgroundId = "research-room", act
       });
 
       app.stage.addChild(background);
+      app.stage.addChild(prevBackground);
       app.stage.addChild(characters);
       app.stage.addChild(overlay);
       app.stage.addChild(sparkles);
@@ -296,8 +351,10 @@ export function PixiStage({ activeCharacter, backgroundId = "research-room", act
       }
 
       const scene: StageScene = {
-        app, host: hostElement, background, backgroundTextures,
-        characterTextures, characterSprites, overlay, sparkleItems,
+        app, host: hostElement, background, prevBackground, backgroundTextures,
+        characterTextures, characterSprites, baseScales: {}, overlay, sparkleItems,
+        fx: { bgFade: 1, charFade: 1, lastBgId: "", lastCharId: null, breathePhase: 0 },
+        animated: !reduceMotion,
       };
       sceneRef.current = scene;
 
@@ -310,16 +367,40 @@ export function PixiStage({ activeCharacter, backgroundId = "research-room", act
       const tick = (ticker: Ticker) => {
         const width = Math.max(1, hostElement.clientWidth);
         const height = Math.max(1, hostElement.clientHeight);
+        const props = latestPropsRef.current;
+        const weather = WEATHER_BY_BACKGROUND[scene.fx.lastBgId] ?? DEFAULT_WEATHER;
+
         sparkleItems.forEach((item, index) => {
-          item.graphic.y -= item.speed * ticker.deltaTime;
+          if (!item.graphic.visible) return;
+          item.graphic.y -= item.speed * weather.speedScale * ticker.deltaTime;
           item.graphic.x += item.drift * ticker.deltaTime;
           item.graphic.rotation += 0.012 * ticker.deltaTime;
-          item.graphic.alpha = 0.32 + Math.sin(performance.now() / 760 + index) * 0.2;
+          item.graphic.alpha = (0.32 + Math.sin(performance.now() / 760 + index) * 0.2) * weather.alphaScale;
           if (item.graphic.y < -20) {
             item.graphic.y = height + 20;
             item.graphic.x = 30 + Math.random() * Math.max(1, width - 60);
           }
         });
+
+        // 背景交叉淡入：旧背景淡出，淡完隐藏。
+        if (scene.fx.bgFade < 1) {
+          scene.fx.bgFade = Math.min(1, scene.fx.bgFade + 0.045 * ticker.deltaTime);
+          prevBackground.alpha = 1 - scene.fx.bgFade;
+          if (scene.fx.bgFade >= 1) prevBackground.visible = false;
+        }
+
+        // 立绘淡入 + 呼吸动画：正弦微缩放，幅度小到不喧宾夺主。
+        if (scene.fx.charFade < 1) {
+          scene.fx.charFade = Math.min(1, scene.fx.charFade + 0.08 * ticker.deltaTime);
+        }
+        scene.fx.breathePhase += 0.018 * ticker.deltaTime;
+        const activeSprite = scene.characterSprites[props.activeCharacter.id];
+        const baseScale = scene.baseScales[props.activeCharacter.id];
+        if (activeSprite && activeSprite.visible && baseScale) {
+          activeSprite.alpha = scene.fx.charFade;
+          const breathe = 1 + Math.sin(scene.fx.breathePhase) * 0.004;
+          activeSprite.scale.set(baseScale, baseScale * breathe);
+        }
       };
 
       if (!reduceMotion) app.ticker.add(tick);
